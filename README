@@ -1,0 +1,9 @@
+ This is a HTTPD server, it requires Vstr: http://www.and.org/vstr
+
+ It aims to be fast and secure, if used properly (and by default), but
+also easy to use.
+
+ It is Licensed under the LGPL, see the COPYING file for details.
+
+ See the AUTHORS file for authors.
+
