@@ -16,7 +16,7 @@
   <body>
     <h1>HTTPD using Vstr</h1>
 
-<p> You can see the source of the JHTTPD daemon
+<p> You can see the source of the AND-HTTPD daemon
 <a href="examples/ex_httpd.c">here</a>, some writing in general about
 HTTP/1.1 after implementing a server is
 <a href="http://www.and.org/texts/server-http">here</a>.</p>
@@ -28,7 +28,7 @@ HTTP/1.1 after implementing a server is
 %
 
     Design is a statemachine triggering off IO events, somewhat like thttpd and boa (among others).
-     Simple tests with ab show it to be about twice as fast as thttpd-2.20c (note that thttpd doesn't support keep-alive, which gives jhttpd a significant advantage -- mainly due to usage of Vstr).
+     Simple tests with ab show it to be about twice as fast as thttpd-2.20c (note that thttpd doesn't support keep-alive, which gives and-httpd a significant advantage -- mainly due to usage of Vstr).
 
     Uses the following system utilities:
      poll or epoll, multiplexing
@@ -107,9 +107,9 @@ HTTP/1.1 after implementing a server is
 Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
 ports 70,79,80-85,88,113,139,143,280,497,515,540,554,631,783,993,995,1220,1503,2030,3052,3128,3372,3531,3689,5000,5432,5800,5900,6699,7070,8000-8010,8080-8085,8880-8888,9090,9999,10000,10005,11371,13722,15000,40193,4711
 
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: jhttpd/(\d+\.\d+\.[-.\w]+) \(Vstr\)|s v/jhttpd - Vstr example/$1//
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: jhttpd/(\d+\.\d+\.[-.\w]+) ([^\r\n]+)|s v/jhttpd/$1/$2/
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: jhttpd| v/jhttpd///
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) \(Vstr\)|s v/and-httpd - Vstr example/$1//
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) ([^\r\n]+)|s v/and-httpd/$1/$2/
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
 
 </pre>
 
@@ -117,7 +117,7 @@ match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: jhttpd| v/jhttpd///
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Tue Aug 23 19:35:09 EDT 2005
+Last modified: Wed Aug 31 02:09:45 EDT 2005
 <!-- hhmts end -->
   </body>
 </html>

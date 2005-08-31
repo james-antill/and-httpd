@@ -14,11 +14,15 @@
 
 /* note that the strings are assigned in httpd_main_conf.c */
 
-#define HTTPD_CONF_PROG_NAME "jhttpd"
-#define HTTPD_CONF_SERVER_COMMENT "(Vstr)"
+#define HTTPD_CONF_PROG_NAME "and-httpd"
+#ifndef NDEBUG
+# define HTTPD_CONF_SERVER_COMMENT " (Debug)"
+#else
+# define HTTPD_CONF_SERVER_COMMENT " "
+#endif
 #define HTTPD_CONF_DEF_SERVER_NAME \
     HTTPD_CONF_PROG_NAME "/"       \
-    HTTPD_CONF_VERSION " " HTTPD_CONF_SERVER_COMMENT
+    HTTPD_CONF_VERSION HTTPD_CONF_SERVER_COMMENT
 #define HTTPD_CONF_USE_MMAP FALSE
 #define HTTPD_CONF_USE_SENDFILE TRUE
 #define HTTPD_CONF_USE_KEEPA TRUE

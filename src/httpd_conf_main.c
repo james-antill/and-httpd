@@ -575,7 +575,8 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
     policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_REQ_POLICY);
     httpd_policy_change_req(req, policy);
   }
-  else if (OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
+  else if (OPT_SERV_SYM_EQ("org.and.and-httpd-conf-req-1.0") ||
+           OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
   {
     Httpd_opts *opts = (Httpd_opts *)con->policy->s->beg;
     return (httpd_conf_req_d0(con, req, /* server beg time is "close engouh" */
@@ -947,7 +948,8 @@ int httpd_conf_main(Httpd_opts *opts, Conf_parse *conf, Conf_token *token)
   unsigned int cur_depth = token->depth_num;
   int clist = FALSE;
   
-  if (!OPT_SERV_SYM_EQ("org.and.jhttpd-conf-main-1.0"))
+  if (!OPT_SERV_SYM_EQ("org.and.and-httpd-conf-main-1.0") &&
+      !OPT_SERV_SYM_EQ("org.and.jhttpd-conf-main-1.0"))
     return (FALSE);
 
   CONF_SC_MAKE_CLIST_MID(cur_depth, clist);
@@ -997,7 +999,7 @@ int httpd_conf_main_parse_cstr(Vstr_base *out,
 
   pos = conf->data->len + 1;
   if (!vstr_add_cstr_ptr(conf->data, conf->data->len,
-                         "(org.and.jhttpd-conf-main-1.0 "))
+                         "(org.and.and-httpd-conf-main-1.0 "))
     goto read_malloc_fail;
   if (!vstr_add_cstr_ptr(conf->data, conf->data->len, data))
     goto read_malloc_fail;
@@ -1022,7 +1024,7 @@ int httpd_conf_main_parse_cstr(Vstr_base *out,
   if (!conf_parse_token(conf, token))
     goto conf_fail;
 
-  ASSERT(OPT_SERV_SYM_EQ("org.and.jhttpd-conf-main-1.0"));
+  ASSERT(OPT_SERV_SYM_EQ("org.and.and-httpd-conf-main-1.0"));
   
   if (!httpd_conf_main(opts, conf, token))
     goto conf_fail;
@@ -1082,7 +1084,8 @@ int httpd_conf_main_parse_file(Vstr_base *out,
       if (!opt_serv_conf(opts->s, conf, token))
         goto conf_fail;
     }
-    else if (OPT_SERV_SYM_EQ("org.and.jhttpd-conf-main-1.0"))
+    else if (OPT_SERV_SYM_EQ("org.and.and-httpd-conf-main-1.0") ||
+             OPT_SERV_SYM_EQ("org.and.jhttpd-conf-main-1.0"))
     {
       if (!httpd_conf_main(opts, conf, token))
         goto conf_fail;

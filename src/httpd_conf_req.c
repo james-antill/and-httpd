@@ -743,7 +743,8 @@ int httpd_conf_req_d0(struct Con *con, Httpd_req_data *req,
 {
   unsigned int cur_depth = token->depth_num;
   
-  if (!OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
+  if (!OPT_SERV_SYM_EQ("org.and.and-httpd-conf-req-1.0") ||
+      !OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
     return (FALSE);
   
   while (conf_token_list_num(token, cur_depth))
@@ -823,7 +824,7 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
   if (!S_ISREG(cf_stat->st_mode))
     goto close_read_fail; /* this is "bad" */
 
-  if ((cf_stat->st_size < strlen("org.and.jhttpd-conf-req-1.0")) ||
+  if ((cf_stat->st_size < strlen("org.and.and-httpd-conf-req-1.0")) ||
       (cf_stat->st_size > req->policy->max_req_conf_sz))
     goto close_read_fail; /* this is "bad" */
 
@@ -852,7 +853,10 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
     if (!conf_parse_token(conf, token))
       goto conf_fail;
     
-    if (!conf_token_cmp_sym_cstr_eq(conf, token, "org.and.jhttpd-conf-req-1.0"))
+    if (!conf_token_cmp_sym_cstr_eq(conf, token,
+                                    "org.and.and-httpd-conf-req-1.0") &&
+        !conf_token_cmp_sym_cstr_eq(conf, token,
+                                    "org.and.jhttpd-conf-req-1.0"))
       goto conf_fail;
   
     if (!httpd_conf_req_d0(con, req, cf_stat->st_mtime, conf, token))
