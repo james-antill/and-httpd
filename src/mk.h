@@ -15,6 +15,6 @@
 #define MALLOC_CHECK__ATTR_USED() __attribute__((used))
 #endif
 
-#include "../include/malloc-check.h"
+#include "malloc-check.h"
 
 #endif

@@ -751,7 +751,14 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
       else if (OPT_SERV_SYM_EQ("ETag:"))
         OPT_SERV_X_UINT(opts->max_etag_nodes);      
       else if (OPT_SERV_SYM_EQ("Range:"))
+      {
         OPT_SERV_X_UINT(opts->max_range_nodes);
+        if (!opts->max_range_nodes)
+        {
+          opts->use_range     = FALSE;
+          opts->use_range_1_0 = FALSE;
+        }
+      }
       
       CONF_SC_MAKE_CLIST_END();
     }

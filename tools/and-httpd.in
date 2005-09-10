@@ -1,20 +1,20 @@
 #! /bin/bash
 #
-# jhttpd          Start/Stop a http daemon.
+# and-httpd          Start/Stop a http daemon.
 #
 # chkconfig: 345 90 60
-# description: jhttpd is a simple http/1.0 server
-# processname: jhttpd
-# pidfile: /var/run/jhttpd1.pid
+# description: and-httpd is a secure HTTP/1.1 server
+# processname: and-httpd
+# pidfile: /var/run/and-httpd.pid
 #
 ### BEGIN INIT INFO
-# Provides: jhttpd
+# Provides: and-httpd
 # Required-Start: $local_fs $named $network $remote_fs $syslog $time
 # Required-Stop:
 # Default-Start: 2 3 4 5
 # Default-Stop: 0 1 6
 # Short-Description: A fast, secure and configurable HTTP/1.1 server
-# Description: jhttpd is currently only a URL to file mapping daemon,
+# Description: and-httpd is currently only a URL to file mapping daemon,
 #              in other words in can take an incomming URL and map it
 #              to a file in a number of ways. However it cannot do CGI
 #              or anything like apache-httpd mod_python etc. ... it cannot
@@ -29,27 +29,37 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 localstatedir="@localstatedir@"
 
-prog_name=jhttpd
+prog_name=and-httpd
 prog_exe="@sbindir@/${prog_name}"
 
-cntl_exe="@sbindir@/jcntl"
+cntl_exe="@sbindir@/and-cntl"
 
-MIME_EXTRAS_FILE="@libdir@/vstr-@VERSION@/examples/data/mime_types_extra.txt"
+MIME_EXTRAS_FILE="@sharedir@/and-httpd-@VERSION@/mime_types_extra.txt"
 
 FILE_BASE="${localstatedir}/run/${prog_name}"
 CNTL_FILE="${FILE_BASE}.cntl"
 PID_FILE="${FILE_BASE}.pid"
 
-JHTTPD_ARGS='--configuration-file /etc/jhttpd/jhttpd.conf'
-[ -r /etc/sysconfig/jhttpd ] && . /etc/sysconfig/jhttpd
+if [ -f /etc/and-httpd/and-httpd.conf ]; then
+  AND_HTTPD_ARGS='-C /etc/and-httpd/and-httpd.conf'
+fi
 
-GLOB_I_ARGS="--daemon --mime-types-xtra $MIME_EXTRAS_FILE"
+LC_ALL=C find /etc/and-httpd/conf.d/ -name \*.conf | \
+LC_ALL=C sort | \
+ while read a; do
+  AND_HTTPD_ARGS="$AND_HTTPD_ARGS -C '$a'"
+done
+
+[ -r /etc/sysconfig/and-httpd ] && . /etc/sysconfig/and-httpd
+
+GPRE_ARGS="--mime-types-xtra ${MIME_EXTRAS_FILE} --cntl-file ${CNTL_FILE} --pid-file ${PID_FILE}"
+GPST_ARGS="--daemon=true"
 
 function start()
 {
-        I_ARGS="${GLOB_I_ARGS} --cntl-file ${CNTL_FILE} --pid-file ${PID_FILE}"
         echo -n $"Starting $prog_name: "
-        daemon --check $prog_name $prog_exe $I_ARGS $JHTTPD_ARGS
+	ARGS="$GPRE_ARGS $AND_HTTPD_ARGS $GPST_ARGS"
+        daemon --check $prog_name $prog_exe $ARGS
         RETVAL=$?
 	echo
         [ $RETVAL -eq 0 ] && touch /var/lock/subsys/$prog_name

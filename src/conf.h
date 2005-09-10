@@ -2,6 +2,7 @@
 #define CONF_H
 
 #include <vstr.h>
+#include "compiler.h"
 
 #define CONF_PARSE_ERR 0
 #define CONF_PARSE_FIN 1

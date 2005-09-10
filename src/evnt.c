@@ -203,7 +203,7 @@ static void evnt__del_whatever(struct Evnt *evnt)
     ASSERT_NOT_REACHED();
 }
 
-static void EVNT__ATTR_USED() evnt__add_whatever(struct Evnt *evnt)
+static void COMPILE_ATTR_USED() evnt__add_whatever(struct Evnt *evnt)
 {
   if (0) { }
   else if (evnt->flag_q_accept)
@@ -355,15 +355,15 @@ int evnt_fd(struct Evnt *evnt)
   return (SOCKET_POLL_INDICATOR(evnt->ind)->fd);
 }
 
-int evnt_cb_func_connect(struct Evnt *EVNT__ATTR_UNUSED(evnt))
+int evnt_cb_func_connect(struct Evnt *COMPILE_ATTR_UNUSED(evnt))
 {
   return (TRUE);
 }
 
-struct Evnt *evnt_cb_func_accept(struct Evnt *EVNT__ATTR_UNUSED(evnt),
-                                 int EVNT__ATTR_UNUSED(fd),
-                                 struct sockaddr *EVNT__ATTR_UNUSED(sa),
-                                 socklen_t EVNT__ATTR_UNUSED(len))
+struct Evnt *evnt_cb_func_accept(struct Evnt *COMPILE_ATTR_UNUSED(evnt),
+                                 int COMPILE_ATTR_UNUSED(fd),
+                                 struct sockaddr *COMPILE_ATTR_UNUSED(sa),
+                                 socklen_t COMPILE_ATTR_UNUSED(len))
 {
   return (NULL);
 }
@@ -2188,7 +2188,7 @@ void evnt_wait_cntl_del(struct Evnt *evnt, int flags)
   SOCKET_POLL_INDICATOR(evnt->ind)->revents &= ~flags;  
 }
 
-unsigned int evnt_poll_add(struct Evnt *EVNT__ATTR_UNUSED(evnt), int fd)
+unsigned int evnt_poll_add(struct Evnt *COMPILE_ATTR_UNUSED(evnt), int fd)
 {
   return (socket_poll_add(fd));
 }

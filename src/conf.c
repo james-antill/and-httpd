@@ -28,7 +28,7 @@
 
 #include "mk.h"
 
-#define CLEN VSTR__AT_COMPILE_STRLEN
+#define CLEN COMPILE_STRLEN
 
 #define VPREFIX(vstr, p, l, cstr)                                       \
     (((l) >= CLEN(cstr)) &&                                             \

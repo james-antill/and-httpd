@@ -177,45 +177,45 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
 
   if (0) {}
 
-  else if (OPT_SERV_SYM_EQ("version-compare<=") ||
-           OPT_SERV_SYM_EQ("vers-cmp<="))
+  else if (OPT_SERV_SYM_EQ("version<=") ||
+           OPT_SERV_SYM_EQ("vers<="))
   {
     OPT_SERV_X_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) >= 0);
   }
-  else if (OPT_SERV_SYM_EQ("version-compare>=") ||
-           OPT_SERV_SYM_EQ("vers-cmp>="))
+  else if (OPT_SERV_SYM_EQ("version>=") ||
+           OPT_SERV_SYM_EQ("vers>="))
   {
     OPT_SERV_X_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) <= 0);
   }
-  else if (OPT_SERV_SYM_EQ("version-compare-eq") ||
-           OPT_SERV_SYM_EQ("vers-cmp=="))
+  else if (OPT_SERV_SYM_EQ("version-eq") ||
+           OPT_SERV_SYM_EQ("vers=="))
   {
     OPT_SERV_X_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) == 0);
   }
 
-  else if (OPT_SERV_SYM_EQ("name-compare-eq") ||
-           OPT_SERV_SYM_EQ("name-cmp=="))
+  else if (OPT_SERV_SYM_EQ("name-eq") ||
+           OPT_SERV_SYM_EQ("name=="))
   {
     OPT_SERV_X_VSTR(conf->tmp);
     *matches = vstr_cmp_buf_eq(conf->tmp, 1, conf->tmp->len,
                                opts->name_cstr, opts->name_len);
   }
 
-  else if (OPT_SERV_SYM_EQ("uid-compare-eq") ||
-           OPT_SERV_SYM_EQ("uid-cmp=="))
+  else if (OPT_SERV_SYM_EQ("uid-eq") ||
+           OPT_SERV_SYM_EQ("uid=="))
   {
     unsigned int dummy = 0;
     OPT_SERV_X_UINT(dummy);
     *matches = (dummy == getuid());
   }
-  else if (OPT_SERV_SYM_EQ("euid-compare-eq") ||
-           OPT_SERV_SYM_EQ("euid-cmp=="))
+  else if (OPT_SERV_SYM_EQ("euid-eq") ||
+           OPT_SERV_SYM_EQ("euid=="))
   {
     unsigned int dummy = 0;
     OPT_SERV_X_UINT(dummy);

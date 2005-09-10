@@ -4,13 +4,28 @@
 #
 AUTOMAKE_OPTIONS = no-dependencies 1.4
 
-GEN_CFLAGS = $(VSTR_CFLAGS) @CFLAGS@ @WARNS@
+if DBG_VSTR
+if VSTR_DBG_AVAIL
 
-if USE_EX_STATIC_LIBS
-GEN_CFLAGS += -DCONF_FULL_STATIC=1
+GEN_CFLAGS = $(VSTR_DBG_CFLAGS) @CFLAGS@ @WARNS@
+GEN_LDLIBS = $(VSTR_DBG_LDLIBS) @LDFLAGS@
+
+else
+
+GEN_CFLAGS = $(VSTR_CFLAGS) @CFLAGS@ @WARNS@
+GEN_LDLIBS = $(VSTR_LDLIBS) @LDFLAGS@
+
+endif
+else
+
+GEN_CFLAGS = $(VSTR_CFLAGS) @CFLAGS@ @WARNS@
+GEN_LDLIBS = $(VSTR_LDLIBS) @LDFLAGS@
+
 endif
 
-GEN_LDLIBS = $(VSTR_LDFLAGS) @LDFLAGS@ @LOCAL_EX_PROG_LIBS@
+# if USE_STATIC_LIBS
+# GEN_CFLAGS += -DCONF_FULL_STATIC=1
+# endif
 
 CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c
 CMDLINE_FILES_HDRS = date.h evnt.h hexdump.h opt.h vlg.h
@@ -22,32 +37,32 @@ DAEMON_FILES_HDRS = bag.h conf.h cntl.h date.h evnt.h hexdump.h \
                     opt.h opt_policy.h opt_serv.h vlg.h
 
 
-and-httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
+and_httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
                         httpd_policy.c httpd_policy_inline.c \
                         $(DAEMON_FILES_SRCS) httpd.c and-httpd.c
-and-httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
+and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                         httpd_policy.h \
                         $(DAEMON_FILES_HDRS) httpd.h httpd_err_codes.h
-and-httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
-and-httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
+and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
+and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
 
 
 
 # These are "extra" ... but kind of needed
 
-and-cntl_SOURCES      = $(CMDLINE_FILES_SRCS) and-cntl.c
-and-cntl_DEPENDENCIES = $(CMDLINE_FILES_HDRS) mk.h
-and-cntl_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
-and-cntl_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
+and_cntl_SOURCES      = $(CMDLINE_FILES_SRCS) and-cntl.c
+and_cntl_DEPENDENCIES = $(CMDLINE_FILES_HDRS) mk.h
+and_cntl_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
+and_cntl_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
 
-and-conf_SOURCES      = conf.c and-conf.c conf_inline.c
-and-conf_DEPENDENCIES = conf.h ex_utils.h mk.h
-and-conf_CFLAGS = $(GEN_CFLAGS)
-and-conf_LDADD  = $(GEN_LDLIBS)
+and_conf_SOURCES      = conf.c and-conf.c conf_inline.c
+and_conf_DEPENDENCIES = conf.h ex_utils.h mk.h
+and_conf_CFLAGS = $(GEN_CFLAGS)
+and_conf_LDADD  = $(GEN_LDLIBS)
 
-and-sock-filter_DEPENDENCIES = ex_utils.h
-and-sock-filter_CFLAGS = $(GEN_CFLAGS)
-and-sock-filter_LDADD  = $(GEN_LDLIBS)
+and_sock_filter_DEPENDENCIES = ex_utils.h
+and_sock_filter_CFLAGS = $(GEN_CFLAGS)
+and_sock_filter_LDADD  = $(GEN_LDLIBS)
 
 
 if PERL_USR_BIN_AVAIL
@@ -60,5 +75,8 @@ TESTS = ../tst/tst_sock_filter.pl ../tst/tst_conf.pl \
         ../tst/tst_httpd_vhosts.pl
 endif
 
+httpdadmindir = $(sbindir)
+httpdadmin_PROGRAMS = and-cntl and-httpd
 
-httpd_PROGRAMS = and-conf and-cntl and-httpd and-sock-filter
+httpduserdir = $(bindir)
+httpduser_PROGRAMS = and-conf and-sock-filter

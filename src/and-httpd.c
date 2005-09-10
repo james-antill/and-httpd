@@ -61,7 +61,7 @@ MALLOC_CHECK_DECL();
 #include "httpd.h"
 #include "httpd_policy.h"
 
-#define CLEN VSTR__AT_COMPILE_STRLEN
+#define CLEN COMPILE_STRLEN
 
 /* is the cstr a prefix of the vstr */
 #define VPREFIX(vstr, p, l, cstr)                                       \
@@ -92,6 +92,11 @@ static void usage(const char *program_name, int ret, const char *prefix)
   vstr_add_fmt(out, 0, "%s\n\
  Format: %s [options] <dir>\n\
   Daemon options\n\
+    --configuration-file\n\
+                   -C - Load configuration file specified.\n\
+    --configuration-data-daemon\n\
+                      - Parse configuration given in the\n\
+                        org.and.daemon-conf-1.0 namespace.\n\
     --daemon          - Toggle becoming a daemon%s.\n\
     --chroot          - Change root.\n\
     --drop-privs      - Toggle droping privilages%s.\n\
@@ -106,7 +111,7 @@ static void usage(const char *program_name, int ret, const char *prefix)
     --host -H         - IPv4 address to bind (default: \"all\").\n\
     --help -h         - Print this message.\n\
     --max-connections\n\
-                  -M  - Max connections allowed (0 = no limit).\n\
+                   -M - Max connections allowed (0 = no limit).\n\
     --nagle -n        - Toggle usage of nagle TCP option%s.\n\
     --port -P         - Port to bind to.\n\
     --idle-timeout -t - Timeout (usecs) for connections that are idle.\n\
@@ -114,6 +119,9 @@ static void usage(const char *program_name, int ret, const char *prefix)
     --version -V      - Print the version string.\n\
 \n\
   HTTPD options\n\
+    --configuration-data-and-httpd\n\
+                      - Parse configuration given in the\n\
+                        org.and.and-httpd-conf-main-1.0 namespace.\n\
     --mmap            - Toggle use of mmap() to load files%s.\n\
     --sendfile        - Toggle use of sendfile() to load files%s.\n\
     --keep-alive      - Toggle use of Keep-Alive handling%s.\n\
@@ -449,8 +457,8 @@ static void serv_cmd_line(int argc, char *argv[])
    {"config-file",        required_argument, NULL, 'C'},
    {"configuration-data-daemon", required_argument, NULL, 143},
    {"config-data-daemon",        required_argument, NULL, 143},
-   {"configuration-data-jhttpd", required_argument, NULL, 144},
-   {"config-data-jhttpd",        required_argument, NULL, 144},
+   {"configuration-data-and-httpd", required_argument, NULL, 144},
+   {"config-data-and-httpd",        required_argument, NULL, 144},
    
    {"sendfile", optional_argument, NULL, 31},
    {"mmap", optional_argument, NULL, 30},

@@ -2,6 +2,9 @@
 #define VLG_H 1
 
 #include <vstr.h>
+
+#include "compiler.h"
+
 #include <stdarg.h>
 #include <errno.h>
 

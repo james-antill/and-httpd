@@ -50,7 +50,7 @@
 #endif
 #define HTTP_CONF_MMAP_LIMIT_MAX (50 * 1024 * 1024)
 
-#define CLEN VSTR__AT_COMPILE_STRLEN
+#define CLEN COMPILE_STRLEN
 
 /* is the cstr a prefix of the vstr */
 #define VPREFIX(vstr, p, l, cstr)                                       \
@@ -1300,7 +1300,10 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
   int use_cust_err_msg = FALSE;
 
   ASSERT(req->error_code);
-  
+
+  ASSERT(!con->use_mpbr); /* done as part of close() */
+  ASSERT(con->fs && !con->fs_num);
+
   req->content_encoding_gzip  = FALSE;
   req->content_encoding_bzip2 = FALSE;
   
@@ -1308,8 +1311,6 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       (req->error_code == 413) ||
       (req->error_code == 500) || (req->error_code == 501))
     con->keep_alive = HTTP_NON_KEEP_ALIVE;
-  
-  ASSERT(con->fs && !con->fs_num);
   
   vlg_info(vlg, "ERREQ from[$<sa:%p>] err[%03u %s]",
            CON_CEVNT_SA(con), req->error_code, req->error_line);
@@ -2854,9 +2855,9 @@ static int http_parse_range(struct Con *con, Httpd_req_data *req)
 static void httpd_serv_file_sects_none(struct Con *con, Httpd_req_data *req)
 {
   con->use_mpbr = FALSE;
-  con->fs_num = 1;
-  con->fs->off = 0;
-  con->fs->len = req->f_stat->st_size;
+  con->fs_num   = 1;
+  con->fs->off  = 0;
+  con->fs->len  = req->f_stat->st_size;
 }
                                       
 static void httpd_serv_call_file_init(struct Con *con, Httpd_req_data *req,
@@ -2937,9 +2938,7 @@ static int http_req_1_x(struct Con *con, Httpd_req_data *req,
   
   http_app_end_hdrs(out);
 
-  if (req->head_op)
-    con->use_mpbr = FALSE;
-  else if (h_r->pos && con->use_mpbr)
+  if (!req->head_op && h_r->pos && con->use_mpbr)
   {
     con->mpbr_fs_len = req->f_stat->st_size;
     http_app_hdrs_mpbr(con, con->fs);

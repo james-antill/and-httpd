@@ -1,18 +1,11 @@
 #define _GNU_SOURCE 1
 
 #include "bag.h"
+#include "compiler.h"
 
 /* need to use vlg etc. */
 #define EX_UTILS_NO_FUNCS 1
 #include "ex_utils.h"
-
-#ifdef __GNUC__
-# define BAG__ATTR_UNUSED(x) vstr__UNUSED_ ## x __attribute__((unused))
-#elif defined(__LCLINT__)
-# define BAG__ATTR_UNUSED(x) /*@unused@*/ vstr__UNUSED_ ## x
-#else
-# define BAG__ATTR_UNUSED(x) vstr__UNUSED_ ## x
-#endif
 
 #ifndef __GLIBC__ /* hack */
 # define strverscmp(x, y) strcmp(x, y)
@@ -181,7 +174,7 @@ int bag_cb_srch_eq_val_ptr(const Bag_obj *obj, const void *val)
   return (FALSE);
 }
 
-void bag_cb_free_nothing(void *BAG__ATTR_UNUSED(val))
+void bag_cb_free_nothing(void *COMPILE_ATTR_UNUSED(val))
 {
 }
 

@@ -16,15 +16,22 @@
   <body>
     <h1>HTTPD using Vstr</h1>
 
-<p> You can see the source of the AND-HTTPD daemon
-<a href="examples/ex_httpd.c">here</a>, some writing in general about
-HTTP/1.1 after implementing a server is
+<p> You can get the source of the AND-HTTPD daemon by doing (note that you need the Vstr, socket_poll and timer_q libraries):</p>
+
+<pre>tla register-archive \
+    james@and.org--2004-code <a href="ftp://ftp.and.org/pub/james/ARCH-2004-code">ftp://ftp.and.org/pub/james/ARCH-2004-code</a>
+    tla get james@and.org--2004-code/and-httpd--main--0
+</pre>
+
+<p>...note that the LICENSE is LGPL, not GPL.</p>
+
+<p>I've also written in general about HTTP/1.1 after implementing a server
 <a href="http://www.and.org/texts/server-http">here</a>.</p>
 
 <pre>
-    Simple. Secure. Unit tests (over 90% coverage).
+    Simple. Secure. Unit tests.
 
-% LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|basename|dirname|a?sn?printf|byte_)' examples/ex_httpd.c
+% LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c
 %
 
     Design is a statemachine triggering off IO events, somewhat like thttpd and boa (among others).
@@ -43,7 +50,7 @@ HTTP/1.1 after implementing a server is
      socket filters
      IP binding
 
-    Is HTTP/1.1 conditionally compliant, as far as I know.
+    Is HTTP/1.1 conditionally compliant, as far as I know (and I have tests to prove some of it :).
     Supports optional HTTP/1.1 features:
      Accept header for Content-Type.
      0.9 HTTP compatability support
@@ -62,6 +69,10 @@ HTTP/1.1 after implementing a server is
 
     Parses /etc/mime.types file
       plus extensions for disallowing certain file types.
+
+    Can be run "easily" Ie. "and-httpd foo" will start a web server listening
+    on port 80 or 8008 (depending in if you are uid zero) serving the contents
+    of the directory "foo".
 
     Configuration file parser.
      Also has optional "per request" configuration files (using the same code, 
@@ -117,7 +128,7 @@ match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Wed Aug 31 02:09:45 EDT 2005
+Last modified: Sun Sep  4 12:39:20 EDT 2005
 <!-- hhmts end -->
   </body>
 </html>

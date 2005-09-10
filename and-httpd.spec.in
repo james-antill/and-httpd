@@ -1,0 +1,65 @@
+# Do we want to run "make check" after the build...
+%define chk_opt %{?chk}%{!?chk:0}
+
+
+Summary: 
+Name: and-httpd
+Version: @VERSION@
+Release: 1
+License: LGPL
+Group: System Environment/Daemons
+URL: http://www.and.org/and-httpd
+Source0: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+
+%description
+
+ and-httpd is currently only a URL to file mapping daemon,
+in other words in can take an incomming URL and map it
+to a file in a number of ways. However it cannot do CGI
+or anything like apache-httpd mod_python etc. ... it cannot
+even dynamically create directory listings.
+
+%prep
+%setup -q
+
+%build
+
+%build
+
+function build()
+{
+%if %{chk_opt}
+  make %{makeopts} check
+%else
+  make %{makeopts}
+%endif
+}
+
+../configure --prefix=%{prefix} --mandir=%{_mandir} \
+  --datadir=%{_datadir} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir}
+
+%if %{chk_opt}
+  make %{makeopts} check
+%else
+  make %{makeopts}
+%endif
+
+%install
+rm -rf $RPM_BUILD_ROOT
+
+make DESTDIR=$RPM_BUILD_ROOT install
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+
+%files
+%defattr(-,root,root,-)
+%doc
+
+
+%changelog
+* Sat Sep 10 2005 James Antill <james@and.org> - and-httpd-0.99-1
+- Initial build.
+

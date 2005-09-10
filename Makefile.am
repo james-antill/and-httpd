@@ -3,4 +3,4 @@
 
 AUTOMAKE_OPTIONS = no-dependencies 1.4
 
-SUBDIRS = src tools
+SUBDIRS = src tools Documentation

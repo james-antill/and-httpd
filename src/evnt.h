@@ -19,20 +19,6 @@
 # define PROC_CNTL_PDEATHSIG(x1) (-1)
 #endif
 
-#ifdef __GNUC__
-# define EVNT__ATTR_UNUSED(x) vstr__UNUSED_ ## x __attribute__((unused))
-#elif defined(__LCLINT__)
-# define EVNT__ATTR_UNUSED(x) /*@unused@*/ vstr__UNUSED_ ## x
-#else
-# define EVNT__ATTR_UNUSED(x) vstr__UNUSED_ ## x
-#endif
-
-#ifdef __GNUC__
-# define EVNT__ATTR_USED() __attribute__((used))
-#else
-# define EVNT__ATTR_USED() 
-#endif
-
 #ifndef EVNT_COMPILE_INLINE
 #define EVNT_COMPILE_INLINE 1
 #endif
