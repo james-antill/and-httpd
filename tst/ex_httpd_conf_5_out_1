@@ -1,32 +1,32 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: Keep-Alive
 Accept-Ranges: bytes
 Content-Type: text/html
-Content-Length: 357
+Content-Length: 347
 Location: http://foo.example.com/
 
 HTTP/1.1 404 Not Found
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
-Content-Length: 334
+Content-Length: 324
 
 HTTP/1.1 404 Not Found
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
-Content-Length: 334
+Content-Length: 324
 
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -36,11 +36,11 @@ Content-Length: 159
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: close
 Accept-Ranges: bytes
 Content-Type: text/html
-Content-Length: 357
+Content-Length: 347
 Location: http://foo.example.com/
 

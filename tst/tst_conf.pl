@@ -2,10 +2,10 @@
 
 use strict;
 
-push @INC, "$ENV{SRCDIR}/tst";
+push @INC, "$ENV{SRCDIR}/../tst";
 require 'vstr_tst_examples.pl';
 
-run_simple_tst("ex_conf");
-run_simple_tst("ex_conf", "ex_conf_httpd");
+run_simple_tst("and-conf", "ex_conf");
+run_simple_tst("and-conf", "ex_conf_httpd");
 
 success();

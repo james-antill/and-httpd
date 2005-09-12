@@ -21322,7 +21322,7 @@ if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
 
 
-if false; then
+if true; then
   DBG_VSTR_TRUE=
   DBG_VSTR_FALSE='#'
 else
@@ -21333,7 +21333,7 @@ fi
 else
 
 
-if true; then
+if false; then
   DBG_VSTR_TRUE=
   DBG_VSTR_FALSE='#'
 else
@@ -31401,6 +31401,131 @@ echo "${ECHO_T}$local_cv_has_attrib_const" >&6
 case x$local_cv_has_attrib_const in
 xyes) cat >>confdefs.h <<\_ACEOF
 #define HAVE_ATTRIB_CONST 1
+_ACEOF
+ ;;
+esac
+
+echo "$as_me:$LINENO: checking if unused is a valid attribute" >&5
+echo $ECHO_N "checking if unused is a valid attribute... $ECHO_C" >&6
+if test "${local_cv_has_attrib_unused+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <stdlib.h>
+#include <stdio.h>
+
+int func(char *foo __attribute__((unused)))
+{ return 0; }
+
+int main() {
+ return func(NULL);
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  local_cv_has_attrib_unused=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+local_cv_has_attrib_unused=no
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+
+echo "$as_me:$LINENO: result: $local_cv_has_attrib_unused" >&5
+echo "${ECHO_T}$local_cv_has_attrib_unused" >&6
+case x$local_cv_has_attrib_unused in
+xyes) cat >>confdefs.h <<\_ACEOF
+#define HAVE_ATTRIB_UNUSED 1
+_ACEOF
+ ;;
+esac
+
+echo "$as_me:$LINENO: checking if used is a valid attribute" >&5
+echo $ECHO_N "checking if used is a valid attribute... $ECHO_C" >&6
+if test "${local_cv_has_attrib_used+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <stdlib.h>
+#include <stdio.h>
+
+int func(char *) __attribute__((used)) ;
+
+int main() {
+ return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  local_cv_has_attrib_used=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+local_cv_has_attrib_used=no
+fi
+rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+fi
+
+echo "$as_me:$LINENO: result: $local_cv_has_attrib_used" >&5
+echo "${ECHO_T}$local_cv_has_attrib_used" >&6
+case x$local_cv_has_attrib_used in
+xyes) cat >>confdefs.h <<\_ACEOF
+#define HAVE_ATTRIB_USED 1
 _ACEOF
  ;;
 esac

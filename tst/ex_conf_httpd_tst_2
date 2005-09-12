@@ -24,7 +24,7 @@
      ; Required by the tests...
      unspecified-hostname-append-port off
      secure-directory-filename no
-     MIME/types-filename-xtra (+= ENV SRCDIR /mime_types_extra.txt)
+     MIME/types-filename-xtra (+= ENV _MIMEDIR /mime_types_extra.txt)
 
      public-only ON
 

@@ -25,9 +25,9 @@ else
  echo "No scripts dir"
  exit 1;
 fi
-
 prefix=$1
 num=$2
 
-diff -u ${sex}/ex_${prefix}_out_$num ${bex}/ex_${prefix}_tmp_$num 
-
+# Break the symlink, if one exists...
+rm -f ${sex}/ex_${prefix}_out_$num
+cp ${bex}/ex_${prefix}_tmp_$num ${sex}/ex_${prefix}_out_$num

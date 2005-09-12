@@ -8,7 +8,7 @@
   (match-init [true]
    match-init [! false]
    match-init []
-   match-init [version-compare>= 0.99.1]
+   match-init [version>= 0.99.1]
    org.and.daemon-conf-1.0
     (listen addr 127.0.3.1)
 
@@ -39,8 +39,8 @@
         error-host-400 false)
      
      MIME/types-default-type bar/baz 
-     MIME/types-filename-main (= ENV SRCDIR /mime_types_extra.txt)
-     MIME/types-filename-xtra (= ENV SRCDIR /tst/ex_httpd_bad_mime)
+     MIME/types-filename-main (= ENV _MIMEDIR /mime_types_extra.txt)
+     MIME/types-filename-xtra (= ENV _TSTDIR /ex_httpd_bad_mime)
      server-name r"Apache/2.0.40 (Red Hat Linux)"
      directory-filename 'welcome.html'
 

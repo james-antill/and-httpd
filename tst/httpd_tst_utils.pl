@@ -3,7 +3,6 @@ use strict;
 use File::Path;
 use File::Copy;
 
-push @INC, "$ENV{SRCDIR}/tst";
 require 'vstr_tst_examples.pl';
 
 our $root = "ex_httpd_root";
@@ -14,7 +13,7 @@ sub http_cntl_list
     my $list_pid = tst_proc_fork();
     if (!$list_pid) {
       sleep(2);
-      system("./ex_cntl -e list ex_httpd_cntl > /dev/null");
+      system("./and-cntl -e list and-httpd_cntl > /dev/null");
       _exit(0);
     }
     return $list_pid;
@@ -30,7 +29,7 @@ sub httpd__munge_ret
     $output =~
       s!(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[0234567]|50[0135]) .*)$ (\n)
 	^(Date:)$ (\n)
-	^(Server:.*)$ (\n)
+	^(Server:.*)(?:[(]Debug[)])?$ (\n)
 	^(Last-Modified:) .*$
 	!$1$2$3$4$5$6$7!gmx;
     # Remove last modified for trace ops
@@ -278,7 +277,7 @@ sub munge_mtime
 
     my ($a, $b, $c, $d,
 	$e, $f, $g, $h,
-	$atime, $mtime) = stat("$ENV{SRCDIR}/tst/ex_httpd_tst_1");
+	$atime, $mtime) = stat("$ENV{_TSTDIR}/ex_httpd_tst_1");
     $atime -= ($num * (60 * 60 * 24));
     $mtime -= ($num * (60 * 60 * 24));
     utime $atime, $mtime, $fname;
@@ -377,7 +376,7 @@ sub setup
     open(OUT,     "> $root/foo.example.com/empty") || failure("open empty: $!");
     munge_mtime(44, "$root/foo.example.com/empty");
 
-    system("$ENV{SRCDIR}/gzip-r.pl --force --type=all $root");
+    system("$ENV{_TOOLSDIR}/gzip-r.pl --force --type=all $root");
     munge_mtime(0, "$root/index.html.gz");
     munge_mtime(0, "$root/index.html.bz2");
     munge_mtime(0, "$root/default/index.html.gz");
@@ -394,8 +393,8 @@ sub setup
 
     my ($a, $b, $c, $d,
 	$e, $f, $g, $h,
-	$atime, $mtime) = stat("$ENV{SRCDIR}/tst/ex_cat_tst_4");
-    copy("$ENV{SRCDIR}/tst/ex_cat_tst_4", "$root/default/bin");
+	$atime, $mtime) = stat("$ENV{_TSTDIR}/ex_cat_tst_4");
+    copy("$ENV{_TSTDIR}/ex_cat_tst_4", "$root/default/bin");
     utime $atime, $mtime, "$root/default/bin";
   }
 
@@ -442,12 +441,12 @@ if (@ARGV)
     success();
   }
 
-our $conf_args_nonstrict = " --configuration-data-jhttpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP (header-names-strict false)))'";
-our $conf_args_strict = " --configuration-data-jhttpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))'";
+our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP (header-names-strict false)))'";
+our $conf_args_strict = " --configuration-data-and-httpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))'";
 
 sub httpd_vhost_tst
   {
-    daemon_init("ex_httpd", $root, shift);
+    daemon_init("and-httpd", $root, shift);
     system("cat > $root/default/fifo &");
     http_cntl_list();
     all_vhost_tsts();
@@ -461,9 +460,9 @@ sub conf_tsts
     my $args = '';
 
     for ($beg..$end)
-      { $args .= " -C $ENV{SRCDIR}/tst/ex_conf_httpd_tst_$_"; }
+      { $args .= " -C $ENV{_TSTDIR}/ex_conf_httpd_tst_$_"; }
 
-    daemon_init("ex_httpd", $root, $args);
+    daemon_init("and-httpd", $root, $args);
     my $list_pid = http_cntl_list();
 
     for ($beg..$end)
@@ -471,39 +470,39 @@ sub conf_tsts
 	if (0) {}
 	elsif ($_ == 1)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.0.1");
+	    daemon_status("and-httpd_cntl", "127.0.0.1");
 	    all_vhost_tsts();
 	    my $old_trunc = $truncate_segv;
 	    $truncate_segv = 1;
-	    daemon_status("ex_httpd_cntl", "127.0.0.2");
+	    daemon_status("and-httpd_cntl", "127.0.0.2");
 	    all_vhost_tsts();
 	    $truncate_segv = $old_trunc;
-	    daemon_status("ex_httpd_cntl", "127.0.0.3");
+	    daemon_status("and-httpd_cntl", "127.0.0.3");
 	    all_vhost_tsts();
 	  }
 	elsif ($_ == 2)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.1.1");
+	    daemon_status("and-httpd_cntl", "127.0.1.1");
 	    all_public_only_tsts("no gen tsts");
 	  }
 	elsif ($_ == 3)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.2.1");
+	    daemon_status("and-httpd_cntl", "127.0.2.1");
 	    all_nonvhost_tsts();
 	  }
 	elsif ($_ == 4)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.3.1");
+	    daemon_status("and-httpd_cntl", "127.0.3.1");
 	    all_none_tsts();
 	  }
 	elsif ($_ == 5)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.4.1");
+	    daemon_status("and-httpd_cntl", "127.0.4.1");
 	    all_conf_5_tsts();
 	  }
 	elsif ($_ == 6)
 	  {
-	    daemon_status("ex_httpd_cntl", "127.0.5.1");
+	    daemon_status("and-httpd_cntl", "127.0.5.1");
 	    all_conf_6_tsts();
 	  }
       }

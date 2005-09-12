@@ -172,7 +172,7 @@
   172. [Circular bracket list]
     173. <Symbol> = =
     174. <Symbol> = ENV
-    175. <Symbol> = SRCDIR
+    175. <Symbol> = _MIMEDIR
     176. <Symbol> = /mime_types_extra.txt
   177. [Circular bracket list]
     178. <Symbol> = HTTP

@@ -75,7 +75,7 @@
   75. [Circular bracket list]
     76. <Symbol> = =
     77. <Symbol> = ENV
-    78. <Symbol> = SRCDIR
+    78. <Symbol> = _MIMEDIR
     79. <Symbol> = /mime_types_extra.txt
   80. <Symbol> = virtual-hosts
   81. <Symbol> = true

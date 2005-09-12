@@ -1,11 +1,11 @@
 HTTP/1.1 413 Request Entity Too Large
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: close
 Accept-Ranges: bytes
 Content-Type: text/html
-Content-Length: 501
+Content-Length: 491
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -16,6 +16,6 @@ Content-Length: 501
     <h1>413 Request Entity Too Large</h1>
     <p>The server does not accept any requests with Content (In other words if either a Content-Length or a Transfer-Encoding header is passed to the server, the request will fail).</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>

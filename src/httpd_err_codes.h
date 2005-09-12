@@ -9,7 +9,7 @@
 
 #define CONF_MSG_RET_END "\
   <hr>\r\n\
-  Generated using the <a href=\"http://www.and.org/vstr/httpd\">Vstr httpd example Web Server</a>.\r\n\
+  Generated using the <a href=\"http://www.and.org/and-httpd\">And-httpd Web Server</a>.\r\n\
   </body>\r\n\
 </html>\r\n\
 "
@@ -39,8 +39,8 @@
 #define CONF_MSG__FMT_301_END CONF_MSG__FMT_30x_END
 
 #define CONF_MSG_LEN_301(s1) (((s1)->len) +                             \
-                              strlen(CONF_MSG__FMT_301_BEG) +           \
-                              strlen(CONF_MSG__FMT_301_END))
+                              COMPILE_STRLEN(CONF_MSG__FMT_301_BEG) +   \
+                              COMPILE_STRLEN(CONF_MSG__FMT_301_END))
 
 #define CONF_LINE_RET_302 "Found"
 #define CONF_MSG_FMT_302 "%s${vstr:%p%zu%zu%u}%s"
@@ -54,8 +54,8 @@
 #define CONF_MSG__FMT_302_END CONF_MSG__FMT_30x_END
 
 #define CONF_MSG_LEN_302(s1) (((s1)->len) +                             \
-                              strlen(CONF_MSG__FMT_302_BEG) +           \
-                              strlen(CONF_MSG__FMT_302_END))
+                              COMPILE_STRLEN(CONF_MSG__FMT_302_BEG) +   \
+                              COMPILE_STRLEN(CONF_MSG__FMT_302_END))
 
 #define CONF_LINE_RET_303 "See Other"
 #define CONF_MSG_FMT_303 "%s${vstr:%p%zu%zu%u}%s"
@@ -69,8 +69,8 @@
 #define CONF_MSG__FMT_303_END CONF_MSG__FMT_30x_END
 
 #define CONF_MSG_LEN_303(s1) (((s1)->len) +                             \
-                              strlen(CONF_MSG__FMT_303_BEG) +           \
-                              strlen(CONF_MSG__FMT_303_END))
+                              COMPILE_STRLEN(CONF_MSG__FMT_303_BEG) +   \
+                              COMPILE_STRLEN(CONF_MSG__FMT_303_END))
 
 #define CONF_LINE_RET_307 "Temporary Redirect"
 #define CONF_MSG_FMT_307 "%s${vstr:%p%zu%zu%u}%s"
@@ -84,8 +84,8 @@
 #define CONF_MSG__FMT_307_END CONF_MSG__FMT_30x_END
 
 #define CONF_MSG_LEN_307(s1) (((s1)->len) +                             \
-                              strlen(CONF_MSG__FMT_307_BEG) +           \
-                              strlen(CONF_MSG__FMT_307_END))
+                              COMPILE_STRLEN(CONF_MSG__FMT_307_BEG) +   \
+                              COMPILE_STRLEN(CONF_MSG__FMT_307_END))
 
 #define CONF_LINE_RET_400 "Bad Request"
 #define CONF_MSG_RET_400 \
@@ -180,12 +180,12 @@
       (req)->error_len  = CONF_MSG_LEN_307((req)->fname); \
     } while (0)
 
-#define HTTPD_ERR(req, code) do {                           \
-      (req)->error_code  = (code);                          \
-      (req)->error_line  = CONF_LINE_RET_ ## code ;         \
-      (req)->error_len   = strlen( CONF_MSG_RET_ ## code ); \
-      if (!(req)->head_op)                                  \
-        (req)->error_msg = CONF_MSG_RET_ ## code ;          \
+#define HTTPD_ERR(req, code) do {                                       \
+      (req)->error_code  = (code);                                      \
+      (req)->error_line  = CONF_LINE_RET_ ## code ;                     \
+      (req)->error_len   = COMPILE_STRLEN( CONF_MSG_RET_ ## code );     \
+      if (!(req)->head_op)                                              \
+        (req)->error_msg = CONF_MSG_RET_ ## code ;                      \
     } while (0)
 
 #define HTTPD_ERR_RET(req, code, val) do {              \

@@ -18,7 +18,7 @@
 #ifndef NDEBUG
 # define HTTPD_CONF_SERVER_COMMENT " (Debug)"
 #else
-# define HTTPD_CONF_SERVER_COMMENT " "
+# define HTTPD_CONF_SERVER_COMMENT ""
 #endif
 #define HTTPD_CONF_DEF_SERVER_NAME \
     HTTPD_CONF_PROG_NAME "/"       \

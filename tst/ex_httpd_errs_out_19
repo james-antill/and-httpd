@@ -1,11 +1,11 @@
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Type: text/html
-Content-Length: 403
+Content-Length: 393
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -16,18 +16,18 @@ Content-Length: 403
     <h1>412 Precondition Failed</h1>
     <p>The precondition given in one or more of the request-header fields evaluated to false.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: close
 Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Type: text/html
-Content-Length: 403
+Content-Length: 393
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -38,6 +38,6 @@ Content-Length: 403
     <h1>412 Precondition Failed</h1>
     <p>The precondition given in one or more of the request-header fields evaluated to false.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>

@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -19,7 +19,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

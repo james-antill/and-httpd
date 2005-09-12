@@ -2,7 +2,7 @@
 
 use strict;
 
-push @INC, "$ENV{SRCDIR}/tst";
+push @INC, "$ENV{SRCDIR}/../tst";
 
 require 'httpd_tst_utils.pl';
 

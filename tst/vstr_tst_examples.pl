@@ -1,4 +1,10 @@
 
+die " No SRCDIR" if (!defined ($ENV{SRCDIR}));
+
+$ENV{_TSTDIR}   = "$ENV{SRCDIR}/../tst";
+$ENV{_TOOLSDIR} = "$ENV{SRCDIR}/../tools";
+$ENV{_MIMEDIR}  = $ENV{_TOOLSDIR};
+
 use strict;
 
 use File::Basename;
@@ -132,13 +138,12 @@ sub tst_proc_fork()
     return $pid;
   }
 
-my $dir = "$ENV{SRCDIR}/tst";
-
 sub sub_tst
   {
     my $func   = shift;
     my $prefix = shift;
     my $xtra   = shift;
+    my $dir    = $ENV{_TSTDIR};
     my @files  = <$dir/${prefix}_tst_*>;
     my $sz     = scalar @files;
 
@@ -148,7 +153,7 @@ sub sub_tst
     @files = undef;
 
     if (!$sz)
-      { failure("NO files: ${prefix}"); }
+      { failure("NO files: ${prefix} [$dir/${prefix}_tst_*]"); }
 
     for my $num (1..($sz * $tst_num_mp))
       {
@@ -168,7 +173,8 @@ sub sub_tst
 	my $fsz = -s "$dir/${prefix}_out_$num";
 
 	unlink("${prefix}_tmp_${num}_$$");
-	print "DBG($$): $dir/${prefix}_tst_$num ${prefix}_tmp_${num}\n" if ($tst_DBG);
+	print "DBG($$): $dir/${prefix}_tst_$num ${prefix}_tmp_${num}\n"
+	  if ($tst_DBG);
 	$func->("$dir/${prefix}_tst_$num", "${prefix}_tmp_${num}_$$",
 		$xtra, $fsz);
 
@@ -178,6 +184,7 @@ sub sub_tst
 	    failure("tst ${prefix} $num");
 	  }
 	unlink("${prefix}_tmp_${num}_$$");
+	unlink("${prefix}_tmp_${num}");
 
 	if ($loc_tst_mp)
 	  { success(); }
@@ -217,7 +224,7 @@ sub run_tst
       }
 
     sub_tst(\&sub_run_tst,      $prefix, {cmd => $cmd, opts => $opts});
-    sub_tst(\&sub_run_pipe_tst, $prefix, {cmd => $cmd, opts => $opts});
+#    sub_tst(\&sub_run_pipe_tst, $prefix, {cmd => $cmd, opts => $opts});
   }
 
 sub run_simple_tst
@@ -251,7 +258,7 @@ sub daemon_status
     $daemon_cntl = shift;
     my $daemon_laddr = shift;
 
-    open(INFO, "./ex_cntl -e status ${daemon_cntl} |") ||
+    open(INFO, "./and-cntl -e status ${daemon_cntl} |") ||
       failure("Can't open control ${daemon_cntl}.");
 
     while (<INFO>)
@@ -493,7 +500,7 @@ sub daemon_exit
     tst_proc_waitall();
     return if ($$ != $pdaemon_pid);
 
-    if (system("./ex_cntl -e close $daemon_cntl > /dev/null"))
+    if (system("./and-cntl -e close $daemon_cntl > /dev/null"))
       { warn "cntl close: $!\n"; }
     unlink($daemon_cntl);
     $daemon_addr = undef;

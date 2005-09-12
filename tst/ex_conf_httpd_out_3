@@ -39,7 +39,7 @@
   39. [Circular bracket list]
     40. <Symbol> = +=
     41. <Symbol> = ENV
-    42. <Symbol> = SRCDIR
+    42. <Symbol> = _MIMEDIR
     43. <Symbol> = /mime_types_extra.txt
   44. <Symbol> = document-root
   45. <Symbol> = ex_httpd_root

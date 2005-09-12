@@ -37,7 +37,7 @@
   37. [Circular bracket list]
     38. <Symbol> = +=
     39. <Symbol> = ENV
-    40. <Symbol> = SRCDIR
+    40. <Symbol> = _MIMEDIR
     41. <Symbol> = /mime_types_extra.txt
   42. <Symbol> = public-only
   43. <Symbol> = ON

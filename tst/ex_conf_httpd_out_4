@@ -12,7 +12,7 @@
     12. [Square bracket list]
     13. <Symbol> = match-init
     14. [Square bracket list]
-      15. <Symbol> = version-compare>=
+      15. <Symbol> = version>=
       16. <Symbol> = 0.99.1
     17. <Symbol> = org.and.daemon-conf-1.0
     18. [Circular bracket list]
@@ -72,14 +72,14 @@
   72. [Circular bracket list]
     73. <Symbol> = =
     74. <Symbol> = ENV
-    75. <Symbol> = SRCDIR
+    75. <Symbol> = _MIMEDIR
     76. <Symbol> = /mime_types_extra.txt
   77. <Symbol> = MIME/types-filename-xtra
   78. [Circular bracket list]
     79. <Symbol> = =
     80. <Symbol> = ENV
-    81. <Symbol> = SRCDIR
-    82. <Symbol> = /tst/ex_httpd_bad_mime
+    81. <Symbol> = _TSTDIR
+    82. <Symbol> = /ex_httpd_bad_mime
   83. <Symbol> = server-name
   84. <Quoted string (double, RAW)> = Apache/2.0.40 (Red Hat Linux)
   85. <Symbol> = directory-filename

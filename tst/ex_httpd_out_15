@@ -1,30 +1,30 @@
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 200 OK
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 403 Forbidden
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Content-Type: text/html
-Content-Length: 322
+Content-Length: 312
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -35,16 +35,16 @@ Content-Length: 322
     <h1>403 Forbidden</h1>
     <p>The request is forbidden.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>
 HTTP/1.1 400 Bad Request
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: close
 Content-Type: text/html
-Content-Length: 337
+Content-Length: 327
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -55,6 +55,6 @@ Content-Length: 337
     <h1>400 Bad Request</h1>
     <p>The request could not be understood.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>

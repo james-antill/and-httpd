@@ -743,7 +743,7 @@ int httpd_conf_req_d0(struct Con *con, Httpd_req_data *req,
 {
   unsigned int cur_depth = token->depth_num;
   
-  if (!OPT_SERV_SYM_EQ("org.and.and-httpd-conf-req-1.0") ||
+  if (!OPT_SERV_SYM_EQ("org.and.and-httpd-conf-req-1.0") &&
       !OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
     return (FALSE);
   

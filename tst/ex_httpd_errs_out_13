@@ -1,10 +1,10 @@
 HTTP/1.1 505 Version not supported
 Date:
-Server: jhttpd/0.99.1 (Vstr)
+Server: and-httpd/0.99.1
 Last-Modified:
 Connection: close
 Content-Type: text/html
-Content-Length: 363
+Content-Length: 353
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
@@ -15,6 +15,6 @@ Content-Length: 363
     <h1>505 Version not supported</h1>
     <p>The version of http used is not supported.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>

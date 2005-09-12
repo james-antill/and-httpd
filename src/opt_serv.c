@@ -953,7 +953,7 @@ int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
 
 /* into conf->tmp */
 static int opt_serv__build_static_path(struct Opt_serv_opts *
-                                       EVNT__ATTR_UNUSED(opts),
+                                       COMPILE_ATTR_UNUSED(opts),
                                        Conf_parse *conf, Conf_token *token)
 {
   unsigned int cur_depth = token->depth_num;

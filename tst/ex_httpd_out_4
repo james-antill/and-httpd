@@ -7,6 +7,6 @@
     <h1>501 Not Implemented</h1>
     <p>The request method is not implemented.</p>
   <hr>
-  Generated using the <a href="http://www.and.org/vstr/httpd">Vstr httpd example Web Server</a>.
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
   </body>
 </html>

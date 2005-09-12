@@ -1,6 +1,11 @@
 
- Format: ex_httpd [options] <dir>
+ Format: and-httpd [options] <dir>
   Daemon options
+    --configuration-file
+                   -C - Load configuration file specified.
+    --configuration-data-daemon
+                      - Parse configuration given in the
+                        org.and.daemon-conf-1.0 namespace.
     --daemon          - Toggle becoming a daemon (default: off).
     --chroot          - Change root.
     --drop-privs      - Toggle droping privilages (default: off).
@@ -15,7 +20,7 @@
     --host -H         - IPv4 address to bind (default: "all").
     --help -h         - Print this message.
     --max-connections
-                  -M  - Max connections allowed (0 = no limit).
+                   -M - Max connections allowed (0 = no limit).
     --nagle -n        - Toggle usage of nagle TCP option (default: off).
     --port -P         - Port to bind to.
     --idle-timeout -t - Timeout (usecs) for connections that are idle.
@@ -23,6 +28,9 @@
     --version -V      - Print the version string.
 
   HTTPD options
+    --configuration-data-and-httpd
+                      - Parse configuration given in the
+                        org.and.and-httpd-conf-main-1.0 namespace.
     --mmap            - Toggle use of mmap() to load files (default: off).
     --sendfile        - Toggle use of sendfile() to load files (default: on).
     --keep-alive      - Toggle use of Keep-Alive handling (default: on).

@@ -1725,7 +1725,10 @@ int evnt_fd_set_filter(struct Evnt *evnt, const char *fname)
   vstr_sc_read_len_file(s1, 0, fname, 0, 0, &ern);
 
   if (ern &&
-      ((ern != VSTR_TYPE_SC_READ_FILE_ERR_OPEN_ERRNO) || (errno != ENOENT)))
+      !(((ern == VSTR_TYPE_SC_READ_FILE_ERR_OPEN_ERRNO) &&
+         (errno == ENOENT)) ||
+        ((ern == VSTR_TYPE_SC_READ_FILE_ERR_FSTAT_ERRNO) &&
+         (errno == ENOSPC))))
   {
     evnt__free_base_noerrno(s1);
     VLG_WARN_RET(FALSE, (vlg, "filter_attach1(%s): %m\n", fname));
