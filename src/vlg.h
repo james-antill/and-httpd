@@ -96,7 +96,7 @@ extern void vlg_sig_dbg3(Vlg *, const char *fmt, ... )
       VSTR__COMPILE_ATTR_FMT(2, 3);
 
 #ifndef VLG_COMPILE_INLINE
-# ifdef VSTR_AUTOCONF_NDEBUG
+# if ! COMPILE_DEBUG
 #  define VLG_COMPILE_INLINE 1
 # else
 #  define VLG_COMPILE_INLINE 0

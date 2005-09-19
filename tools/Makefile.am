@@ -11,4 +11,8 @@ initddir = $(sysconfdir)/init.d
 initd_DATA = and-httpd
 
 confdir = $(sysconfdir)/and-httpd
-conf_DATA = and-httpd.conf mime_types_extra.txt conf.d
+conf_DATA = and-httpd.conf mime_types_extra.txt
+
+install-data-local: install-initdDATA
+		$(mkdir_p)       $(DESTDIR)$(confdir)/conf.d
+		$(CHMOD_PATH) +x $(DESTDIR)$(sysconfdir)/init.d/and-httpd

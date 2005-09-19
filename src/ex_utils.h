@@ -87,7 +87,9 @@
     else if (0) ASSERT(FALSE)
 
 
-#ifndef VSTR_AUTOCONF_NDEBUG
+#include "compiler.h" /* includes autoconf.h */
+
+#if COMPILE_DEBUG
 # define assert(x) do { if (x) {} else { warnx("assert(%s), FAILED at %s:%u", #x , __FILE__, __LINE__); abort(); } } while (FALSE)
 # define ASSERT(x) do { if (x) {} else { warnx("ASSERT(%s), FAILED at %s:%u", #x , __FILE__, __LINE__); abort(); } } while (FALSE)
 # define assert_ret(x, y) do { if (x) {} else { warnx("assert(%s), FAILED at %s:%u", #x , __FILE__, __LINE__); abort(); } } while (FALSE)

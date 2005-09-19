@@ -64,7 +64,7 @@ extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
     MALLOC_CHECK_REINIT()
 
 #ifndef USE_MALLOC_CHECK
-#ifndef VSTR_AUTOCONF_NDEBUG
+#ifndef NDEBUG
 #  define USE_MALLOC_CHECK 1
 # else
 #  define USE_MALLOC_CHECK 0

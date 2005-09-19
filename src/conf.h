@@ -223,16 +223,16 @@ extern void conf_parse_backtrace(Vstr_base *, const char *,
                                  const Conf_parse *, const Conf_token *);
 
 #if !defined(CONF_COMPILE_INLINE)
-# ifdef VSTR_AUTOCONF_NDEBUG
-#  define CONF_COMPILE_INLINE 1
-# else
+# if COMPILE_DEBUG
 #  define CONF_COMPILE_INLINE 0
+# else
+#  define CONF_COMPILE_INLINE 1
 # endif
 #endif
 
 #if defined(VSTR_AUTOCONF_HAVE_INLINE) && CONF_COMPILE_INLINE
 
-#ifndef VSTR_AUTOCONF_NDEBUG
+#if COMPILE_DEBUG
 # define CONF__ASSERT ASSERT
 #else
 # define CONF__ASSERT(x)

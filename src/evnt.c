@@ -236,7 +236,7 @@ static unsigned int evnt__debug_num_1(struct Evnt *scan)
   return (num);
 }
 
-#ifndef VSTR_AUTOCONF_NDEBUG
+#if COMPILE_DEBUG
 static struct Evnt **evnt__srch(struct Evnt **que, struct Evnt *evnt)
 {
   struct Evnt **ret = que;
@@ -1138,12 +1138,12 @@ int evnt_send(struct Evnt *evnt)
   return (TRUE);
 }
 
-#ifdef VSTR_AUTOCONF_lseek64 /* lseek64 doesn't exist */
+#ifndef HAVE_OFF64_T
 # define sendfile64 sendfile
 #endif
 
-int evnt_sendfile(struct Evnt *evnt, int ffd, VSTR_AUTOCONF_uintmax_t *f_off,
-                  VSTR_AUTOCONF_uintmax_t *f_len, unsigned int *ern)
+int evnt_sendfile(struct Evnt *evnt, int ffd,
+                  uintmax_t *f_off, uintmax_t *f_len, unsigned int *ern)
 {
   ssize_t ret = 0;
   off64_t tmp_off = *f_off;
@@ -1183,7 +1183,7 @@ int evnt_sendfile(struct Evnt *evnt, int ffd, VSTR_AUTOCONF_uintmax_t *f_off,
   return (TRUE);
 }
 
-int evnt_sc_read_send(struct Evnt *evnt, int fd, VSTR_AUTOCONF_uintmax_t *len)
+int evnt_sc_read_send(struct Evnt *evnt, int fd, uintmax_t *len)
 {
   Vstr_base *out = evnt->io_w;
   size_t orig_len = out->len;
@@ -1674,7 +1674,7 @@ struct Evnt *evnt_queue(const char *qname)
   return (NULL);
 }
 
-#ifdef VSTR_AUTOCONF_HAVE_TCP_CORK
+#ifdef HAVE_TCP_CORK
 # define USE_TCP_CORK 1
 #else
 # define USE_TCP_CORK 0
@@ -2156,7 +2156,7 @@ static int evnt__poll_accept(void)
 
 
 #ifndef  EVNT_USE_EPOLL
-# ifdef  VSTR_AUTOCONF_HAVE_SYS_EPOLL_H
+# ifdef  HAVE_SYS_EPOLL_H
 #  define EVNT_USE_EPOLL 1
 # else
 #  define EVNT_USE_EPOLL 0

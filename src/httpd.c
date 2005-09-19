@@ -41,7 +41,7 @@
 # define posix_fadvise64(x1, x2, x3, x4) (errno = ENOSYS, -1)
 #endif
 
-#ifdef VSTR_AUTOCONF_NDEBUG
+#if ! COMPILE_DEBUG
 # define HTTP_CONF_MMAP_LIMIT_MIN (16 * 1024) /* a couple of pages */
 # define HTTP_CONF_SAFE_PRINT_REQ TRUE
 #else
@@ -257,6 +257,7 @@ Httpd_req_data *http_req_make(struct Con *con)
   req->neg_content_lang_done = FALSE;
 
   req->conf_secure_dirs   = FALSE;
+  req->conf_friendly_file = FALSE;
   req->conf_friendly_dirs = FALSE;
   
   req->done_once  = TRUE;
@@ -495,7 +496,7 @@ static void http_app_hdr_fmt(Vstr_base *out, const char *hdr,
 }
 
 static void http_app_hdr_uintmax(Vstr_base *out, const char *hdr,
-                                 VSTR_AUTOCONF_uintmax_t data)
+                                 uintmax_t data)
 {
   http__app_hdr_hdr(out, hdr);
   vstr_add_fmt(out, out->len, "%ju", data);
@@ -515,7 +516,7 @@ void http_app_def_hdrs(struct Con *con, struct Httpd_req_data *req,
                        const char *http_ret_line, time_t mtime,
                        const char *custom_content_type,
                        int use_range,
-                       VSTR_AUTOCONF_uintmax_t content_length)
+                       uintmax_t content_length)
 {
   Vstr_base *out = con->evnt->io_w;
   Date_store *ds = httpd_opts->date;
@@ -800,7 +801,7 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
       /* swap, close the old fd (later) and use the new */
       SWAP_TYPE(con->fs->fd, fd, int);
       
-      ASSERT(con->fs->len == (VSTR_AUTOCONF_uintmax_t)req_f_stat->st_size);
+      ASSERT(con->fs->len == (uintmax_t)req_f_stat->st_size);
       /* _only_ copy the new size over, mtime etc. is from the original file */
       con->fs->len = req->f_stat->st_size = f_stat->st_size;
       req->encoded_mtime = f_stat->st_mtime;
@@ -1061,8 +1062,8 @@ static void httpd_serv_call_mmap(struct Con *con, struct Httpd_req_data *req,
 {
   static long pagesz = 0;
   Vstr_base *data = con->evnt->io_r;
-  VSTR_AUTOCONF_uintmax_t mmoff = fs->off;
-  VSTR_AUTOCONF_uintmax_t mmlen = fs->len;
+  uintmax_t mmoff = fs->off;
+  uintmax_t mmlen = fs->len;
   
   ASSERT(!req->f_mmap || !req->f_mmap->len);
   ASSERT(!con->use_mmap);
@@ -1141,14 +1142,14 @@ static void httpd_serv_call_seek(struct Con *con, struct Httpd_req_data *req,
   }
 }
 
-static int http__conf_req(struct Con *con, Httpd_req_data *req)
+static int http__conf_req(struct Con *con, Httpd_req_data *req, size_t del_len)
 {
   Conf_parse *conf = NULL;
   
   if (!(conf = conf_parse_make(NULL)))
     return (FALSE);
   
-  if (!httpd_conf_req_parse_file(conf, con, req))
+  if (!httpd_conf_req_parse_file(conf, con, req, del_len))
   {
     Vstr_base *s1 = req->policy->s->policy_name;
     Vstr_base *s2 = conf->tmp;
@@ -1237,8 +1238,8 @@ static void http_app_hdrs_file(struct Con *con, Httpd_req_data *req)
 static void http_app_hdrs_mpbr(struct Con *con, struct File_sect *fs)
 {
   Vstr_base *out = con->evnt->io_w;
-  VSTR_AUTOCONF_uintmax_t range_beg;
-  VSTR_AUTOCONF_uintmax_t range_end;    
+  uintmax_t range_beg;
+  uintmax_t range_end;    
 
   ASSERT(fs && (fs->fd != -1));
   
@@ -1266,32 +1267,38 @@ static void http_app_err_file(struct Con *con, Httpd_req_data *req,
                               Vstr_base *fname, size_t *vhost_prefix_len)
 {
   Vstr_base *dir = NULL;
+  size_t orig_len = 0;
 
-  ASSERT(con && req);
+  ASSERT(con && req && fname);
   ASSERT(vhost_prefix_len && !*vhost_prefix_len);
 
+  orig_len = fname->len;
   dir = req->policy->req_err_dir;
-  ASSERT((dir->len   >= 1) && vstr_cmp_cstr_eq(dir,          1, 1, "/"));
   ASSERT((dir->len   >= 1) && vstr_cmp_cstr_eq(dir,   dir->len, 1, "/"));
   HTTPD_APP_REF_ALLVSTR(fname, dir);
-  
-  vstr_add_fmt(fname, fname->len, "%u", req->error_code);
   
   if (req->policy->use_vhosts_name)
   {
     Vstr_base *data = con->evnt->io_r;
     Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
-    size_t orig_len = fname->len;
+    size_t tmp = fname->len;
     
     if (!h_h->len)
-      httpd_sc_add_default_hostname(con, req, fname, 0);
-    else if (vstr_add_vstr(fname, 0, data, /* add as buf's, for lowercase op */
+      httpd_sc_add_default_hostname(con, req, fname, fname->len);
+    else if (vstr_add_vstr(fname, fname->len, data,
                            h_h->pos, h_h->len, VSTR_TYPE_ADD_DEF))
-      vstr_conv_lowercase(fname, 1, h_h->len);
-    vstr_add_cstr_ptr(fname, 0, "/");
-
-    *vhost_prefix_len = (fname->len - orig_len);
+      vstr_conv_lowercase(fname, tmp, h_h->len);
+    vstr_add_cstr_ptr(fname, fname->len, "/");
   }
+
+  /* FIXME: This kind of looks like a hack, we tell the rest of the code that
+   * the err req dir and any vhost info. is all part of the
+   * "non-path prefix" basically so = does the right thing with limits.
+   * Ie. path-eq 404 ... vhost_prefix_len should probably be called
+   * something else. */
+  *vhost_prefix_len = (fname->len - orig_len);
+  
+  vstr_add_fmt(fname, fname->len, "%u.html", req->error_code);
 }
 
 static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
@@ -1324,7 +1331,7 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     ASSERT(req->error_code == 500);
     vstr_del(con->evnt->io_r, 1, con->evnt->io_r->len);
   }
-  else if (((req->error_code == 400) ||
+  else if (((req->error_code == 400) || /* must match below */
             (req->error_code == 403) ||
             (req->error_code == 404) ||
             (req->error_code == 410) ||
@@ -1363,10 +1370,7 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
         http_prepend_doc_root(fname, req);
     }
     else if (!req->policy->req_conf_dir)
-    {
       http_app_err_file(con, req, fname, &vhost_prefix_len);
-      http_prepend_doc_root(fname, req);
-    }
     else
     {
       int conf_ret = FALSE;
@@ -1381,13 +1385,16 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       
       SWAP_TYPE(fname, req->fname, Vstr_base *);
       SWAP_TYPE(vhost_prefix_len, req->vhost_prefix_len, size_t);
-      conf_ret = http__conf_req(con, req);
+      
+      req->conf_flags = HTTPD_CONF_REQ_FLAGS_PARSE_FILE_UERR;
+      conf_ret = http__conf_req(con, req, CLEN(".html"));
+      
       SWAP_TYPE(fname, req->fname, Vstr_base *);
       SWAP_TYPE(vhost_prefix_len, req->vhost_prefix_len, size_t);
 
       ncode = req->error_code;
       switch (code)
-      {
+      { /* restore default error info. in case of failure, must match above */
         case 400: HTTPD_ERR(req, 400); break;
         case 403: HTTPD_ERR(req, 403); break;
         case 404: HTTPD_ERR(req, 404); break;
@@ -1400,9 +1407,6 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
         goto fail_custom_err;
       if (ncode)
         goto fail_custom_err; /* don't allow remapping errors -- loops */
-      
-      if (!req->skip_document_root)
-        http_prepend_doc_root(fname, req);
     }
     fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len);
     
@@ -1457,7 +1461,7 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     
     if (req->error_code == 416)
       http_app_hdr_fmt(out, "Content-Range", "%s */%ju", "bytes",
-                          (VSTR_AUTOCONF_uintmax_t)req->f_stat->st_size);
+                          (uintmax_t)req->f_stat->st_size);
 
     if (req->error_code == 401)
       http_app_hdr_fmt(out, "WWW-Authenticate",
@@ -2699,8 +2703,8 @@ static void http__parse_skip_blanks(Vstr_base *data,
 }
 
 static int httpd__file_sect_add(struct Con *con, Httpd_req_data *req,
-                                VSTR_AUTOCONF_uintmax_t range_beg,
-                                VSTR_AUTOCONF_uintmax_t range_end, size_t len)
+                                uintmax_t range_beg, uintmax_t range_end,
+                                size_t len)
 {
   struct File_sect *fs = NULL;
     
@@ -2768,7 +2772,7 @@ static int http_parse_range(struct Con *con, Httpd_req_data *req)
   Vstr_sect_node *h_r = req->http_hdrs->multi->hdr_range;
   size_t pos = h_r->pos;
   size_t len = h_r->len;
-  VSTR_AUTOCONF_uintmax_t fsize = req->f_stat->st_size;
+  uintmax_t fsize = req->f_stat->st_size;
   unsigned int num_flags = 10 | (VSTR_FLAG_PARSE_NUM_NO_BEG_PM |
                                  VSTR_FLAG_PARSE_NUM_OVERFLOW);
   size_t num_len = 0;
@@ -2787,12 +2791,12 @@ static int http_parse_range(struct Con *con, Httpd_req_data *req)
   
   while (len)
   {
-    VSTR_AUTOCONF_uintmax_t range_beg = 0;
-    VSTR_AUTOCONF_uintmax_t range_end = 0;
+    uintmax_t range_beg = 0;
+    uintmax_t range_end = 0;
     
     if (VPREFIX(data, pos, len, "-"))
     { /* num bytes at end */
-      VSTR_AUTOCONF_uintmax_t tmp = 0;
+      uintmax_t tmp = 0;
 
       len -= CLEN("-"); pos += CLEN("-");
       HTTP_SKIP_LWS(data, pos, len);
@@ -2929,7 +2933,7 @@ static int http_req_1_x(struct Con *con, Httpd_req_data *req,
   if (h_r->pos && !con->use_mpbr)
     http_app_hdr_fmt(out, "Content-Range", "%s %ju-%ju/%ju", "bytes",
                      con->fs->off, con->fs->off + (con->fs->len - 1),
-                     (VSTR_AUTOCONF_uintmax_t)req->f_stat->st_size);
+                     (uintmax_t)req->f_stat->st_size);
   if (req->content_location_vs1)
     http_app_hdr_vstr_def(out, "Content-Location",
                           HTTP__XTRA_HDR_PARAMS(req, content_location));
@@ -3320,7 +3324,8 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
 
   httpd_sc_add_default_filename(req, fname);
   
-  if (!http__conf_req(con, req))
+  req->conf_flags = HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DEFAULT;
+  if (!http__conf_req(con, req, 0))
     return (FALSE);
   if (req->error_code)
     return (http_fin_err_req(con, req));
@@ -3362,6 +3367,12 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
     else if (req->direct_filename && (errno == EISDIR)) /* don't allow */
       HTTPD_ERR(req, 404);
     else if (errno == EISDIR)
+      return (http_req_chk_dir(con, req));
+    else if (req->conf_friendly_file &&
+             ((errno == ENOENT) ||
+              (errno == ENOTDIR) || /* part of path was not a dir */
+              (errno == ENAMETOOLONG) || /* 414 ? */
+              FALSE))
       return (http_req_chk_dir(con, req));
     else if (((errno == ENOENT) && req->conf_friendly_dirs) ||
              (errno == ENOTDIR) || /* part of path was not a dir */
@@ -3434,7 +3445,7 @@ int http_req_op_opts(struct Con *con, Httpd_req_data *req)
 {
   Vstr_base *out = con->evnt->io_w;
   Vstr_base *fname = req->fname;
-  VSTR_AUTOCONF_uintmax_t tmp = 0;
+  uintmax_t tmp = 0;
 
   if (fname->conf->malloc_bad)
     goto malloc_err;
@@ -3467,7 +3478,7 @@ int http_req_op_trace(struct Con *con, Httpd_req_data *req)
 {
   Vstr_base *data = con->evnt->io_r;
   Vstr_base *out  = con->evnt->io_w;
-  VSTR_AUTOCONF_uintmax_t tmp = 0;
+  uintmax_t tmp = 0;
       
   http_app_def_hdrs(con, req, 200, "OK", req->now,
                     "message/http", FALSE, req->len);

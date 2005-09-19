@@ -1,16 +1,43 @@
 # Do we want to run "make check" after the build...
 %define chk_opt %{?chk}%{!?chk:0}
 
+# Do we want a DEBUG build
+%define dbg_opt %{?dbg}%{!?dbg:0}
+# Use the Vstr debug libraries?
+%define dbg_vstr_opt %{?dbg_vstr}%{!?dbg_vstr:0}
 
-Summary: 
+%if %{dbg_opt}
+%define dbg_arg_main --enable-debug
+%else
+%define dbg_arg_main %nil
+%endif
+
+%if %{dbg_vstr_opt}
+%define dbg_arg_vstr --enable-debug-vstr
+%else
+%define dbg_arg_vstr %nil
+%endif
+
+%define makeopts %{?jnum:-j %jnum}%{!?jnum:%nil}
+
+%define statedir /var
+
+%define and_httpd_uid 444
+%define wwwdir %{statedir}/www
+
+
+Summary: Secure, simple and fast HTTP server
 Name: and-httpd
 Version: @VERSION@
-Release: 1
+Release: %{?rel}%{!?rel:1}
 License: LGPL
 Group: System Environment/Daemons
 URL: http://www.and.org/and-httpd
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+Requires: vstr >= 1.0.14
+BuildRequires: pkgconfig >= 0.8
+BuildRequires: vstr-devel, timer_q-devel, socket_poll-devel
 
 %description
 
@@ -25,8 +52,6 @@ even dynamically create directory listings.
 
 %build
 
-%build
-
 function build()
 {
 %if %{chk_opt}
@@ -36,14 +61,11 @@ function build()
 %endif
 }
 
-../configure --prefix=%{prefix} --mandir=%{_mandir} \
+./configure %{dbg_arg_main} %{dbg_arg_vstr} \
+  --prefix=%{_prefix} --mandir=%{_mandir} --localstatedir=%{statedir} \
   --datadir=%{_datadir} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir}
 
-%if %{chk_opt}
-  make %{makeopts} check
-%else
-  make %{makeopts}
-%endif
+build
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -53,10 +75,41 @@ make DESTDIR=$RPM_BUILD_ROOT install
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%pre
+
+# Add the user id's
+/usr/sbin/useradd -c "And-httpd" -u %{and_httpd_uid} \
+        -s /sbin/nologin -r -d %{wwwdir} and-httpd 2> /dev/null || :
+
+%post
+
+if [ $1 = 1 ]; then
+    /sbin/chkconfig --add and-httpd
+fi
+if [ $1 = 2 ]; then
+    /sbin/service and-httpd condrestart > /dev/null 2>&1
+fi
+
+%preun
+
+if [ $1 = 0 ]; then
+    /sbin/service and-httpd stop > /dev/null 2>&1
+    /sbin/chkconfig --del and-httpd
+fi
 
 %files
 %defattr(-,root,root,-)
+%{_sbindir}/
+%{_bindir}/
+%{_datadir}/tools/and-httpd-@VERSION@/
+%{_sysconfdir}/and-httpd
+%dir %{_sysconfdir}/and-httpd/conf.d
+%{_sysconfdir}/init.d/and-httpd
+%config %{_sysconfdir}/and-httpd/and-httpd.conf
+%config %{_sysconfdir}/and-httpd/mime_types_extra.txt
 %doc
+%{_datadir}/doc/and-httpd-@VERSION@/
+%{_mandir}/man8/and-httpd*
 
 
 %changelog

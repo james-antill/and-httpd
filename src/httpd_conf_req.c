@@ -660,6 +660,9 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                            req->fname, 1, req->fname->len,
                            lim, full, ref, FALSE, NULL))
       return (FALSE);
+    if (!req->skip_document_root &&
+        (!req->fname->len || !vstr_cmp_cstr_eq(req->fname, 1, 1, "/")))
+      vstr_add_cstr_ptr(req->fname, 0, "/");
     req->direct_filename = TRUE;
   }
   else if (OPT_SERV_SYM_EQ("parse-accept"))
@@ -743,7 +746,7 @@ int httpd_conf_req_d0(struct Con *con, Httpd_req_data *req,
 {
   unsigned int cur_depth = token->depth_num;
   
-  if (!OPT_SERV_SYM_EQ("org.and.and-httpd-conf-req-1.0") &&
+  if (!OPT_SERV_SYM_EQ("org.and.httpd-conf-req-1.0") &&
       !OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
     return (FALSE);
   
@@ -774,28 +777,38 @@ int httpd_conf_req_d0(struct Con *con, Httpd_req_data *req,
 }
 
 int httpd_conf_req_parse_file(Conf_parse *conf,
-                              struct Con *con, Httpd_req_data *req)
+                              struct Con *con, Httpd_req_data *req,
+                              size_t del_len)
 {
   Conf_token token[1] = {CONF_TOKEN_INIT};
-  Vstr_base *dir   = req->policy->req_conf_dir;
   Vstr_base *fname = req->fname;
   Vstr_base *s1 = NULL;
   const char *fname_cstr = NULL;
   int fd = -1;
   struct stat64 cf_stat[1];
 
-  ASSERT(conf && con && req && dir && fname && fname->len);
-  
-  if (!dir->len ||
-      !req->policy->use_req_conf || req->skip_document_root)
-    return (TRUE);
+  ASSERT(conf && con && req && fname && (del_len < fname->len));
   
   s1 = conf->tmp;
-  HTTPD_APP_REF_ALLVSTR(s1, dir);
-  ASSERT((dir->len   >= 1) && vstr_cmp_cstr_eq(dir,   dir->len, 1, "/"));
-  ASSERT((fname->len >= 1) && vstr_cmp_cstr_eq(fname,        1, 1, "/"));
-  HTTPD_APP_REF_VSTR(s1, fname, 2, fname->len - 1);
 
+  if (req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT)
+    HTTPD_APP_REF_VSTR(s1, fname, 1, fname->len - del_len);
+  else
+  {
+    Vstr_base *dir = req->policy->req_conf_dir;
+
+    ASSERT(dir);
+
+    if (!dir->len ||
+        !req->policy->use_req_conf || req->skip_document_root)
+      return (TRUE);
+    
+    HTTPD_APP_REF_ALLVSTR(s1, dir);
+    ASSERT((dir->len   >= 1) && vstr_cmp_cstr_eq(dir,   dir->len, 1, "/"));
+    ASSERT((fname->len >= 1) && vstr_cmp_cstr_eq(fname,        1, 1, "/"));
+    HTTPD_APP_REF_VSTR(s1, fname, 2, fname->len - (1 + del_len));
+  }
+  
   if (s1->conf->malloc_bad ||
       !(fname_cstr = vstr_export_cstr_ptr(s1, 1, s1->len)))
     goto read_fail;
@@ -824,7 +837,7 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
   if (!S_ISREG(cf_stat->st_mode))
     goto close_read_fail; /* this is "bad" */
 
-  if ((cf_stat->st_size < strlen("org.and.and-httpd-conf-req-1.0")) ||
+  if ((cf_stat->st_size < strlen("org.and.httpd-conf-req-1.0")) ||
       (cf_stat->st_size > req->policy->max_req_conf_sz))
     goto close_read_fail; /* this is "bad" */
 
@@ -854,7 +867,7 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
       goto conf_fail;
     
     if (!conf_token_cmp_sym_cstr_eq(conf, token,
-                                    "org.and.and-httpd-conf-req-1.0") &&
+                                    "org.and.httpd-conf-req-1.0") &&
         !conf_token_cmp_sym_cstr_eq(conf, token,
                                     "org.and.jhttpd-conf-req-1.0"))
       goto conf_fail;
@@ -872,7 +885,9 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
  fin_close_dir:
   close(fd);
  fin_dir:
-  if (req->policy->use_secure_dirs)
+  req->conf_friendly_file = TRUE;
+  if (req->policy->use_secure_dirs &&
+      !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_NONMAIN))
   { /* check if conf file exists inside the directory given,
      * so we can re-direct without leaking info. */
     struct stat64 d_stat[1];
@@ -892,7 +907,8 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
   return (TRUE);
   
  fin_file:
-  if (req->policy->use_friendly_dirs)
+  if (req->policy->use_friendly_dirs &&
+      !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_NONMAIN))
   { /* check if conf file exists as a file, so we can re-direct backwards */
     struct stat64 d_stat[1];
     size_t len = vstr_cspn_cstr_chrs_rev(s1, 1, s1->len, "/") + 1;
@@ -922,7 +938,8 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
   
  conf_fail:
   vstr_del(conf->tmp,  1, conf->tmp->len);
-  if (!req->user_return_error_code)
+  if (!req->user_return_error_code &&
+      !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_NONMAIN))
     conf_parse_backtrace(conf->tmp, "<conf-request>", conf, token);
  read_fail:
   if (!req->user_return_error_code)

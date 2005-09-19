@@ -1036,7 +1036,7 @@ Optional Features:
   --enable-debug          turn on debugging (assumes gcc/gdb) [default=no]
   --enable-ansi           turn on ansi stuff (assumes gcc/gdb) [default=no]
   --enable-tst-noopt      turn on no optomizations (assumes gcc/gdb) [default=no]
-  --enable-debug-vstr          turn on debugging for Vstr [default=no]
+  --enable-debug-vstr     turn on debugging for Vstr [default=no]
   --enable-tst-noinline   turn off use of inline [default=no]
 
 Optional Packages:
@@ -21317,9 +21317,9 @@ if test "${enable_tst_noopt+set}" = set; then
 fi;
 
 
-# Check whether --enable-debug or --disable-debug was given.
-if test "${enable_debug+set}" = set; then
-  enableval="$enable_debug"
+# Check whether --enable-debug-vstr or --disable-debug-vstr was given.
+if test "${enable_debug_vstr+set}" = set; then
+  enableval="$enable_debug_vstr"
 
 
 if true; then

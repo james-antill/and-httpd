@@ -15,7 +15,7 @@
 /* note that the strings are assigned in httpd_main_conf.c */
 
 #define HTTPD_CONF_PROG_NAME "and-httpd"
-#ifndef NDEBUG
+#if COMPILE_DEBUG
 # define HTTPD_CONF_SERVER_COMMENT " (Debug)"
 #else
 # define HTTPD_CONF_SERVER_COMMENT ""
@@ -70,11 +70,7 @@
 
 /* this is configurable, but is much higher than EX_MAX_R_DATA_INCORE due to
  * allowing largish requests with HTTP */
-#ifdef VSTR_AUTOCONF_NDEBUG
-# define HTTPD_CONF_INPUT_MAXSZ (  1 * 1024 * 1024)
-#else
-# define HTTPD_CONF_INPUT_MAXSZ (128 * 1024) /* debug */
-#endif
+# define HTTPD_CONF_INPUT_MAXSZ (128 * 1024)
 
 typedef struct Httpd_policy_opts
 {

@@ -9,6 +9,8 @@ require 'httpd_tst_utils.pl';
 our $truncate_segv;
 our $root;
 
+my $conf_end_num = 7;
+
 setup();
 
 $truncate_segv = $ENV{VSTR_TST_HTTP_TRUNC_SEGV};
@@ -16,19 +18,19 @@ $truncate_segv = 1 if (!defined ($truncate_segv));
 
 # quick tests...
 if ($ENV{VSTR_TST_FAST}) {
-  conf_tsts(6, 6);
+  conf_tsts($ENV{VSTR_TST_FAST}, $ENV{VSTR_TST_FAST});
+  cleanup();
   success();
 }
 
 my $old_truncate_segv = $truncate_segv;
 $truncate_segv = 1; # Stop gen tests to save time...
 
-conf_tsts($_, $_) for (1..6);
+conf_tsts($_, $_) for (1..$conf_end_num);
 
 $truncate_segv = $old_truncate_segv;
-conf_tsts(1, 6); # Now do all of them at once...
+conf_tsts(1, $conf_end_num); # Now do all of them at once...
 
-rmtree($root);
-
+cleanup();
 success();
 

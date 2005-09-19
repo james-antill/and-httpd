@@ -77,9 +77,9 @@
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__) && \
     defined(HAVE_ATTRIB_USED) && \
    !defined(__STRICT_ANSI__) && COMPILE_USE_BUILTINS
-# define COMPILE_ATTR_USED(x) __attribute__((used))
+# define COMPILE_ATTR_USED() __attribute__((__used__))
 #else
-# define COMPILE_ATTR_USED(x) 
+# define COMPILE_ATTR_USED() 
 #endif
 
 #if defined(__GNUC__) && !defined(__STRICT_ANSI__) && COMPILE_USE_BUILTINS
@@ -91,5 +91,10 @@
 # define COMPILE_STRLEN(x) strlen(x)
 #endif
 
+#ifndef NDEBUG /* make it easier */
+# define COMPILE_DEBUG 1
+#else
+# define COMPILE_DEBUG 0
+#endif
 
 #endif

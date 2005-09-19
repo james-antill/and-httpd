@@ -142,8 +142,11 @@ typedef struct Httpd_req_data
  unsigned int neg_content_lang_done : 1;
  
  unsigned int conf_secure_dirs : 1;
+ unsigned int conf_friendly_file : 1;
  unsigned int conf_friendly_dirs : 1;
- 
+
+ unsigned int conf_flags : 3;
+
  unsigned int using_req : 1;
  unsigned int done_once : 1;
  

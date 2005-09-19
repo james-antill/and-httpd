@@ -119,9 +119,9 @@ static void usage(const char *program_name, int ret, const char *prefix)
     --version -V      - Print the version string.\n\
 \n\
   HTTPD options\n\
-    --configuration-data-and-httpd\n\
+    --configuration-data-httpd\n\
                       - Parse configuration given in the\n\
-                        org.and.and-httpd-conf-main-1.0 namespace.\n\
+                        org.and.httpd-conf-main-1.0 namespace.\n\
     --mmap            - Toggle use of mmap() to load files%s.\n\
     --sendfile        - Toggle use of sendfile() to load files%s.\n\
     --keep-alive      - Toggle use of Keep-Alive handling%s.\n\
@@ -415,31 +415,29 @@ static void serv_canon_policies(void)
   { /* check variables for things which will screw us too much */
     Httpd_policy_opts *tmp = (Httpd_policy_opts *)scan;
     Vstr_base *s1 = NULL;
-
+    int ec = EXIT_FAILURE;
+    
     ASSERT(scan->beg == httpd_opts->s);
     
     s1 = tmp->document_root;
     if (!httpd_canon_dir_path(s1))
-      VLG_ERRNOMEM((vlg, EXIT_FAILURE, "canon_dir_path($<vstr.all:%p>): %m\n",
-                    s1));
+      VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
   
     s1 = tmp->req_conf_dir;
     if (!httpd_canon_dir_path(s1))
-      VLG_ERRNOMEM((vlg, EXIT_FAILURE, "canon_dir_path($<vstr.all:%p>): %m\n",
-                    s1));
+      VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
 
     s1 = tmp->req_err_dir;
-    if (!httpd_canon_abs_dir_path(s1))
-      VLG_ERRNOMEM((vlg, EXIT_FAILURE,
-                    "canon_abs_dir_path($<vstr.all:%p>): %m\n", s1));
+    if (!httpd_canon_dir_path(s1))
+      VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
 
     if (!httpd_init_default_hostname(scan))
-      VLG_ERRNOMEM((vlg, EXIT_FAILURE, "hostname(): %m\n"));
+      VLG_ERRNOMEM((vlg, ec, "hostname(): %m\n"));
     
     s1 = tmp->dir_filename;
     if (!httpd_valid_url_filename(s1, 1, s1->len) &&
         !vstr_sub_cstr_ptr(s1, 1, s1->len, HTTPD_CONF_DEF_DIR_FILENAME))
-      VLG_ERRNOMEM((vlg, EXIT_FAILURE, "dir_filename(): %m\n"));
+      VLG_ERRNOMEM((vlg, ec, "dir_filename(): %m\n"));
     
     scan = scan->next;
   }
@@ -457,6 +455,8 @@ static void serv_cmd_line(int argc, char *argv[])
    {"config-file",        required_argument, NULL, 'C'},
    {"configuration-data-daemon", required_argument, NULL, 143},
    {"config-data-daemon",        required_argument, NULL, 143},
+   {"configuration-data-httpd", required_argument, NULL, 144},
+   {"config-data-httpd",        required_argument, NULL, 144},
    {"configuration-data-and-httpd", required_argument, NULL, 144},
    {"config-data-and-httpd",        required_argument, NULL, 144},
    
@@ -680,6 +680,9 @@ static void serv_cmd_line(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+  if (sizeof(uintmax_t) != sizeof(VSTR_AUTOCONF_uintmax_t))
+    errx(EXIT_FAILURE, "uintmax_t size is different between program and Vstr");
+
   serv_init();
 
   serv_cmd_line(argc, argv);

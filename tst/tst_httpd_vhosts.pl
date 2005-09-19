@@ -11,7 +11,6 @@ require 'httpd_tst_utils.pl';
 
 our $conf_args_nonstrict;
 our $truncate_segv;
-our $root;
 
 setup();
 
@@ -30,7 +29,7 @@ if ($conf_fc4_die)
 httpd_vhost_tst("--virtual-hosts=true --mmap=false --sendfile=true" .
 		$fc4_doa . $args);
 
-rmtree($root);
+cleanup();
 
 success();
 

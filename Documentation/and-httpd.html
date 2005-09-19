@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <title>HTTPD using Vstr</title>
+    <title>And HTTPD</title>
 
 <style>
   A:hover { color: #20bbaa; }
@@ -14,7 +14,7 @@
   </head>
 
   <body>
-    <h1>HTTPD using Vstr</h1>
+    <h1>And HTTPD</h1>
 
 <p> You can get the source of the AND-HTTPD daemon by doing (note that you need the Vstr, socket_poll and timer_q libraries):</p>
 
@@ -25,7 +25,7 @@
 
 <p>...note that the LICENSE is LGPL, not GPL.</p>
 
-<p>I've also written in general about HTTP/1.1 after implementing a server
+<p>I've also written in general about HTTP/1.1 after implementing this server
 <a href="http://www.and.org/texts/server-http">here</a>.</p>
 
 <pre>
@@ -118,7 +118,7 @@
 Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
 ports 70,79,80-85,88,113,139,143,280,497,515,540,554,631,783,993,995,1220,1503,2030,3052,3128,3372,3531,3689,5000,5432,5800,5900,6699,7070,8000-8010,8080-8085,8880-8888,9090,9999,10000,10005,11371,13722,15000,40193,4711
 
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) \(Vstr\)|s v/and-httpd - Vstr example/$1//
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) \(Debug\)|s v/and-httpd - Debug version/$1//
 match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) ([^\r\n]+)|s v/and-httpd/$1/$2/
 match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
 
@@ -128,7 +128,7 @@ match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Sun Sep  4 12:39:20 EDT 2005
+Last modified: Sun Sep 18 18:03:58 EDT 2005
 <!-- hhmts end -->
   </body>
 </html>

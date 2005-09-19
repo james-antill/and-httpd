@@ -1,3 +1,11 @@
+2005-09-18  James Antill  <james@and.org>
+
+	* NEWS: Done first release.
+
+2005-09-11  James Antill  <james@and.org>
+
+	* and-httpd.spec.in: Done first real build.
+
 2005-08-30  James Antill  <james@and.org>
 
 	* : Initial import from Vstr

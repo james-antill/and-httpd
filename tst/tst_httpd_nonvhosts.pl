@@ -21,7 +21,7 @@ if (daemon_pid() != $abcd) { failure("pid doesn't match pid-file"); }
 all_nonvhost_tsts();
 daemon_exit();
 
-rmtree($root);
+cleanup();
 
 success();
 

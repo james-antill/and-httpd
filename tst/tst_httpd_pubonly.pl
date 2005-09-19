@@ -19,7 +19,7 @@ daemon_init("and-httpd", $root, "-d -d -d --virtual-hosts=true " .
 all_public_only_tsts("no gen tsts");
 daemon_exit();
 
-rmtree($root);
+cleanup();
 
 success();
 

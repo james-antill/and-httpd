@@ -5,7 +5,10 @@ use File::Copy;
 
 require 'vstr_tst_examples.pl';
 
-our $root = "ex_httpd_root";
+our $root      = "ex_httpd_root";
+our $conf_root = "ex_httpd_conf_root";
+my $err_conf_7_root  = "ex_httpd_err_conf_7_root";
+
 our $truncate_segv = 0;
 
 sub http_cntl_list
@@ -27,16 +30,20 @@ sub httpd__munge_ret
     $output =~ s/^(Date:).*$/$1/gm;
     # Remove last-modified = start date for error messages
     $output =~
-      s!(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[0234567]|50[0135]) .*)$ (\n)
+      s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[0234567]|50[0135]) .*)$ (\n)
 	^(Date:)$ (\n)
-	^(Server:.*)(?:[(]Debug[)])?$ (\n)
+	^(Server: .*)$ (\n)
 	^(Last-Modified:) .*$
-	!$1$2$3$4$5$6$7!gmx;
+	#$1$2$3$4$5$6$7#gmx;
     # Remove last modified for trace ops
     $output =~
       s!^(Last-Modified:).*$ (\n)
         ^(Content-Type: \s message/http.*)$
 	!$1$2$3!gmx;
+
+    # Remove (Debug) comment from Server...
+    $output =~
+      s!^(Server: [^ ]*) \(Debug\)!$1!gm;
 
     return $output;
   }
@@ -270,6 +277,17 @@ sub all_conf_6_tsts()
 	    {shutdown_w => 0, slow_write => 1});
   }
 
+sub all_conf_7_tsts()
+  {
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7");
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
+	    {shutdown_w => 0});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
+	    {                 slow_write => 1});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
+	    {shutdown_w => 0, slow_write => 1});
+  }
+
 sub munge_mtime
   {
     my $num   = shift;
@@ -324,6 +342,23 @@ EOL
     make_data($num, $data, $fname);
   }
 
+sub make_conf
+  {
+    my $val   = shift;
+    my $fname = shift;
+
+    my $data = "(org.and.httpd-conf-req-1.0 $val)";
+
+    make_data(0, $data, $fname);
+  }
+
+sub cleanup
+  {
+    rmtree([$root,
+	    $conf_root,
+	    $err_conf_7_root]);
+  }
+
 sub setup
   {
     my $big = "";
@@ -332,14 +367,18 @@ sub setup
     $big .= ("\n" . ("x" x 10) . ("xy" x 10) . ("y" x 10)) x 500;
     $big .= "\n";
 
-    rmtree($root);
+    cleanup();
     mkpath([$root . "/default",
 	    $root . "/default.example.com",
 	    $root . "/blah",
 	    $root . "/foo.example.com/nxt",
 	    $root . "/foo.example.com/corner/index.html",
 	    $root . "/foo.example.com/there",
-	    $root . "/foo.example.com:1234"]);
+	    $root . "/foo.example.com:1234",
+	    $conf_root . "/foo.example.com/conf2",
+	    $conf_root . "/foo.example.com/conf3",
+	    $conf_root . "/foo.example.com/conf4",
+	    $err_conf_7_root . "/foo.example.com"]);
 
     make_html(1, "root",    "$root/index.html");
     make_html(2, "default", "$root/default/index.html");
@@ -389,6 +428,19 @@ sub setup
     chmod(0000, "$root/default/noprivs.html");
     chmod(0600, "$root/default/noallprivs.html");
 
+    make_conf("filename index.html",
+	      "$conf_root/foo.example.com/conf1-index.html");
+    make_conf("filename [limit <none> skip-document-root] $root/index.html",
+	      "$conf_root/foo.example.com/conf2/index.html");
+    make_conf("filename [limit <none> skip-document-root]" .
+	      " = <document-root> index.html",
+	      "$conf_root/foo.example.com/conf3/index.html");
+    make_conf("filename [limit <none> skip-vhosts] foo.example.com/index.html",
+	      "$conf_root/foo.example.com/conf4/index.html");
+
+    make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
+    make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
+
     system("mkfifo $root/default/fifo");
 
     my ($a, $b, $c, $d,
@@ -432,6 +484,8 @@ if (@ARGV)
 	  { all_conf_5_tsts(); $y = 1; }
 	elsif ($arg eq "conf_6")
 	  { all_conf_6_tsts(); $y = 1; }
+	elsif ($arg eq "conf_7")
+	  { all_conf_7_tsts(); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -505,6 +559,13 @@ sub conf_tsts
 	    daemon_status("and-httpd_cntl", "127.0.5.1");
 	    all_conf_6_tsts();
 	  }
+	elsif ($_ == 7)
+	  {
+	    daemon_status("and-httpd_cntl", "127.0.6.1");
+	    all_conf_7_tsts();
+	  }
+	else
+	  { failure("Bad conf number."); }
       }
 
     daemon_exit();

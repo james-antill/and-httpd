@@ -120,7 +120,7 @@ extern int httpd_policy_copy(Opt_serv_policy_opts *,
                              const Opt_serv_policy_opts *);
 
 #if !defined(HTTPD_POLICY_COMPILE_INLINE)
-# ifdef VSTR_AUTOCONF_NDEBUG
+# if ! COMPILE_DEBUG
 #  define HTTPD_POLICY_COMPILE_INLINE 1
 # else
 #  define HTTPD_POLICY_COMPILE_INLINE 0
@@ -129,7 +129,7 @@ extern int httpd_policy_copy(Opt_serv_policy_opts *,
 
 #if defined(VSTR_AUTOCONF_HAVE_INLINE) && HTTPD_POLICY_COMPILE_INLINE
 
-#ifndef VSTR_AUTOCONF_NDEBUG
+#if COMPILE_DEBUG
 # define HTTPD_POLICY__ASSERT ASSERT
 #else
 # define HTTPD_POLICY__ASSERT(x)

@@ -222,6 +222,9 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
     *matches = (dummy == geteuid());
   }
 
+  else if (OPT_SERV_SYM_EQ("debug"))
+    *matches = COMPILE_DEBUG;
+  
   else
     return (opt_serv_sc_tst(conf, token, matches,
                             opt_serv__match_init_tst_op_d1, opts));

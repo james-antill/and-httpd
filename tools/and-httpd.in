@@ -34,21 +34,20 @@ prog_exe="@sbindir@/${prog_name}"
 
 cntl_exe="@sbindir@/and-cntl"
 
-MIME_EXTRAS_FILE="@sharedir@/and-httpd-@VERSION@/mime_types_extra.txt"
+MIME_EXTRAS_FILE="${localstatedir}/and-httpd/mime_types_extra.txt"
 
 FILE_BASE="${localstatedir}/run/${prog_name}"
 CNTL_FILE="${FILE_BASE}.cntl"
 PID_FILE="${FILE_BASE}.pid"
 
+export AND_HTTPD_ARGS=''
 if [ -f /etc/and-httpd/and-httpd.conf ]; then
   AND_HTTPD_ARGS='-C /etc/and-httpd/and-httpd.conf'
 fi
 
-LC_ALL=C find /etc/and-httpd/conf.d/ -name \*.conf | \
-LC_ALL=C sort | \
- while read a; do
-  AND_HTTPD_ARGS="$AND_HTTPD_ARGS -C '$a'"
-done
+AND_HTTPD_ARGS="$AND_HTTPD_ARGS \
+$(LC_ALL=C find /etc/and-httpd/conf.d/ -name \*.conf | \
+LC_ALL=C sort | xargs -n 1 printf ' -C %s')"
 
 [ -r /etc/sysconfig/and-httpd ] && . /etc/sysconfig/and-httpd
 

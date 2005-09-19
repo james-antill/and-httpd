@@ -43,7 +43,7 @@ extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 
 
 #if !defined(OPT_POLICY_COMPILE_INLINE)
-# ifdef VSTR_AUTOCONF_NDEBUG
+# if ! COMPILE_DEBUG
 #  define OPT_POLICY_COMPILE_INLINE 1
 # else
 #  define OPT_POLICY_COMPILE_INLINE 0
@@ -52,7 +52,7 @@ extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 
 #if defined(VSTR_AUTOCONF_HAVE_INLINE) && OPT_POLICY_COMPILE_INLINE
 
-#ifndef VSTR_AUTOCONF_NDEBUG
+#if COMPILE_DEBUG
 # define OPT_POLICY__ASSERT ASSERT
 #else
 # define OPT_POLICY__ASSERT(x)

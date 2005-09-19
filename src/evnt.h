@@ -70,13 +70,13 @@ struct Evnt
 
  unsigned long msecs_tm_mtime;
  
- VSTR_AUTOCONF_uintmax_t prev_bytes_r;
+ uintmax_t prev_bytes_r;
  struct
  {
-  unsigned int            req_put;
-  unsigned int            req_got;
-  VSTR_AUTOCONF_uintmax_t bytes_r;
-  VSTR_AUTOCONF_uintmax_t bytes_w;
+  unsigned int req_put;
+  unsigned int req_got;
+  uintmax_t    bytes_r;
+  uintmax_t    bytes_w;
  } acct;
  
  unsigned int flag_q_accept    : 1;
@@ -101,13 +101,17 @@ struct Evnt
  unsigned int io_w_shutdown    : 1;
 };
 
-#if 1 /* ndef VSTR_AUTOCONF_NDEBUG */
+#if 1 /* ! COMPILE_DEBUG */
 # define EVNT_SA(x)     ((struct sockaddr     *)(x)->sa_ref->ptr)
 # define EVNT_SA_IN4(x) ((struct sockaddr_in  *)(x)->sa_ref->ptr)
 # define EVNT_SA_IN6(x) ((struct sockaddr_in6 *)(x)->sa_ref->ptr)
 # define EVNT_SA_UN(x)  ((struct sockaddr_un  *)(x)->sa_ref->ptr)
 #else
-static struct sockaddr *evnt___chk_sa(void *ptr)
+#include <netinet/in.h>
+#include <sys/un.h>
+
+static struct sockaddr     *evnt___chk_sa(void *ptr) COMPILE_ATTR_USED();
+static struct sockaddr     *evnt___chk_sa(void *ptr)
 {
   struct sockaddr *sa = ptr;
   if ((sa->sa_family != AF_INET) &&
@@ -116,21 +120,24 @@ static struct sockaddr *evnt___chk_sa(void *ptr)
     abort();
   return (sa);
 }
-static struct sockaddr *evnt___chk_in(void *ptr)
+static struct sockaddr_in  *evnt___chk_in(void *ptr) COMPILE_ATTR_USED();
+static struct sockaddr_in  *evnt___chk_in(void *ptr)
 {
   struct sockaddr_in *sa = ptr;
   if (sa->sin_family != AF_INET)
     abort();
   return (sa);
 }
-static struct sockaddr *evnt___chk_in6(void *ptr)
+static struct sockaddr_in6 *evnt___chk_in6(void *ptr) COMPILE_ATTR_USED();
+static struct sockaddr_in6 *evnt___chk_in6(void *ptr)
 {
   struct sockaddr_in6 *sa = ptr;
   if (sa->sin6_family != AF_INET6)
     abort();
   return (sa);
 }
-static struct sockaddr *evnt___chk_un(void *ptr)
+static struct sockaddr_un  *evnt___chk_un(void *ptr) COMPILE_ATTR_USED();
+static struct sockaddr_un  *evnt___chk_un(void *ptr)
 {
   struct sockaddr_un *sa = ptr;
   if (sa->sun_family != AF_LOCAL)
@@ -150,7 +157,7 @@ typedef struct Acpt_data
  struct Evnt *evnt;
  Vstr_ref *sa;
 } Acpt_data;
-#if 1 /* ndef VSTR_AUTOCONF_NDEBUG */
+#if 1 /* ! COMPILE_DEBUG -- can't check due to useage when creating SAs */
 # define ACPT_SA(x)     ((struct sockaddr     *)(x)->sa->ptr)
 # define ACPT_SA_IN4(x) ((struct sockaddr_in  *)(x)->sa->ptr)
 # define ACPT_SA_IN6(x) ((struct sockaddr_in6 *)(x)->sa->ptr)
@@ -212,9 +219,8 @@ extern int evnt_shutdown_w(struct Evnt *);
 extern int evnt_recv(struct Evnt *, unsigned int *);
 extern int evnt_send(struct Evnt *);
 extern int evnt_sendfile(struct Evnt *, int,
-                         VSTR_AUTOCONF_uintmax_t *, VSTR_AUTOCONF_uintmax_t *,
-                         unsigned int *);
-extern int evnt_sc_read_send(struct Evnt *, int, VSTR_AUTOCONF_uintmax_t *);
+                         uintmax_t *, uintmax_t *, unsigned int *);
+extern int evnt_sc_read_send(struct Evnt *, int, uintmax_t *);
 extern int  evnt_send_add(struct Evnt *, int, size_t);
 extern void evnt_send_del(struct Evnt *);
 extern void evnt_scan_fds(unsigned int, size_t);

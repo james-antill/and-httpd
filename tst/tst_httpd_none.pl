@@ -42,7 +42,7 @@ all_none_tsts();
 daemon_exit();
 
 
-rmtree($root);
+cleanup();
 
 success();
 
