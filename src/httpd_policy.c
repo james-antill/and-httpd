@@ -589,6 +589,7 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(max_neg_A_nodes);
   HTTPD_POLICY_CP_VAL(max_neg_AL_nodes);
   
+  HTTPD_POLICY_CP_VAL(max_A_nodes);
   HTTPD_POLICY_CP_VAL(max_AC_nodes);
   HTTPD_POLICY_CP_VAL(max_AE_nodes);
   HTTPD_POLICY_CP_VAL(max_AL_nodes);

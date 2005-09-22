@@ -262,6 +262,7 @@ static void serv_cb_func_free(struct Evnt *evnt)
   else
     ASSERT(con->fs == con->fs_store);
 
+  vstr_free_base(con->tag);
   F(con);
 }
 
@@ -273,6 +274,9 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
 
   if (sa->sa_family != AF_INET) /* only support IPv4 atm. */
     goto sa_fail;
+  
+  if (!(con->tag = vstr_dup_cstr_ptr(NULL, "<default>")))
+    goto con_tag_fail;
   
   if (!con || !evnt_make_acpt_dup(con->evnt, fd, sa, len))
     goto make_acpt_fail;
@@ -300,6 +304,8 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
   return (con->evnt);
   
  make_acpt_fail:
+  vstr_free_base(con->tag);
+ con_tag_fail:
   F(con);
   VLG_WARNNOMEM_RET(NULL, (vlg, "%s: %m\n", "accept"));
   

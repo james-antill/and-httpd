@@ -288,6 +288,18 @@ sub all_conf_7_tsts()
 	    {shutdown_w => 0, slow_write => 1});
   }
 
+sub all_conf_8_tsts
+  {
+    my $num = shift || 1;
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num");
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
+	    {shutdown_w => 0});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
+	    {                 slow_write => 1});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
+	    {shutdown_w => 0, slow_write => 1});
+  }
+
 sub munge_mtime
   {
     my $num   = shift;
@@ -486,6 +498,8 @@ if (@ARGV)
 	  { all_conf_6_tsts(); $y = 1; }
 	elsif ($arg eq "conf_7")
 	  { all_conf_7_tsts(); $y = 1; }
+	elsif ($arg eq "conf_8")
+	  { all_conf_8_tsts(shift); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -563,6 +577,17 @@ sub conf_tsts
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.6.1");
 	    all_conf_7_tsts();
+	  }
+	elsif ($_ == 8)
+	  {
+	    daemon_status("and-httpd_cntl", "127.0.7.1");
+	    all_conf_8_tsts(1);
+	    daemon_status("and-httpd_cntl", "127.0.7.2");
+	    all_conf_8_tsts(2);
+	    daemon_status("and-httpd_cntl", "127.0.7.3");
+	    all_conf_8_tsts(3);
+	    daemon_status("and-httpd_cntl", "127.0.7.4");
+	    all_conf_8_tsts(4);
 	  }
 	else
 	  { failure("Bad conf number."); }

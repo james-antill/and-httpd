@@ -91,6 +91,7 @@ while (<>)
 
     $day =~ s/ /0/; # convert from leading space to leading zero
 
+# FIXME: use timestamp of file.
     ($_,$_,$_,$_,$_,$year,$_,$_) = localtime(time);
 
     $year += 1900;

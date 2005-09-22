@@ -211,6 +211,8 @@ extern unsigned int conf_token_list_num(const Conf_token *, unsigned int);
 extern int conf_sc_token_parse_toggle(const Conf_parse *, Conf_token *, int *);
 extern int conf_sc_token_parse_uint(const Conf_parse *, Conf_token *,
                                     unsigned int *);
+extern int conf_sc_token_parse_eq(const Conf_parse *, Conf_token *,
+                                  const Vstr_base *, size_t, size_t, int *);
 extern int conf_sc_token_app_vstr(const Conf_parse *, Conf_token *,
                                   Vstr_base *,
                                   const Vstr_base **, size_t *, size_t *);
@@ -576,6 +578,26 @@ extern inline int conf_sc_token_parse_toggle(const Conf_parse *conf,
     ern = CONF_SC_TYPE_RET_ERR_NO_MATCH;
 
   return (ern);
+}
+
+extern inline int conf_sc_token_parse_eq(const Conf_parse *conf,
+                                         Conf_token *token,
+                                         const Vstr_base *s1,
+                                         size_t pos, size_t len,
+                                         int *matches)
+{
+  unsigned int num = conf_token_list_num(token, token->depth_num);
+
+  CONF__ASSERT(matches);
+  
+  if (!num)
+    return (CONF_SC_TYPE_RET_ERR_PARSE);
+
+  conf_parse_token(conf, token);
+  
+  *matches = conf_token_cmp_val_eq(conf, token, s1, pos, len);
+
+  return (CONF_SC_TYPE_RET_OK);
 }
 
 #endif

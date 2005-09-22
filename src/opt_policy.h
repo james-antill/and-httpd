@@ -23,9 +23,6 @@ extern Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *,
                                              const Conf_parse *, Conf_token *);
 
 extern void opt_policy_add(Opt_serv_opts *, Opt_serv_policy_opts *);
-
-extern int opt_policy_name_eq(const Conf_parse *, Conf_token *,
-                              const Opt_serv_policy_opts *, int *);
    
 extern int opt_policy_ipv4_make(Conf_parse *, Conf_token *,
                                 unsigned int, struct sockaddr *, int *);
@@ -109,19 +106,6 @@ extern inline Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *beg_opts,
   }
   
   return (NULL);
-}
-
-extern inline int opt_policy_name_eq(const Conf_parse *conf, Conf_token *token,
-                                     const Opt_serv_policy_opts *policy,
-                                     int *matches)
-{
-  const Vstr_base *tmp = policy->policy_name;
-    
-  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, OPT_POLICY__FALSE);
-
-  *matches = conf_token_cmp_val_eq(conf, token, tmp, 1, tmp->len);
-  
-  return (OPT_POLICY__TRUE);
 }
 
 #endif

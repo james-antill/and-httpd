@@ -1,6 +1,6 @@
 HTTP/1.1 403 Forbidden
 Date:
-Server: and-httpd/0.99.1
+Server: and-httpd/0.99.2
 Last-Modified:
 Content-Type: text/html
 Content-Length: 312
@@ -19,7 +19,7 @@ Content-Length: 312
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.1
+Server: and-httpd/0.99.2
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

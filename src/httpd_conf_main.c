@@ -72,7 +72,9 @@ static int httpd__policy_connection_tst_d1(struct Con *con,
   }
   
   else if (OPT_SERV_SYM_EQ("policy-eq") || OPT_SERV_SYM_EQ("policy=="))
-    return (opt_policy_name_eq(conf, token, con->policy->s, matches));
+    OPT_SERV_X_EQ(con->policy->s->policy_name);
+  else if (OPT_SERV_SYM_EQ("tag-eq") || OPT_SERV_SYM_EQ("tag=="))
+    OPT_SERV_X_EQ(con->tag);
   else if (OPT_SERV_SYM_EQ("client-ipv4-cidr-eq") ||
            OPT_SERV_SYM_EQ("client-ipv4-cidr=="))
     return (httpd_policy_ipv4_make(con, NULL, conf, token,
@@ -169,6 +171,8 @@ static int httpd__policy_connection_d1(struct Con *con,
     policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_CON_POLICY);
     httpd_policy_change_con(con, policy);
   }
+  else if (OPT_SERV_SYM_EQ("tag"))
+    OPT_SERV_X_VSTR(con->tag);
   else if (OPT_SERV_SYM_EQ("Vary:_*"))
     OPT_SERV_X_TOGGLE(con->vary_star);
   
@@ -342,8 +346,16 @@ static int httpd__policy_request_tst_d1(struct Con *con,
       return (conf_parse_num_token(conf, token, nxt));
   }
 
+  else if (OPT_SERV_SYM_EQ("connection-policy-eq") ||
+           OPT_SERV_SYM_EQ("connection-policy=="))
+    OPT_SERV_X_EQ(con->policy->s->policy_name);
   else if (OPT_SERV_SYM_EQ("policy-eq") || OPT_SERV_SYM_EQ("policy=="))
-    return (opt_policy_name_eq(conf, token, req->policy->s, matches));
+    OPT_SERV_X_EQ(req->policy->s->policy_name);
+  else if (OPT_SERV_SYM_EQ("connection-tag-eq") ||
+           OPT_SERV_SYM_EQ("connection-tag=="))
+    OPT_SERV_X_EQ(con->tag);
+  else if (OPT_SERV_SYM_EQ("tag-eq") || OPT_SERV_SYM_EQ("tag=="))
+    OPT_SERV_X_EQ(req->tag);
   else if (OPT_SERV_SYM_EQ("client-ipv4-cidr-eq") ||
            OPT_SERV_SYM_EQ("client-ipv4-cidr=="))
     return (httpd_policy_ipv4_make(con, req, conf, token,
@@ -357,7 +369,7 @@ static int httpd__policy_request_tst_d1(struct Con *con,
   else if (OPT_SERV_SYM_EQ("hostname-eq") || OPT_SERV_SYM_EQ("hostname=="))
   { /* doesn't do escaping because DNS is ASCII */
     Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
-    Vstr_base *d_h = req->policy->default_hostname;
+    Vstr_base *d_h      = req->policy->default_hostname;
 
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     if (h_h->len)
@@ -543,7 +555,7 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
         break;
         
       case HTTPD_POLICY_REQ_POLICY:
-        httpd_policy_change_req(req, ref->ptr);
+        httpd_policy_change_req(con, req, ref->ptr);
         break;
         
       default:
@@ -573,8 +585,12 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
     const Httpd_policy_opts *policy = NULL;
 
     policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_REQ_POLICY);
-    httpd_policy_change_req(req, policy);
+    httpd_policy_change_req(con, req, policy);
   }
+  else if (OPT_SERV_SYM_EQ("connection-tag"))
+    OPT_SERV_X_VSTR(con->tag);
+  else if (OPT_SERV_SYM_EQ("tag"))
+    OPT_SERV_X_VSTR(req->tag);
   else if (OPT_SERV_SYM_EQ("org.and.httpd-conf-req-1.0") ||
            OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
   {

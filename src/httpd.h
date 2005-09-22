@@ -59,7 +59,8 @@ struct Http_hdrs
 typedef struct Httpd_req_data
 {
  const Httpd_policy_opts *policy;
-
+ Vstr_base *tag;
+ 
  struct Http_hdrs http_hdrs[1];
  Vstr_base *fname;
  size_t len;
@@ -164,6 +165,8 @@ struct Con
 {
  struct Evnt evnt[1];
 
+ Vstr_base *tag;
+ 
  Vstr_ref *acpt_sa_ref;
  
  const Httpd_policy_opts *policy;

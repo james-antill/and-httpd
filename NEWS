@@ -1,3 +1,6 @@
+0.99.2 - 2005-09-21
+ Fix install of scripts so they are executable. Tweak default config.
+documentation improvments and some minor fixes. Add security guarantee.
 
-0.99.1
+0.99.1 - 2005-09-18
  Initial release seperated from Vstr

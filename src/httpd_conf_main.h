@@ -10,7 +10,9 @@
 #include "date.h"
 
 /* **** defaults for runtime conf **** */
-#define HTTPD_CONF_VERSION "0.99.1"
+#ifndef HTTPD_CONF_VERSION
+#define HTTPD_CONF_VERSION __DATE__
+#endif
 
 /* note that the strings are assigned in httpd_main_conf.c */
 

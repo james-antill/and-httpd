@@ -640,8 +640,6 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     HTTPD_CONF_REQ__X_CONTENT_VSTR(p3p);
     HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(p3p);
   }
-  /*  else if (OPT_SERV_SYM_EQ("Etag:"))
-      X_CONTENT_VSTR(etag); -- needs server support */
   else if (OPT_SERV_SYM_EQ("filename"))
   {
     int full = req->skip_document_root;

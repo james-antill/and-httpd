@@ -61,7 +61,7 @@ if (!defined ($index_loc))
 if (!defined ($dir_name))
   {
     $dir_name = $dir_loc;
-    $dir_name =~ m!/([^/]+)/*$!;
+    $dir_name =~ m!/?([^/]+)/*$!;
     if ($1 ne '')
       { $dir_name = $1; }
     else

@@ -43,7 +43,8 @@ and_httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
 and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                         httpd_policy.h \
                         $(DAEMON_FILES_HDRS) httpd.h httpd_err_codes.h
-and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
+and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS) \
+                     -DHTTPD_CONF_VERSION='"@VERSION@"'
 and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
 
 

@@ -29,6 +29,8 @@ int opt_policy_init(Opt_serv_opts *beg_opts, Opt_serv_policy_opts *opts)
   opts->idle_timeout    = OPT_SERV_CONF_DEF_IDLE_TIMEOUT;
   opts->max_connections = OPT_SERV_CONF_DEF_MAX_CONNECTIONS;
   
+  opts->use_insta_close = OPT_SERV_CONF_USE_INSTA_CLOSE;
+  
   opts->beg  = beg_opts;
   opts->next = NULL;
   

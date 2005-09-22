@@ -440,6 +440,8 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   
   evnt->flag_fully_acpt  = FALSE;
   
+  evnt->flag_insta_close = FALSE;
+  
   evnt->io_r_shutdown    = FALSE;
   evnt->io_w_shutdown    = FALSE;
   
@@ -1081,10 +1083,13 @@ int evnt_recv(struct Evnt *evnt, unsigned int *ern)
   ASSERT(evnt__valid(evnt) && ern);
 
   /* FIXME: this is set for HTTPD's default buf sizes of 120 (128 - 8) */
-  if (evnt->prev_bytes_r > (120 * 3))
+  if (evnt->prev_bytes_r >= (120 * 2))
+  {  
+    num_min =  8; /* 8 * 120 = 960 */
     num_max =  8;
-  if (evnt->prev_bytes_r > (120 * 6))
-    num_max = 32;
+  }
+  if (evnt->prev_bytes_r >= (120 * 8))
+    num_max = 64; /* 64 * 120 = 7680 */
   
   vstr_sc_read_iov_fd(data, data->len, evnt_fd(evnt), num_min, num_max, ern);
   evnt->prev_bytes_r = (evnt->io_r->len - tmp);
@@ -1844,7 +1849,7 @@ static void evnt__timer_cb_mtime(int type, void *data)
   {
     vlg_dbg2(vlg, "timeout = %p[$<sa:%p>] (%lu, %lu)\n",
              evnt, EVNT_SA(evnt), diff, evnt->msecs_tm_mtime);
-    if (!evnt_shutdown_w(evnt))
+    if (evnt->flag_insta_close || !evnt_shutdown_w(evnt))
     {
       evnt_close(evnt);
       return;

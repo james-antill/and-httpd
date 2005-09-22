@@ -110,6 +110,8 @@ static int opt_serv__conf_main_policy_d1(Opt_serv_policy_opts *opts,
   
     CONF_SC_MAKE_CLIST_END();
   }
+  else if (OPT_SERV_SYM_EQ("instant-close"))
+    OPT_SERV_X_TOGGLE(opts->use_insta_close);
   else if (OPT_SERV_SYM_EQ("limit"))
   {
     CONF_SC_MAKE_CLIST_BEG(limit, clist);

@@ -1,6 +1,33 @@
+2005-09-22  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.2
+
+2005-09-20  James Antill  <james@and.org>
+
+	* src/evnt.c (evnt_recv): Make sure readv() goes up, even if we have no
+	cached buffers.
+
+	* src/httpd.c (http_response_ok): Always use strong comparison for
+	if-match.
+
+	* src/httpd_conf_main.c (httpd__policy_request_d1): Add "tag"s to
+	the connection and request structs.
+
+	* tools/and-httpd.conf: Change default config file to include rlimit
+	increases, and larger max-connections for root users.
+
+	* tools/make_index.pl: Fix directory names for non-path directories.
+
+2005-09-19  James Antill  <james@and.org>
+
+	* src/evnt.c (evnt__timer_cb_mtime): Allow configurable option of
+	instant close on timeout.
+
+	* src/Makefile.am: Move from _DATA to _BIN so things get chmod +x.
+
 2005-09-18  James Antill  <james@and.org>
 
-	* NEWS: Done first release.
+	* NEWS: Release 0.99.1
 
 2005-09-11  James Antill  <james@and.org>
 

@@ -36,4 +36,5 @@ text/plain  ./README ./SConstruct ./THANKS ./TODO
 #  Another extension, allow files to be filtered based on extension
 # note that because of gzip you'll probably want the .gz version too
 # Valid: codes are 400, 403, 404, 410, 500 and 503
-/403/			  shtml shtml.gz .~ .# tmp htaccess sconsign
+/403/			  shtml shtml.gz .~ .# tmp tmp.gz
+/403/			  htaccess htaccess.gz sconsign sconsign.gz

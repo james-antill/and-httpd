@@ -1,6 +1,6 @@
 HTTP/1.1 403 Forbidden
 Date:
-Server: and-httpd/0.99.1
+Server: and-httpd/0.99.2
 Last-Modified:
 Connection: close
 Content-Type: text/html

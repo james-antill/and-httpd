@@ -18,10 +18,12 @@
 #define OPT_SERV_CONF_DEF_PRIV_GID 60001
 #define OPT_SERV_CONF_DEF_NUM_PROCS 1
 #define OPT_SERV_CONF_DEF_IDLE_TIMEOUT (2 * 60)
+#define OPT_SERV_CONF_USE_INSTA_CLOSE FALSE
 #define OPT_SERV_CONF_DEF_Q_LISTEN_LEN 128
 #define OPT_SERV_CONF_DEF_MAX_CONNECTIONS 0
 #define OPT_SERV_CONF_DEF_RLIM_CORE_NUM 0
 #define OPT_SERV_CONF_DEF_RLIM_FILE_NUM 0
+
 
 typedef struct Opt_serv_policy_opts
 {
@@ -33,6 +35,8 @@ typedef struct Opt_serv_policy_opts
 
  unsigned int idle_timeout;
  unsigned int max_connections;
+ 
+ unsigned int use_insta_close : 1;
 } Opt_serv_policy_opts;
 
 typedef struct Opt_serv_addr_opts
@@ -246,6 +250,11 @@ extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
     } while (FALSE)
 
 #define OPT_SERV_X_VSTR(x) OPT_SERV_X__VSTR(x, 1, (x)->len)
+
+#define OPT_SERV_X_EQ(x) do {                                           \
+      if (conf_sc_token_parse_eq(conf, token, (x), 1, (x)->len, matches)) \
+        return (FALSE);                                                 \
+    } while (FALSE)
 
 #define OPT_SERV_SC_MATCH_INIT(x, y) do {                               \
       unsigned int match_init__depth = token->depth_num;                \

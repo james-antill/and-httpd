@@ -105,7 +105,7 @@ fi
 %{_sysconfdir}/and-httpd
 %dir %{_sysconfdir}/and-httpd/conf.d
 %{_sysconfdir}/init.d/and-httpd
-%config %{_sysconfdir}/and-httpd/and-httpd.conf
+%config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
 %doc
 %{_datadir}/doc/and-httpd-@VERSION@/

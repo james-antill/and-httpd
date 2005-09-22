@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <title>And HTTPD</title>
+    <title>And-HTTPD</title>
 
 <style>
   A:hover { color: #20bbaa; }
@@ -9,95 +9,283 @@
   P { text-indent: 0.4cm; }
 
   body { background: #FFF; color: #000; }
+
+  pre.conf span.comment   { color: #848; }
+  pre.conf span.namespace { color: #0b3; }
+  pre.conf span.return    { color: #07c; }
 </style>
 
   </head>
 
   <body>
-    <h1>And HTTPD</h1>
+    <h1>And-HTTPD</h1>
 
-<p> You can get the source of the AND-HTTPD daemon by doing (note that you need the Vstr, socket_poll and timer_q libraries):</p>
+    <h2>Current version is 0.99.2</h2>
 
+<p> NOTE that this software requires the Vstr, socket_poll and timer_q
+ libraries.</p>
+
+<p>
+ Note that this software currently has a <a href="#secure-guarantee">$500 "security guarantee"</a>.
+</p>
+
+<ul>
+  <li> Tar balls are available via.
+ <a href="http://www.and.org/and-httpd/0.99.2/">http</a>.
+</li>
+
+<li>
+ An upto date <a href="http://www.phy.duke.edu/~rgb/General/yum_article/yum_article/yum_article.html">YUM</a> repository is available (containing only the non debug versions of the rpms)...<br>
+<pre>
+[and-org-james]
+name=And.org James' packages
+baseurl=ftp://ftp.and.org/yum/fc$releasever-james
+</pre>
+...at which point you can just "yum install and-httpd".
+	    </li>
+
+            <li>If you want to look at the <b><a href="http://www.gnu.org/software/gnu-arch">arch</a> repository</b> that
+	      and-httpd is developed in, then it is available using
 <pre>tla register-archive \
     james@and.org--2004-code <a href="ftp://ftp.and.org/pub/james/ARCH-2004-code">ftp://ftp.and.org/pub/james/ARCH-2004-code</a>
     tla get james@and.org--2004-code/and-httpd--main--0
 </pre>
-
-<p>...note that the LICENSE is LGPL, not GPL.</p>
+<p>...note that the LICENSE is LGPL, not GPL. So you can reuse it in
+your applications.</p>
+</li>
+            <li> NEWS file can be found
+              <a href="and-httpd/NEWS">here</a>
+	    </li>
+            <li> TODO file can be found
+              <a href="and-httpd/TODO">here</a>
+	    </li>
+</ul>
 
 <p>I've also written in general about HTTP/1.1 after implementing this server
 <a href="http://www.and.org/texts/server-http">here</a>.</p>
 
-<pre>
-    Simple. Secure. Unit tests.
+<h2> About and-httpd</h2>
 
+<p>
+    <a href="#simple">Simple</a>. <a href="#fast">Fast</a>. <a href="#secure">Secure</a>.
+</p>
+
+<a id="simple"></a>
+<h3>Simple</h3>
+<p>
+    <a href="#configurable">Configurable</a>. <a href="#rewrites">Rewrites</a>. <a href="#vhosts">Virtual hosts</a>.
+</p>
+
+<p>At it's simplest the webserver can be used from the command line like so:</p>
+
+<pre>
+% ./and-httpd foo-dir
+[Sep 20 21:20:05]: READY [0.0.0.0@8008]: foo-dir/
+</pre>
+
+<p>...which will start mapping requests to files under the specified
+"foo-dir" directory, using /etc/mime.types to specify the content-type of the
+resources and also automatically serving compressed versions of the
+resources if it is available as the resource name with ".gz" appended. Serving
+"large files" happens by default, if the system supports them. And if you are
+root you can use the --chroot option, which tries it's best to just work
+(doing a bind mount for /dev/log when in a chroot).</p>
+
+<p>And-httpd accepts connection froma "local controller", allow the user to
+gracefully shutdown or take a list of the current network connections being
+serviced.</p>
+
+<p>And-httpd also comes with an "extra mime.types" file which can be loaded
+providing content-type information for "non-standard" files like bittorrent,
+x-icon and OpenDocument</p>
+
+<a id="configurable"></a>
+<h3>Configurable</h3>
+<p> It allows you to easily create
+<a href="http://www.w3.org/Provider/Style/URI">"cool URLs"</a>, by using
+the per. file configuration files (which can also do most of the points desired
+of the "content manager" in <a href="http://www.w3.org/TR/chips/">chips</a>).
+For instance, content can be negotiated by having the following file at the
+path in the request configuration directory:
+</p>
+
+<pre class="conf">
+<span class="comment">; Negotiate language and content</span>
+<span class="comment">; Ie. request is http://foo/bar.c and this file is at</span>
+<span class="comment">;  /&lt;req-conf-dir&gt;/bar.c And-httpd will serve either</span>
+<span class="comment">;  /&lt;docroot&gt;/bar.c as text/plain or /&lt;docroot&gt;/bar.c as text/html</span>
+(<span class="namespace">org.and.httpd-conf-req-1.0</span>
+  (negotiate-content-type (text/plain '') (text/html .html))
+  (filename += &lt;content-type-extension&gt;))
+</pre>
+
+<p>...the per. request configuration can add Content-MD5, Content-Location, ETags (which will be honored in If-Match headers from clients) and more.</p>
+
+<p>
+And-httpd will also do a number of things automatically, like automatically
+redirecting between directories and files or automatically redirecting
+"ugly" requests. </p>
+
+<a id="rewrites"></a>
+<h3>Rewrites</h3>
+<p>While the rewrite capabilities aren't as powerful as
+<a href="http://www.modrewrite.com/">mod_rewrite</a>, they are <b>much</b>
+easier to do correctly. For example the following is in the default
+and-httpd.conf to remove extraneous trailing index.html in URLs:</p>
+<pre class="conf">
+<span class="comment">; Match http://localhost/index.html and redirect to http://localhost/</span>
+(<span class="namespace">org.and.httpd-conf-main-1.0</span>
+   match-request [path-end = / &lt;directory-filename&gt;]
+     <span class="namespace">org.and.httpd-conf-req-1.0</span>
+       Location: [limit &lt;path&gt;-end = &lt;directory-filename&gt;] ''
+       <span class="return">return</span> 301)
+</pre>
+
+<p>...another somewhat common need is to redirect all requests to another URL,
+which can be done like:
+</p>
+
+<pre class="conf">
+<span class="comment">; Redirect all requests for the localhost IP to localhost</span>
+(<span class="namespace">org.and.httpd-conf-main-1.0</span>
+   match-request [hostname-eq 127.0.0.1]
+     <span class="namespace">org.and.httpd-conf-req-1.0</span>
+      (Location: = http://localhost &lt;url-path&gt;)
+       <span class="return">return</span> 301)
+</pre>
+
+<a id="vhosts"></a>
+<h3>Virtual hosts</h3>
+<p>Another command problem is hosting multiple domains on the same computer,
+this again can easily be accomplished even from the command line by doing:</p>
+
+<pre>
+% ./and-httpd --virtual-hosts foo-dir
+[Sep 20 21:20:05]: READY [0.0.0.0@8008]: foo-dir/
+</pre>
+
+<p>...now requests for "/x/y/z" on the host foo.example.com will be served
+via. the file "foo-dir/foo.example.com:8008/x/y/z"</p>
+
+<p>And-httpd also comes with a few tools, including make_index.pl
+(which can make an index.html file for a diven directory) and gzip-r.pl (which
+will recursivly create compressed files for auto content-encoding to save
+bandwidth). There is also a utility to convert the and-httpd syslog lines into
+the apache-httpd style combined log format.</p>
+
+<a id="fast"></a>
+<h3>Fast</h3>
+<p>And-httpd uses the following system capabilities to quickly do it's work:</p>
+<ul>
+<li>Event multiplexing using either traditional APIs like poll() or newer APIs
+ like epoll.</li>
+<li>Multi-process support, allowing it to scale with the number of CPUs it
+has available.</li>
+<li>Zero copy network output, using either sendfile or mmap.</li>
+<li>TCP_CORK, to combine data as much as possible.</li>
+<li>TCP_DEFER_ACCEPT, to minimize empty network connections.</li>
+<li>posix_fadvise(), to speed up disk IO</li>
+<li><a href="http://www.and.org/vstr/">Vstr</a>, to manage IO buffers.</li>
+</ul>
+
+<a id="secure"></a>
+<h3>Secure</h3>
+<p> Although written in C the code doesn't call any
+ <a href="http://www.and.org/vstr/security">simplistic "C string" functions</a>,
+ so it isn't possible to create buffer overflows even if there is a logic
+problem. </p>
+<pre>
 % LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c
 %
+</pre>
+<p> Unlike most other httpd servers and-httpd places strict limits on the
+number of nodes inside each header. Thus stopping exponential DOS attacks.
+It will also, by default, do checks before doing automatic directory redirects
+so it doesn't give away that empty directories exist
+(Ie. http://example.com/foo will not redirect to http://example.com/foo/ if
+that would just produce a 404 anyway). </p>
 
+<p>While And-httpd can be configured to be more "compliant", it by default
+will reject requests which have:</p>
+
+<ul>
+<li>When using virtual hosts a hostname that isn't specifically allowed (this
+is actually encouraged by rfc2616)</li>
+<li>Encoded / characters in the URL-path</li>
+<li>Encoded . characters in the URL-path</li>
+<li>The sequence /./ in the URL-path</li>
+<li>The character / in the hostname</li>
+<li>Range requests of more than a single byterange (this is just ignored,
+and the rest of the request is processed)</li>
+<li>PUT/POST methods</li>
+<li>Any kind of payload (Ie. content-length on a request)</li>
+<li>Any "extra" CR or LF characters in the hostname or URL-path. </li>
+<li>Any whitespace in a header name.</li>
+<li>Any repeating of headers that aren't allowed to be repeated.</li>
+<li>A URL-path that ends in any of: .shtml ~ # .tmp .htaccess or .sconsign
+(or their compressed versions)</li>
+</ul>
+
+<p>...while some of these might make it "non-compliant" with rfc2616, no real
+world clients do any of the above things. </p>
+
+<p>And-httpd can also be configured to reject TRACE methods, although that
+does no real harm and so is left as a debugging aid.</p>
+
+<p>And-httpd also has over 1.9MB of unit tests, which run from "make check"
+testing a significant portion of the above features.</p>
+
+<a id="secure-guarantee"></a>
+<h3>Secure guarantee</h3>
+
+<p>In fact I'm so sure that it is secure that I'm offering a
+"security guarantee" of $500.</p>
+
+<p>Obviously there are caveats:</p>
+
+<ul>
+<li>The guarantee is only that stable released versions of
+And-httpd (0.99.x and then 1.0.x, currently) cannot be compromised so that an
+attacker can execute arbitrary commands or read/write arbitrary data. For
+instance DOS attacks aren't included in the guarantee (although I'm pretty
+sure And-httpd is better than most in that regard the nature of network
+connected servers is that they are open to DOS attacks at some level). </li>
+<li>I only guarantee against remote attackers, so anything in the
+configuration that couldn't be expected to be put there by a "reasonable person
+who knows what they are doing" is not allowed (this is esp. true for
+information leak attacks, if it's a configuration issue it's not my
+problem). </li>
+<li>You have to have the latest Vstr, socket_poll and timer_q libraries
+installed. </li>
+<li>The $500 is only available to the first person who provides a working
+attack (I'll allow a couple of weeks for you to demonstrate something that works
+like an attack you describe).</li>
+</ul>
+
+<p>...on the "positive" side:</p>
+<ul>
+<li>You can run And-httpd as root, Ie. not using drop-privs. </li>
+<li>You can run And-httpd without using chroot. </li>
+<li>You can run And-httpd without system defenses like exec-shield and
+SELinux. </li>
+</ul>
+
+<p>...although, obviously, feel free to add those as extra security layers on
+your servers. </p>
+
+<hr>
+
+<h2> Unsorted info. </h2>
+<pre>
     Design is a statemachine triggering off IO events, somewhat like thttpd and boa (among others).
-     Simple tests with ab show it to be about twice as fast as thttpd-2.20c (note that thttpd doesn't support keep-alive, which gives and-httpd a significant advantage -- mainly due to usage of Vstr).
+     Simple tests with "ab" show it to be about twice as fast as thttpd-2.20c (note that thttpd doesn't support keep-alive, which gives and-httpd a significant advantage -- mainly due to usage of Vstr).
 
     Uses the following system utilities:
-     poll or epoll, multiplexing
-     multiple process support. for MP systems
-     sendfile or mmap, for file contents
-     LFS
-     TCP_CORK
-     TCP_DEFER_ACCEPT
-     posix_fadvise()
-     chroot, privilage de-escalation (can also easily be started as non-root)
-     does a bind mount for /dev/log when in a chroot.
      socket filters
      IP binding
 
-    Is HTTP/1.1 conditionally compliant, as far as I know (and I have tests to prove some of it :).
-    Supports optional HTTP/1.1 features:
-     Accept header for Content-Type.
-     0.9 HTTP compatability support
-     keep-alive, on by default for 1.1 and 1.0
-     virtual hosts (via. prefix directories and explicit configuration
-                    statements)
-     if-modified-since/if-unmodified-since
-     byte ranges (single and multipart/byteranges)
-       if-range
-       multipart/byteranges can also be limited to prevent DOS attacks.
-     accept-encoding/content-encoding for gzip/bzip2 (via. pre-generated files)
-      Also fully obeys identity
-     ETags
-     accept-language negotiation to serve multiple languages
-     
-
-    Parses /etc/mime.types file
-      plus extensions for disallowing certain file types.
-
-    Can be run "easily" Ie. "and-httpd foo" will start a web server listening
-    on port 80 or 8008 (depending in if you are uid zero) serving the contents
-    of the directory "foo".
-
-    Configuration file parser.
-     Also has optional "per request" configuration files (using the same code, 
-     and thus layout, as the main configuration files), allowing you to:
-      Generate explicit Content-Types.
-       Generate negotiated Content-Types for requests with multiple types.
-       Eg. http://www.and.org/vstr/examples/httpd.c
-         is available as text/plain and text/html
-      Generate Content-MD5 data.
-      Generate Content-Location data.
-      Generate Expires and Cache-Control data.
-      Generate all four types of redirect's.
-      Generate the usable types of error conditions.
-      Change the file object used to serve the data.
-      Has a native ACL configuration (can also use Linux socket filters).
-      All "configuration parameters" done through policies.
-       Change configuration policy based on ip address connections.
-       Change configuration policy based on many parameters of the request.
-        Automatically generate the "right" Vary header based on which fields
-        of the request were tested.
-
-    includes init.d file, and allows "local controller" connections for soft
+     includes init.d file, and allows "local controller" connections for soft
     restarts, status information etc.
-
-    Converter to make log files that look like apache-httpd combined log files.
 
     DOES NOT:
       Auto generate directory listings (see ex_dir_list2html in Vstr examples)
@@ -112,15 +300,23 @@
       Parse or honor the Accept-Charset header.
 
       Full date parser (not a problem, string matches work well).
+</pre>
 
-   NMAP simple service fingerprint(s):
+<h2>NMAP simple service fingerprint(s)</h2>
+<p> This has been submitted to nmap, and so will hopefully be included in future
+releases. However if you want a readable response now, you can manually add
+these to your nmap-service-probes file.</p>
 
+<pre>
+# This is already part of the /usr/share/nmap/nmap-service-probes file
 Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
 ports 70,79,80-85,88,113,139,143,280,497,515,540,554,631,783,993,995,1220,1503,2030,3052,3128,3372,3531,3689,5000,5432,5800,5900,6699,7070,8000-8010,8080-8085,8880-8888,9090,9999,10000,10005,11371,13722,15000,40193,4711
 
+# These are the "fingerprint"s for and-httpd
 match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) \(Debug\)|s v/and-httpd - Debug version/$1//
 match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) ([^\r\n]+)|s v/and-httpd/$1/$2/
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+)|s v/and-httpd/$1//
+match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd|s v/and-httpd///
 
 </pre>
 
@@ -128,7 +324,7 @@ match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd| v/and-httpd///
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Sun Sep 18 18:03:58 EDT 2005
+Last modified: Thu Sep 22 02:01:47 EDT 2005
 <!-- hhmts end -->
   </body>
 </html>

@@ -139,10 +139,7 @@ static void http__clear_hdrs(struct Httpd_req_data *req)
   HTTP__HDR_MULTI_SET(req, if_match,        0, 0);
   HTTP__HDR_MULTI_SET(req, if_none_match,   0, 0);
   HTTP__HDR_MULTI_SET(req, range,           0, 0);
-}
 
-static void http__clear_xtra(struct Httpd_req_data *req)
-{
   if (req->xtra_content)
     vstr_del(req->xtra_content, 1, req->xtra_content->len);
 
@@ -180,9 +177,10 @@ Httpd_req_data *http_req_make(struct Con *con)
     if (con)
       conf = con->evnt->io_w->conf;
       
-    if (!(req->fname = vstr_make_base(conf)) ||
+    if (!(req->fname                            = vstr_make_base(conf)) ||
         !(req->http_hdrs->multi->combiner_store = vstr_make_base(conf)) ||
-        !(req->sects = vstr_sects_make(8)))
+        !(req->sects                            = vstr_sects_make(8)) ||
+        !(req->tag                              = vstr_make_base(conf)))
       return (NULL);
     
     req->f_mmap       = NULL;
@@ -190,8 +188,6 @@ Httpd_req_data *http_req_make(struct Con *con)
   }
 
   http__clear_hdrs(req);
-  
-  http__clear_xtra(req);
   
   req->http_hdrs->multi->comb = con ? con->evnt->io_r : NULL;
 
@@ -265,11 +261,17 @@ Httpd_req_data *http_req_make(struct Con *con)
 
   req->malloc_bad = FALSE;
 
-  if (con)
-    policy = con->policy;
+  if (con && !vstr_sub_vstr(req->tag, 1, req->tag->len,
+                            con->tag, 1, con->tag->len, VSTR_TYPE_SUB_BUF_REF))
+    return (NULL);
+  
+  if (!con)
+    req->policy = NULL;
   else
-    policy = (Httpd_policy_opts *)httpd_opts->s->def_policy;  
-  httpd_policy_change_req(req, policy);
+  {
+    policy = con->policy;
+    httpd_policy_change_req(con, req, policy);
+  }
   
   return (req);
 }
@@ -287,8 +289,6 @@ void http_req_free(Httpd_req_data *req)
   if (req->f_mmap)
     vstr_del(req->f_mmap, 1, req->f_mmap->len);
 
-  http__clear_xtra(req);
-  
   req->http_hdrs->multi->comb = NULL;
 
   req->using_req = FALSE;
@@ -309,6 +309,7 @@ void http_req_exit(void)
   vstr_free_base(req->f_mmap);         req->f_mmap         = NULL;
   vstr_free_base(req->xtra_content);   req->xtra_content   = NULL;
   vstr_sects_free(req->sects);         req->sects          = NULL;
+  vstr_free_base(req->tag);            req->tag            = NULL;
   
   req->done_once = FALSE;
   req->using_req = FALSE;
@@ -2129,15 +2130,20 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
     if (h_ir_tst && !req_if_range)
       h_r->pos = 0;
 
-    /* #13.3.3 says don't trust weak for "complex" queries, ie. byteranges */
+    /* #13.3.3 says: don't trust weak for "complex" queries, ie. byteranges */
     if (h_inm->pos && (VEQ(hdrs, h_inm->pos, h_inm->len, "*") ||
                        httpd_match_etags(req, comb, h_inm->pos, h_inm->len,
                                          vs1, pos, len, !h_r->pos)))
       cached_output = TRUE;
-    
-    if (h_im->pos  && !(VEQ(hdrs, h_im->pos, h_im->len, "*") ||
+
+    /* #14.24 says: must use strong comparison, and also...
+       If the request would, without the If-Match header field, result in
+       anything other than a 2xx or 412 status, then the If-Match header
+       MUST be ignored. */
+    if (!cached_output &&
+        h_im->pos  && !(VEQ(hdrs, h_im->pos, h_im->len, "*") ||
                         httpd_match_etags(req, comb, h_im->pos, h_im->len,
-                                          vs1, pos, len, !h_r->pos)))
+                                          vs1, pos, len, FALSE)))
       return (FALSE);
   }
   else if (h_ir_tst && !req_if_range)
@@ -2637,7 +2643,8 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
     size_t tmp = 0;
 
     /* leaving out most checks for ".." or invalid chars in hostnames etc.
-       as the default filename checks should catch them
+       as the default filename checks should catch them.
+       Note that "Host: ." is also caught by default due to the check for /./
      */
 
     /*  Check for Host header with extra / ...
@@ -3688,6 +3695,9 @@ static int http_parse_wait_io_r(struct Con *con)
   if (con->evnt->io_r_shutdown)
     return (!!con->evnt->io_w->len);
 
+  /* so we aren't acting under the req policy anymore */
+  httpd_policy_change_con(con, con->policy);
+  
   evnt_wait_cntl_add(con->evnt, POLLIN);
   evnt_fd_set_cork(con->evnt, FALSE);
   
@@ -3898,11 +3908,8 @@ static int httpd_serv_q_send(struct Con *con)
 static int httpd__serv_fin_send(struct Con *con)
 {
   if (con->keep_alive)
-  { /* need to try immediately, as we might have already got the next req */
-    if (!con->evnt->io_r_shutdown)
-      evnt_wait_cntl_add(con->evnt, POLLIN);
+    /* need to try immediately, as we might have already got the next req */
     return (http_parse_req(con));
-  }
 
   vlg_dbg2(vlg, "shutdown_w = %p\n", con->evnt);
   return (evnt_shutdown_w(con->evnt));

@@ -21,6 +21,9 @@
 
 #include <string.h> /* strncmp() etc. in GETOPT macros */
 
+#undef NULL
+#define NULL ((void *)0) /* fix C++/old-C braindamage */
+
 #ifdef VSTR_AUTOCONF_fstat64
 # define fstat64 VSTR_AUTOCONF_fstat64
 #endif

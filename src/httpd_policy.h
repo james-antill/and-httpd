@@ -61,7 +61,7 @@ typedef struct Httpd_policy_path
 } Httpd_policy_path;
 
 extern void httpd_policy_change_con(struct Con *, const Httpd_policy_opts *);
-extern void httpd_policy_change_req(Httpd_req_data *,
+extern void httpd_policy_change_req(struct Con *, Httpd_req_data *,
                                     const Httpd_policy_opts *);
    
 extern int httpd_policy_build_path(struct Con *, Httpd_req_data *,
@@ -141,14 +141,18 @@ extern int httpd_policy_copy(Opt_serv_policy_opts *,
 extern inline void httpd_policy_change_con(struct Con *con,
                                            const Httpd_policy_opts *policy)
 {
+  con->evnt->flag_insta_close = policy->s->use_insta_close;
+    
   con->use_sendfile      = policy->use_sendfile;
   con->use_posix_fadvise = policy->use_posix_fadvise;
   con->policy            = policy;
 }
 
-extern inline void httpd_policy_change_req(Httpd_req_data *req,
+extern inline void httpd_policy_change_req(struct Con *con, Httpd_req_data *req,
                                            const Httpd_policy_opts *policy)
 {
+  con->evnt->flag_insta_close = policy->s->use_insta_close;
+    
   req->parse_accept          = policy->use_err_406;
   req->parse_accept_language = policy->use_err_406;
   req->allow_accept_encoding = policy->use_enc_content_replacement;

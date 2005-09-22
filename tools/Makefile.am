@@ -1,18 +1,20 @@
 
 toolsmaindir = $(datadir)/tools/and-httpd-$(VERSION)
-toolsmain_DATA =                         \
+toolsmain_DATA = scons_jhttpd_helpers.py
+
+toolsmain_SCRIPTS =                         \
                 and-httpd-syslog2apache-httpd-combined-log.pl \
                 gzip-r.pl \
-                make_index.pl \
-                scons_jhttpd_helpers.py
-
+                make_index.pl
 
 initddir = $(sysconfdir)/init.d
-initd_DATA = and-httpd
+initd_SCRIPTS = and-httpd
 
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt
 
-install-data-local: install-initdDATA
-		$(mkdir_p)       $(DESTDIR)$(confdir)/conf.d
-		$(CHMOD_PATH) +x $(DESTDIR)$(sysconfdir)/init.d/and-httpd
+confddir = $(sysconfdir)/and-httpd/conf.d
+confd_DATA = README
+
+# Generated from autoconf
+CLEANFILES = $(initd_SCRIPTS)

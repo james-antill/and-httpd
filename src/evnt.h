@@ -88,7 +88,7 @@ struct Evnt
  unsigned int flag_q_send_now  : 1;
  unsigned int flag_q_closed    : 1;
 
- unsigned int flag_q_pkt_move  : 1;
+ unsigned int flag_q_pkt_move  : 1; /* 8 */
 
  unsigned int flag_io_nagle    : 1;
  unsigned int flag_io_cork     : 1;
@@ -97,8 +97,10 @@ struct Evnt
 
  unsigned int flag_fully_acpt  : 1;
 
+ unsigned int flag_insta_close : 1;
+
  unsigned int io_r_shutdown    : 1;
- unsigned int io_w_shutdown    : 1;
+ unsigned int io_w_shutdown    : 1; /* 15 */
 };
 
 #if 1 /* ! COMPILE_DEBUG */

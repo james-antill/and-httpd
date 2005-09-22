@@ -3,7 +3,7 @@
 if [ ! -r VERSION -o ! -r and-httpd.spec -o ! -r configure ]; then
   if [ -r configure ]; then
 #    ./scripts/b/DOCS.sh
-    ./scripts/b/def-opt.sh
+    ./scripts/b/DOCS.sh
   else
     echo "No VERSION, and-httpd.spec or configure file." &>2
     exit 1
