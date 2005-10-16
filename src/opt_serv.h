@@ -23,6 +23,8 @@
 #define OPT_SERV_CONF_DEF_MAX_CONNECTIONS 0
 #define OPT_SERV_CONF_DEF_RLIM_CORE_NUM 0
 #define OPT_SERV_CONF_DEF_RLIM_FILE_NUM 0
+#define OPT_SERV_CONF_USE_CAP_FOWNER FALSE
+#define OPT_SERV_CONF_USE_DUMPABLE FALSE
 
 
 typedef struct Opt_serv_policy_opts
@@ -70,6 +72,8 @@ typedef struct Opt_serv_opts
  unsigned int no_conf_listen : 1;
  unsigned int rlim_core_call : 1;
  unsigned int rlim_file_call : 1;
+ unsigned int keep_cap_fowner : 1;
+ unsigned int make_dumpable : 1;
 
  Vstr_base *pid_file;
  Vstr_base *cntl_file;
@@ -108,6 +112,8 @@ typedef struct Opt_serv_opts
     FALSE,                                                              \
     OPT_SERV_CONF_DEF_RLIM_CORE_CALL,                                   \
     OPT_SERV_CONF_DEF_RLIM_FILE_CALL,                                   \
+    OPT_SERV_CONF_USE_CAP_FOWNER,                                       \
+    OPT_SERV_CONF_USE_DUMPABLE,                                         \
     NULL, NULL, NULL,                                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_UID,                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_GID,                                   \
@@ -220,6 +226,14 @@ extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
       if (conf_sc_token_parse_toggle(conf, token, &opt__val))   \
         return (FALSE);                                         \
       (x) = opt__val;                                           \
+    } while (FALSE)
+
+#define OPT_SERV_X_NEG_TOGGLE(x) do {                           \
+      int opt__val = !(x);                                      \
+                                                                \
+      if (conf_sc_token_parse_toggle(conf, token, &opt__val))   \
+        return (FALSE);                                         \
+      (x) = !opt__val;                                          \
     } while (FALSE)
 
 #define OPT_SERV_X_UINT(x) do {                                 \

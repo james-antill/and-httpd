@@ -525,8 +525,8 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
     acpt_cntl_evnt->cbs->cb_func_recv = cntl__cb_func_recv;
     acpt_cntl_evnt->cbs->cb_func_free = cntl__cb_func_cntl_acpt_free;
     
-    if (allow_pdeathsig)
-      PROC_CNTL_PDEATHSIG(SIGCHLD);
+    if (allow_pdeathsig && (PROC_CNTL_PDEATHSIG(SIGCHLD) == -1))
+      vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_PDEATHSIG", "SIGCHLD");
   }
   else
   {
@@ -534,10 +534,15 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
       vlg = passed_vlg;
     ASSERT(vlg       == passed_vlg);
 
-    if (allow_pdeathsig && (PROC_CNTL_PDEATHSIG(SIGCHLD) != -1))
+    if (allow_pdeathsig)
     {
-      close(fd);
-      return;
+      if (PROC_CNTL_PDEATHSIG(SIGCHLD) == -1)
+        vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_PDEATHSIG", "SIGCHLD");
+      else
+      {
+        close(fd);
+        return;
+      }
     }
     
     if (!(acpt_pipe_evnt = MK(sizeof(struct Evnt))))

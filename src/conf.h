@@ -286,8 +286,11 @@ extern inline int conf_parse_end_token(const Conf_parse *conf,
     return (CONF__FALSE);
 
   if (token->depth_nums[depth] >= token->num)
+  {
     token->num = token->depth_nums[depth] - 1;
-
+    token->depth_num = depth;
+  }
+  
   return (conf_parse_token(conf, token));
 }
 
@@ -295,6 +298,8 @@ extern inline int conf_parse_num_token(const Conf_parse *conf,
                                        Conf_token *token,
                                        unsigned int num)
 {
+  CONF__ASSERT(num);
+  
   if (token->num == num)
   { /* refresh info... */
     token->type = conf->types_ptr[token->num - 1];
@@ -312,7 +317,11 @@ extern inline int conf_parse_num_token(const Conf_parse *conf,
   }
   
   if (token->num > num)
-    return (CONF__FALSE);
+  {
+    Conf_token tmp = CONF_TOKEN_INIT;
+
+    *token = tmp;
+  }
   
   while (token->num < num)
   {

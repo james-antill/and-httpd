@@ -37,4 +37,7 @@ text/plain  ./README ./SConstruct ./THANKS ./TODO
 # note that because of gzip you'll probably want the .gz version too
 # Valid: codes are 400, 403, 404, 410, 500 and 503
 /403/			  shtml shtml.gz .~ .# tmp tmp.gz
-/403/			  htaccess htaccess.gz sconsign sconsign.gz
+/403/			  htaccess htaccess.gz
+/403/			  htpasswd htpasswd.gz
+/403/			  htgroup  htgroup.gz
+/403/			  sconsign sconsign.gz

@@ -1,6 +1,6 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -21,7 +21,7 @@ Location: http://foo.example.com/corner/
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -42,7 +42,7 @@ Location: http://foo.example.com/corner/index.html/
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Sat, 09 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

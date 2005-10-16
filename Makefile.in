@@ -132,6 +132,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBCAP_AVAIL_FALSE = @LIBCAP_AVAIL_FALSE@
+LIBCAP_AVAIL_TRUE = @LIBCAP_AVAIL_TRUE@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -226,7 +228,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = no-dependencies 1.4
-SUBDIRS = src tools Documentation
+SUBDIRS = src tools Documentation err
 docmaindir = $(datadir)/doc/and-httpd-$(VERSION)
 docmain_DATA = TODO README NEWS ChangeLog AUTHORS COPYING
 all: all-recursive

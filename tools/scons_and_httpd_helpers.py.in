@@ -4,26 +4,71 @@ import os
 import glob
 
 def init_builders(bldr):
+    global gzip_bld
+    global bzip_bld
     global jhighlight_bld
     global jssi_bld
     global make_examples_index_bld
     global make_index_bld
     global ln_bld
     global lns_bld
-    
+
+    global sc_blders
+    global sc_path
+
+# Generic...
+
+    gzip_bld = bldr(action = '\
+gzip  --to-stdout --no-name --best $SOURCE > $TARGET')
+
+    bzip2_bld = bldr(action = '\
+bzip2 --stdout --best $SOURCE > $TARGET')
+
+# Vstr/and-httpd-tools specific...
+
+    # Can't use @"datadir"@ due to it containing ${prefix}
+    and_httpd_tools_path = "@prefix@/share/and-httpd-@VERSION@"
+
     jhighlight_bld = bldr(action = '\
 jhighlight --css-file=http://www.and.org/f_c.css $SOURCE > $TARGET')
 
     jssi_bld       = bldr(action = 'jssi       $SOURCE > $TARGET')
 
     make_examples_index_bld = bldr(action = '\
-make_index.pl --filter-args="-A README -A Makefile -A SConstruct --acpt-name-end .c --acpt-name-end .h --deny-all" --output $TARGET $SOURCE')
+make_index --filter-args="-A README -A Makefile -A SConstruct --acpt-name-end .c --acpt-name-end .h --deny-all" --output $TARGET $SOURCE')
 
     make_index_bld = bldr(action = '\
-make_index.pl $MKINDXARGS --output $TARGET $SOURCE')
+make_index $MKINDXARGS --output $TARGET $SOURCE')
 
     ln_bld  = bldr(action = 'ln $SOURCE $TARGET')
     lns_bld = bldr(action = 'ln -s $SOURCE $TARGET')
+
+    sc_path = "/usr/local/bin:/usr/bin:/bin:" + and_httpd_tools_path
+    sc_blders = {'Highlight'    : jhighlight_bld,
+                 'SSI'          : jssi_bld,
+                 'Make_indx'    : make_index_bld,
+                 'GZip'         : gzip_bld,
+                 'BZip2'        : bzip2_bld,
+                 'Make_ex_indx' : make_examples_index_bld,
+                 'LN'           : ln_bld}
+
+def init_env(Env):
+    global sc_Zip
+    global sc_GZip
+    global sc_BZip2
+    
+    env = Env(ENV = {'PATH' : sc_path}, BUILDERS = sc_blders)
+    sc_Zip   = sc_allzip_bld({'ext' : '.gz',  'bld' : env.GZip},
+                             {'ext' : '.bz2', 'bld' : env.BZip2})
+    sc_GZip  = sc_allzip_bld({'ext' : '.gz',  'bld' : env.GZip})
+    sc_BZip2 = sc_allzip_bld({'ext' : '.bz2', 'bld' : env.BZip2})
+
+    return env
+
+def init(bldr, Env):
+    init_builders(bldr)
+    return init_env(Env)
+
 
 conf = {'GENERATE_INDEX_NAME' : "index.html",
 	'ROOT_DIR' : "html/",
@@ -50,10 +95,13 @@ def gen_dif_idx(env, data, x, rec=False):
             gen__name(x + '/' + os.path.basename(y))
     return gen__name
 
-def apply_dif_idx(data, Make_indx, LN, conf_gen_html):
+def apply_dif_idx(data, Make_indx, LN, conf_gen_html, Zip=None):
     for i in data:
         Make_indx(i[0], i[1])
         LN(i[2], conf_gen_html)
+        if Zip is None:
+            Zip = sc_Zip
+        Zip(i[0])
 
 
 # Generate index.html files automatically in same dir...
@@ -95,16 +143,20 @@ def gen_sam_idx(env, data, x, rec=False):
 		
     return gen__name
 
-def apply_sam_idx(data, env, Make_indx):
+def apply_sam_idx(data, env, Make_indx, Zip=None):
     for i in data:
         abcd = Make_indx(i[0], i[1])
         for j in i[2]:
             env.Depends(abcd, j)
         env.Ignore(abcd, i[1])
 
+        if Zip is None:
+            Zip = sc_Zip
+        Zip(i[0])
+
 
 # Special code for the examples dir.
-def apply_sam_examples_code(data, Highlight, LN, ex_neg, ex_txt):
+def apply_sam_examples_code(data, Highlight, LN, ex_neg, ex_txt, Zip=None):
     for pat in data:
         for i in glob.glob(conf['ROOT_DIR'] + pat[0] + pat[1]):
             Highlight(i + ".html", i)
@@ -113,8 +165,13 @@ def apply_sam_examples_code(data, Highlight, LN, ex_neg, ex_txt):
             conf_name = conf['CONF_DIR'] + pat[0] + name
             LN(conf_name, ex_neg)
             LN(conf_name + ".txt", ex_txt)
+            
+        if Zip is None:
+            Zip = sc_Zip
+        Zip(i + ".html")
+        Zip(i)
 
-def apply_sam_examples_idx(data, env, Make_ex_indx):
+def apply_sam_examples_idx(data, env, Make_ex_indx, Zip=None):
     for src in data:
         name = conf['ROOT_DIR'] + src[0]
         abcd = Make_ex_indx(name + "/" + conf['GENERATE_INDEX_NAME'],
@@ -122,6 +179,9 @@ def apply_sam_examples_idx(data, env, Make_ex_indx):
         for j in glob.glob(name + "/" + src[1]):
             env.Depends(abcd, j)
         env.Ignore(abcd, env.Dir(name))
+        if Zip is None:
+            Zip = sc_Zip
+        Zip(name + "/" + conf['GENERATE_INDEX_NAME'])
 
 # Apply over directories
 def gen_files_sam_ext(env, data, x, rec=False):
@@ -159,9 +219,26 @@ def gen_files_sam_ext(env, data, x, rec=False):
 		
     return gen__name
 
-def apply_sam_ssi(data, SSI):
+def apply_sam_ssi(data, SSI, Zip=None):
     for i in data:
         ext_in  = i[0]
         ext_out = i[1]
         for fname in i[2]:
             SSI(fname[0], fname[1])
+            if Zip is None:
+                Zip = sc_Zip
+            Zip(fname[0])
+
+def __sc_zip_bld(ext, bld):
+    def zipper(fname):
+        bld(fname + ext, fname)
+    return zipper
+
+def sc_allzip_bld(*bldrs):
+    all = []
+    for i in bldrs:
+        all.append(__sc_zip_bld(i['ext'],  i['bld']))
+    def zipper(fname):
+        for i in all:
+            i(fname)
+    return zipper

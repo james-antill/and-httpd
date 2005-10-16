@@ -25,7 +25,6 @@
 #define EX_UTILS_NO_USE_BLOCK 1
 #define EX_UTILS_NO_USE_GET   1
 #define EX_UTILS_NO_USE_PUT   1
-#define EX_UTILS_USE_NONBLOCKING_OPEN 1
 #define EX_UTILS_RET_FAIL     1
 #include "ex_utils.h"
 
@@ -775,13 +774,17 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
   const char *fname_cstr = NULL;
   int fd = -1;
   int ret = FALSE;
+  int open_flags = O_NONBLOCK;
   
+  if (req->policy->use_noatime)
+    open_flags |= O_NOATIME;
+    
   vstr_add_cstr_ptr(fname, fname->len, zip_ext);
   fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len);
   
   if (fname->conf->malloc_bad)
     vlg_warn(vlg, "Failed to export cstr for '%s'\n", zip_ext);
-  else if ((fd = io_open_nonblock(fname_cstr)) == -1)
+  else if ((fd = io__open(fname_cstr, open_flags)) == -1)
     vstr_sc_reduce(fname, 1, fname->len, zip_len);
   else
   {
@@ -1333,8 +1336,10 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     vstr_del(con->evnt->io_r, 1, con->evnt->io_r->len);
   }
   else if (((req->error_code == 400) || /* must match below */
+            (req->error_code == 401) ||
             (req->error_code == 403) ||
             (req->error_code == 404) ||
+            (req->error_code == 406) ||
             (req->error_code == 410) ||
             (req->error_code == 500) ||
             (req->error_code == 503)) && req->policy->req_err_dir->len)
@@ -1343,11 +1348,12 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     size_t vhost_prefix_len = 0;
     const char *fname_cstr = NULL;
     struct stat64 f_stat[1];
+    int open_flags = O_NONBLOCK;
 
     if (!fname)
       goto fail_custom_err;
 
-    /*
+    /* -- leave as union of both...
   req->vary_star = con ? con->vary_star : FALSE;
   req->vary_a    = FALSE;
   req->vary_ac   = FALSE;
@@ -1397,8 +1403,10 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       switch (code)
       { /* restore default error info. in case of failure, must match above */
         case 400: HTTPD_ERR(req, 400); break;
+        case 401: HTTPD_ERR(req, 401); break;
         case 403: HTTPD_ERR(req, 403); break;
         case 404: HTTPD_ERR(req, 404); break;
+        case 406: HTTPD_ERR(req, 406); break;
         case 410: HTTPD_ERR(req, 410); break;
         case 500: HTTPD_ERR(req, 500); break;
         case 503: HTTPD_ERR(req, 503);
@@ -1413,8 +1421,12 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     
     if (fname->conf->malloc_bad)
       goto fail_custom_err;
+
+    if (req->policy->use_noatime)
+      open_flags |= O_NOATIME;
+    
     ASSERT(con->fs && (con->fs->fd == -1));
-    if ((con->fs->fd = io_open_nonblock(fname_cstr)) == -1)
+    if ((con->fs->fd = io__open(fname_cstr, open_flags)) == -1)
       goto fail_custom_err;
 
     if (fstat64(con->fs->fd, f_stat) == -1)
@@ -3259,7 +3271,7 @@ static int http__policy_req(struct Con *con, Httpd_req_data *req)
     
     vlg_info(vlg, "BLOCKED from[$<sa:%p>]: policy $<vstr.all:%p>\n",
              CON_CEVNT_SA(con), s1);
-    return (FALSE);
+    return (http_con_cleanup(con, req));
   }
 
   if (req->direct_uri)
@@ -3306,6 +3318,7 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
   const char *fname_cstr = NULL;
   unsigned int http_ret_code = 200;
   const char * http_ret_line = "OK";
+  int open_flags = O_NONBLOCK;
   
   if (fname->conf->malloc_bad)
     goto malloc_err;
@@ -3367,8 +3380,11 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
   if (fname->conf->malloc_bad)
     goto malloc_err;
 
+  if (req->policy->use_noatime)
+    open_flags |= O_NOATIME;
+  
   ASSERT(con->fs && !con->fs_num && !con->fs_off && (con->fs->fd == -1));
-  if ((con->fs->fd = io_open_nonblock(fname_cstr)) == -1)
+  if ((con->fs->fd = io__open(fname_cstr, open_flags)) == -1)
   {
     if (0) { }
     else if (req->direct_filename && (errno == EISDIR)) /* don't allow */

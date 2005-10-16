@@ -276,7 +276,8 @@ int httpd_policy_build_path(struct Con *con, Httpd_req_data *req,
       HTTPD_APP_REF_VSTR(conf->tmp,
                          con->evnt->io_r, req->path_pos, req->path_len);
     }
-    else if (OPT_SERV_SYM_EQ("<content-type-extension>") ||
+    else if (OPT_SERV_SYM_EQ("<content-type-ext>") ||
+             OPT_SERV_SYM_EQ("<content-type-extension>") ||
              OPT_SERV_SYM_EQ("<content-type-path>"))
     {
       const Vstr_base *s1 = req->ext_vary_a_vs1;
@@ -287,7 +288,9 @@ int httpd_policy_build_path(struct Con *con, Httpd_req_data *req,
       if (s1 && len)
         HTTPD_APP_REF_VSTR(conf->tmp, s1, pos, len);
     }
-    else if (OPT_SERV_SYM_EQ("<content-language-extension>") ||
+    else if (OPT_SERV_SYM_EQ("<content-lang-ext>") ||
+             OPT_SERV_SYM_EQ("<content-language-ext>") ||
+             OPT_SERV_SYM_EQ("<content-language-extension>") ||
              OPT_SERV_SYM_EQ("<content-language-path>"))
     {
       const Vstr_base *s1 = req->ext_vary_al_vs1;
@@ -463,7 +466,9 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   
   opts->add_def_port       = HTTPD_CONF_ADD_DEF_PORT;
 
-  opts->use_non_spc_hdrs   = HTTPD_CONF_USE_NON_SPC_HDRS; /* 22nd bitfield */
+  opts->use_non_spc_hdrs   = HTTPD_CONF_USE_NON_SPC_HDRS;
+  
+  opts->use_noatime        = HTTPD_CONF_USE_NOATIME; /* 23rd bitfield */
   
   opts->max_header_sz      = HTTPD_CONF_INPUT_MAXSZ;
 
@@ -580,8 +585,8 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(chk_encoded_slash);
   HTTPD_POLICY_CP_VAL(chk_encoded_dot);
   HTTPD_POLICY_CP_VAL(add_def_port);
-
   HTTPD_POLICY_CP_VAL(use_non_spc_hdrs);
+  HTTPD_POLICY_CP_VAL(use_noatime);
 
   HTTPD_POLICY_CP_VAL(max_header_sz);
   HTTPD_POLICY_CP_VAL(max_requests);

@@ -1,3 +1,7 @@
+0.99.3 - 2005-10-15
+ Add named matches, and ability to add matches at positions other than the end.
+Minor changes to default config file for that. Add O_NOATIME support.
+
 0.99.2 - 2005-09-21
  Fix install of scripts so they are executable. Tweak default config.
 documentation improvments and some minor fixes. Add security guarantee.

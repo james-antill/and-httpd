@@ -11,4 +11,4 @@ else
   exit 1;
 fi
 
-$c --enable-debug $@ && make clean && make check
+CFLAGS='-DVSTR_COMPILE_INLINE=0' $c --enable-debug $@ && make clean && make check

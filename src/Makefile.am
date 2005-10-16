@@ -47,7 +47,9 @@ and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS) \
                      -DHTTPD_CONF_VERSION='"@VERSION@"'
 and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
 
-
+if LIBCAP_AVAIL
+and_httpd_LDADD += -lcap
+endif
 
 # These are "extra" ... but kind of needed
 

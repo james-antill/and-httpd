@@ -266,6 +266,8 @@ unsigned int opt_policy_sc_conf_parse(Opt_serv_opts *opts,
       CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, 0);
       if (!(frm_opts = opt_policy_find(opts, conf, token)))
         return (0);
+      if (frm_opts == popts)
+        return (0);
       if (created_now && !(*opts->copy_policy)(popts, frm_opts))
         return (0);
     }
@@ -274,6 +276,8 @@ unsigned int opt_policy_sc_conf_parse(Opt_serv_opts *opts,
       const Opt_serv_policy_opts *frm_opts = NULL;
       CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, 0);
       if (!(frm_opts = opt_policy_find(opts, conf, token)))
+        return (0);
+      if (frm_opts == popts)
         return (0);
       if (!(*opts->copy_policy)(popts, frm_opts))
         return (0);

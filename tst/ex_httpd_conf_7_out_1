@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -18,7 +18,7 @@ Content-Length: 159
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -36,7 +36,7 @@ Content-Length: 159
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Wed, 13 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -54,7 +54,7 @@ Content-Length: 159
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Wed, 13 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -72,7 +72,7 @@ Content-Length: 159
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -90,7 +90,7 @@ Content-Length: 159
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -111,7 +111,7 @@ Location: http://foo.example.com/conf4/
 </html>
 HTTP/1.1 404 Not Found
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified:
 Vary: Accept-Encoding
 Content-Type: text/html
@@ -128,7 +128,7 @@ Content-Length: 169
 </html>
 HTTP/1.1 404 Not Found
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified:
 Connection: close
 Vary: Accept-Encoding

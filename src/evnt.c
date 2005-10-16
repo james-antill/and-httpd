@@ -2090,7 +2090,8 @@ int evnt_child_block_beg(void)
     return (TRUE);
   
   if (PROC_CNTL_PDEATHSIG(SIGTERM) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "prctl(): %m\n");
+    vlg_err(vlg, EXIT_FAILURE,
+            "prctl(%s, %s): %m\n", "PR_SET_PDEATHSIG", "SIGTERM");
 
   if (evnt_child_exited)
     return (FALSE);
@@ -2104,7 +2105,8 @@ int evnt_child_block_end(void)
     return (TRUE);
   
   if (PROC_CNTL_PDEATHSIG(SIGCHLD) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "prctl(): %m\n");
+    vlg_err(vlg, EXIT_FAILURE,
+            "prctl(%s, %s): %m\n", "PR_SET_PDEATHSIG", "SIGCHLD");
   
   return (TRUE);
 }

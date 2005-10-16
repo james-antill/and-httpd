@@ -1,0 +1,57 @@
+#########################################################
+###                                                   ###
+### This is a configuration for httpd_conf_9 tests... ###
+###                                                   ###
+#########################################################
+
+(org.and.httpd-conf-main-1.0
+
+  (org.and.daemon-conf-1.0
+    (listen addr 127.0.8.1)
+    (listen addr 127.0.8.2)
+
+    (cntl-file ex_httpd_cntl))
+
+  (match-connection [policy-eq <default>
+                     server-ipv4-cidr-eq 127.0.8.1/24]
+    policy conf-httpd-tst-9.1)
+
+   policy conf-httpd-tst-9.1
+
+     ; Required by the tests...
+     unspecified-hostname foo.example.com ; -- so we always match in tests
+     unspecified-hostname-append-port off
+     MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
+
+     virtual-hosts true
+     document-root ex_httpd_root
+     request-configuration-directory ex_httpd_conf_root
+     req-err-dir ex_httpd_err_conf_7_root)
+
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-9.1 HTTP Server: "Apache/1.3.1" chk-.-dir false)
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-9.2[inherit conf-httpd-tst-9.1]HTTP
+     Server: "Apache/1.3.2")
+
+(org.and.httpd-conf-main-1.0
+   match-connection (beg beg) [] tag "beg")
+(org.and.httpd-conf-main-1.0
+  (match-connection baz [tag-eq    beg] tag "baz")
+  (match-connection (x before baz)
+                        [policy-eq conf-httpd-tst-9.1
+                         tag-eq    beg] tag "x")
+  (match-connection (y after x)
+                        [policy-eq conf-httpd-tst-9.1
+                         tag-eq    beg] <close>)
+  (match-connection ('' beginning)
+                        [policy-eq <default>
+                         server-ipv4-cidr-eq 127.0.8.2]
+    policy conf-httpd-tst-9.2))
+
+(org.and.httpd-conf-main-1.0
+  (match-request ((end))   [hostname-eq .]
+     <stop>)
+  (match-request (A (end)) [tag-eq    x
+                            path-eq   /index.html]
+     <close>))

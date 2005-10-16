@@ -300,6 +300,18 @@ sub all_conf_8_tsts
 	    {shutdown_w => 0, slow_write => 1});
   }
 
+sub all_conf_9_tsts
+  {
+    my $num = shift || 1;
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num");
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
+	    {shutdown_w => 0});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
+	    {                 slow_write => 1});
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
+	    {shutdown_w => 0, slow_write => 1});
+  }
+
 sub munge_mtime
   {
     my $num   = shift;
@@ -427,7 +439,7 @@ sub setup
     open(OUT,     "> $root/foo.example.com/empty") || failure("open empty: $!");
     munge_mtime(44, "$root/foo.example.com/empty");
 
-    system("$ENV{_TOOLSDIR}/gzip-r.pl --force --type=all $root");
+    system("$ENV{_TOOLSDIR}/gzip-r --force --type=all $root");
     munge_mtime(0, "$root/index.html.gz");
     munge_mtime(0, "$root/index.html.bz2");
     munge_mtime(0, "$root/default/index.html.gz");
@@ -500,6 +512,8 @@ if (@ARGV)
 	  { all_conf_7_tsts(); $y = 1; }
 	elsif ($arg eq "conf_8")
 	  { all_conf_8_tsts(shift); $y = 1; }
+	elsif ($arg eq "conf_9")
+	  { all_conf_9_tsts(shift); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -588,6 +602,13 @@ sub conf_tsts
 	    all_conf_8_tsts(3);
 	    daemon_status("and-httpd_cntl", "127.0.7.4");
 	    all_conf_8_tsts(4);
+	  }
+	elsif ($_ == 9)
+	  {
+	    daemon_status("and-httpd_cntl", "127.0.8.1");
+	    all_conf_9_tsts(1);
+	    daemon_status("and-httpd_cntl", "127.0.8.2");
+	    all_conf_9_tsts(2);
 	  }
 	else
 	  { failure("Bad conf number."); }

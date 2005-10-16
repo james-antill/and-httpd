@@ -41,6 +41,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@LIBCAP_AVAIL_TRUE@am__append_1 = -lcap
 httpdadmin_PROGRAMS = and-cntl$(EXEEXT) and-httpd$(EXEEXT)
 httpduser_PROGRAMS = and-conf$(EXEEXT) and-sock-filter$(EXEEXT)
 subdir = src
@@ -151,6 +152,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBCAP_AVAIL_FALSE = @LIBCAP_AVAIL_FALSE@
+LIBCAP_AVAIL_TRUE = @LIBCAP_AVAIL_TRUE@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -277,7 +280,8 @@ and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
 and_httpd_CFLAGS = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS) \
                      -DHTTPD_CONF_VERSION='"@VERSION@"'
 
-and_httpd_LDADD = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
+and_httpd_LDADD = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) \
+	$(TIMER_Q_LDLIBS) $(am__append_1)
 
 # These are "extra" ... but kind of needed
 and_cntl_SOURCES = $(CMDLINE_FILES_SRCS) and-cntl.c

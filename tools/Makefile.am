@@ -1,14 +1,17 @@
 
-toolsmaindir = $(datadir)/tools/and-httpd-$(VERSION)
-toolsmain_DATA = scons_jhttpd_helpers.py
+toolsmaindir = $(datadir)/and-httpd-$(VERSION)-tools
+toolsmain_DATA = scons_and_httpd_helpers.py
 
 toolsmain_SCRIPTS =                         \
-                and-httpd-syslog2apache-httpd-combined-log.pl \
-                gzip-r.pl \
-                make_index.pl
+                and-httpd-syslog2apache-httpd-combined-log \
+                gzip-r \
+                make_index
 
 initddir = $(sysconfdir)/init.d
 initd_SCRIPTS = and-httpd
+
+cronddir = $(sysconfdir)/cron.daily
+crond_SCRIPTS = and-httpd_gzip
 
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt

@@ -54,7 +54,8 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
 
       if (or_matches)
       {
-        conf_parse_end_token(conf, token, depth);
+        int ret = conf_parse_end_token(conf, token, depth);
+        ASSERT(ret);
         return (TRUE);
       }
     }
@@ -74,7 +75,8 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
 
       if (!*matches)
       {
-        conf_parse_end_token(conf, token, depth);
+        int ret = conf_parse_end_token(conf, token, depth);
+        ASSERT(ret);
         return (TRUE);
       }
     }
@@ -209,6 +211,26 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
                                opts->name_cstr, opts->name_len);
   }
 
+  else if (OPT_SERV_SYM_EQ("hostname-eq") ||
+           OPT_SERV_SYM_EQ("hostname=="))
+  {
+    size_t lpos = 0;
+    
+    OPT_SERV_X_VSTR(conf->tmp);
+
+    lpos = conf->tmp->len;
+    if (!opt_serv_sc_append_hostname(conf->tmp, lpos))
+      return (FALSE);
+    
+    if (lpos == conf->tmp->len)
+      *matches = !!conf->tmp->len; /* if they are both blank, they match */
+    else
+    {
+      size_t len = vstr_sc_posdiff(lpos + 1, conf->tmp->len);
+      *matches = vstr_cmp_case_eq(conf->tmp, 1, lpos, conf->tmp, lpos + 1, len);
+    }
+  }
+
   else if (OPT_SERV_SYM_EQ("uid-eq") ||
            OPT_SERV_SYM_EQ("uid=="))
   {
@@ -306,7 +328,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
   else if (OPT_SERV_SYM_EQ("cntl-file") ||
            OPT_SERV_SYM_EQ("control-file"))
     return (opt_serv_sc_make_static_path(opts, conf, token, opts->cntl_file));
-  else if (OPT_SERV_SYM_EQ("daemonize"))
+  else if (OPT_SERV_SYM_EQ("daemonize") || OPT_SERV_SYM_EQ("daemonise"))
     OPT_SERV_X_TOGGLE(opts->become_daemon);
   else if (OPT_SERV_SYM_EQ("drop-privs"))
   {
@@ -329,9 +351,14 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     else if (OPT_SERV_SYM_EQ("gid"))       OPT_SERV_X_UINT(opts->priv_gid);
     else if (OPT_SERV_SYM_EQ("grpname"))   OPT_SERV_X_VSTR(opts->vpriv_gid);
     else if (OPT_SERV_SYM_EQ("groupname")) OPT_SERV_X_VSTR(opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("keep-CAP_FOWNER") ||
+             OPT_SERV_SYM_EQ("keep-cap-fowner"))
+      OPT_SERV_X_TOGGLE(opts->keep_cap_fowner);
 
     CONF_SC_MAKE_CLIST_END();
   }
+  else if (OPT_SERV_SYM_EQ("dumpable"))
+    OPT_SERV_X_TOGGLE(opts->make_dumpable);
   else if (OPT_SERV_SYM_EQ("listen"))
   {
     Opt_serv_addr_opts *addr = opt_serv_make_addr(opts);
@@ -932,25 +959,30 @@ int opt_serv_sc_append_hostname(Vstr_base *s1, size_t pos)
 
 int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
 {
-  size_t sz = PATH_MAX;
+  static size_t sz = PATH_MAX;
   char *ptr = MK(sz);
-  char *tmp = NULL;
   int ret = FALSE;
 
   if (ptr)
-    tmp = getcwd(ptr, sz);
-  while (!tmp && (errno == ERANGE))
   {
-    sz += PATH_MAX;
-    if (!MV(ptr, tmp, sz))
-      break;
+    const size_t maxsz = 8 * PATH_MAX; /* FIXME: config. */
+    char *tmp = NULL;
+    
     tmp = getcwd(ptr, sz);
+    while (!tmp && (errno == ERANGE) && (sz < maxsz))
+    {
+      sz += PATH_MAX;
+      if (!MV(ptr, tmp, sz))
+        break;
+      tmp = getcwd(ptr, sz);
+    }
+  
+    if (!tmp) 
+      ret = vstr_add_cstr_ptr(s1, pos, "/");
+    else
+      ret = vstr_add_cstr_buf(s1, pos, tmp);
   }
   
-  if (!tmp) 
-    ret = vstr_add_cstr_ptr(s1, pos, "/");
-  else
-    ret = vstr_add_cstr_buf(s1, pos, tmp);
   F(ptr);
   
   return (ret);

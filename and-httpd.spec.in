@@ -29,7 +29,7 @@
 Summary: Secure, simple and fast HTTP server
 Name: and-httpd
 Version: @VERSION@
-Release: %{?rel}%{!?rel:1}
+Release: 1
 License: LGPL
 Group: System Environment/Daemons
 URL: http://www.and.org/and-httpd
@@ -37,15 +37,31 @@ Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: vstr >= 1.0.14
 BuildRequires: pkgconfig >= 0.8
-BuildRequires: vstr-devel, timer_q-devel, socket_poll-devel
+BuildRequires: vstr-devel, timer_q-devel, socket_poll-devel, libcap-devel
+BuildRequires: perl
+Provides: webserver
 
 %description
 
- and-httpd is currently only a URL to file mapping daemon,
+ And-httpd is currently only a URL to file mapping daemon,
 in other words in can take an incomming URL and map it
 to a file in a number of ways. However it cannot do CGI
 or anything like apache-httpd mod_python etc. ... it cannot
-even dynamically create directory listings.
+even dynamically create directory listings, however the -tools
+package contains utilities that can do them outside of the
+daemon.
+
+%package tools
+Summary: Tools to help with managing webserver data
+Group: Development/Tools
+Requires: scons, python, perl
+
+%description tools
+ Tools to help managing data under /var/www, including:
+
+. automatic directory indexer.
+. automatic gzip encoding generator.
+. automatic converter from and-httpd syslog to Apache-httpd combined log.
 
 %prep
 %setup -q
@@ -101,15 +117,20 @@ fi
 %defattr(-,root,root,-)
 %{_sbindir}/
 %{_bindir}/
-%{_datadir}/tools/and-httpd-@VERSION@/
-%{_sysconfdir}/and-httpd
-%dir %{_sysconfdir}/and-httpd/conf.d
+%{_sysconfdir}/and-httpd/conf.d
 %{_sysconfdir}/init.d/and-httpd
+%{_sysconfdir}/cron.daily/and-httpd_gzip
 %config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
+%{wwwdir}/err/example.com/*
 %doc
-%{_datadir}/doc/and-httpd-@VERSION@/
+%{_datadir}/doc/and-httpd-@VERSION@
 %{_mandir}/man8/and-httpd*
+%{_mandir}/man5/and-httpd*
+
+%files tools
+%defattr(-,root,root,-)
+%{_datadir}/and-httpd-@VERSION@-tools/*
 
 
 %changelog

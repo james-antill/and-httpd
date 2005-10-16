@@ -20,6 +20,8 @@ cd ./and-httpd-$v
 
 ./scripts/clean.sh full
 
+rm -rf tmp
+
 # Backup files...
 find . \
  \( -name "*.o" -o -name ".*[%~]" -o -name "*[%~]" -o -name "#*#" \) \
@@ -33,12 +35,6 @@ find . -name .arch-ids -type d -print0 | xargs -0 rm -rf
 cp $s/and-httpd.spec .
 
 cd ..
-
-tar -cf and-httpd-$v.tar and-httpd-$v
-bzip2 -9f and-httpd-$v.tar
-
-tar -cf and-httpd-$v.tar and-httpd-$v
-gzip -9f and-httpd-$v.tar
 
 chk=1
 rel=1
@@ -60,11 +56,19 @@ else
 echo Using normal release of 1.
 fi
 
+perl -i -pe "s/^Release: 1/Release: $rel/" and-httpd-$v/and-httpd.spec
+
+tar -cf and-httpd-$v.tar and-httpd-$v
+bzip2 -9f and-httpd-$v.tar
+
+tar -cf and-httpd-$v.tar and-httpd-$v
+gzip -9f and-httpd-$v.tar
+
 sudo rpmbuild -ta --define "chk $chk" --define "rel $rel" and-httpd-$v.tar.gz
 
-echo "/usr/src/redhat/RPMS/*/and-httpd*-$v-$rel-*"
-echo "/usr/src/redhat/SRPMS/and-httpd*-$v-$rel-*"
+echo "/usr/src/redhat/RPMS/*/and-httpd*-$v-$rel*"
+echo "/usr/src/redhat/SRPMS/and-httpd*-$v-$rel*"
 
-ls -aslhF /usr/src/redhat/RPMS/*/and-httpd*-$v-$rel-*
-ls -aslhF /usr/src/redhat/SRPMS/and-httpd*-$v-$rel-*
+ls -aslhF /usr/src/redhat/RPMS/*/and-httpd*-$v-${rel}*
+ls -aslhF /usr/src/redhat/SRPMS/and-httpd*-$v-${rel}*
 

@@ -21,21 +21,14 @@
 
 #include <string.h> /* strncmp() etc. in GETOPT macros */
 
+#include "compiler.h" /* includes autoconf.h */
+
 #undef NULL
 #define NULL ((void *)0) /* fix C++/old-C braindamage */
 
-#ifdef VSTR_AUTOCONF_fstat64
-# define fstat64 VSTR_AUTOCONF_fstat64
-#endif
-#ifdef VSTR_AUTOCONF_stat64
-/* does "stat" + "struct stat" */
-# define stat64 VSTR_AUTOCONF_stat64
-#endif
-#ifdef VSTR_AUTOCONF_off64_t
-# define off64_t VSTR_AUTOCONF_off64_t
-#endif
-#ifdef VSTR_AUTOCONF_lseek64
-# define lseek64 VSTR_AUTOCONF_lseek64
+/* fix.h ? */
+#ifndef O_NOATIME
+#define O_NOATIME 0
 #endif
 
 /* **************************************************************** */
@@ -89,8 +82,6 @@
     }                                                                   \
     else if (0) ASSERT(FALSE)
 
-
-#include "compiler.h" /* includes autoconf.h */
 
 #if COMPILE_DEBUG
 # define assert(x) do { if (x) {} else { warnx("assert(%s), FAILED at %s:%u", #x , __FILE__, __LINE__); abort(); } } while (FALSE)

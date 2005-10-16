@@ -1,0 +1,4 @@
+#! /bin/sh -e
+
+@prefix@/share/and-httpd-@VERSION@/gzip-r --type=all /var/www/generated_html
+@prefix@/share/and-httpd-@VERSION@/gzip-r --type=all --zero /var/www/html

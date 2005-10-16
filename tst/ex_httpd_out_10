@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Thu, 07 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -9,7 +9,7 @@ Content-Length: 161
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.2
+Server: and-httpd/0.99.3
 Last-Modified: Thu, 07 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

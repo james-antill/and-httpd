@@ -39,20 +39,23 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = tools
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(srcdir)/and-httpd.in
+	$(srcdir)/and-httpd.in $(srcdir)/and-httpd_gzip.in \
+	$(srcdir)/scons_and_httpd_helpers.py.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/autoconf.h
-CONFIG_CLEAN_FILES = and-httpd
-am__installdirs = "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" \
-	"$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" \
-	"$(DESTDIR)$(toolsmaindir)"
+CONFIG_CLEAN_FILES = and-httpd scons_and_httpd_helpers.py \
+	and-httpd_gzip
+am__installdirs = "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" \
+	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" \
+	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"
+crondSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 initdSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 toolsmainSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(initd_SCRIPTS) $(toolsmain_SCRIPTS)
+SCRIPTS = $(crond_SCRIPTS) $(initd_SCRIPTS) $(toolsmain_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -111,6 +114,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBCAP_AVAIL_FALSE = @LIBCAP_AVAIL_FALSE@
+LIBCAP_AVAIL_TRUE = @LIBCAP_AVAIL_TRUE@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -204,15 +209,17 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-toolsmaindir = $(datadir)/tools/and-httpd-$(VERSION)
-toolsmain_DATA = scons_jhttpd_helpers.py
+toolsmaindir = $(datadir)/and-httpd-$(VERSION)-tools
+toolsmain_DATA = scons_and_httpd_helpers.py
 toolsmain_SCRIPTS = \
-                and-httpd-syslog2apache-httpd-combined-log.pl \
-                gzip-r.pl \
-                make_index.pl
+                and-httpd-syslog2apache-httpd-combined-log \
+                gzip-r \
+                make_index
 
 initddir = $(sysconfdir)/init.d
 initd_SCRIPTS = and-httpd
+cronddir = $(sysconfdir)/cron.daily
+crond_SCRIPTS = and-httpd_gzip
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt
 confddir = $(sysconfdir)/and-httpd/conf.d
@@ -254,6 +261,29 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 and-httpd: $(top_builddir)/config.status $(srcdir)/and-httpd.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+scons_and_httpd_helpers.py: $(top_builddir)/config.status $(srcdir)/scons_and_httpd_helpers.py.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+and-httpd_gzip: $(top_builddir)/config.status $(srcdir)/and-httpd_gzip.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+install-crondSCRIPTS: $(crond_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(cronddir)" || $(mkdir_p) "$(DESTDIR)$(cronddir)"
+	@list='$(crond_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(crondSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(cronddir)/$$f'"; \
+	    $(crondSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(cronddir)/$$f"; \
+	  else :; fi; \
+	done
+
+uninstall-crondSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(crond_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f '$(DESTDIR)$(cronddir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(cronddir)/$$f"; \
+	done
 install-initdSCRIPTS: $(initd_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(initddir)" || $(mkdir_p) "$(DESTDIR)$(initddir)"
@@ -391,7 +421,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"; do \
+	for dir in "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -438,8 +468,8 @@ info: info-am
 info-am:
 
 install-data-am: install-confDATA install-confdDATA \
-	install-initdSCRIPTS install-toolsmainDATA \
-	install-toolsmainSCRIPTS
+	install-crondSCRIPTS install-initdSCRIPTS \
+	install-toolsmainDATA install-toolsmainSCRIPTS
 
 install-exec-am:
 
@@ -465,23 +495,24 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-confDATA uninstall-confdDATA uninstall-info-am \
+uninstall-am: uninstall-confDATA uninstall-confdDATA \
+	uninstall-crondSCRIPTS uninstall-info-am \
 	uninstall-initdSCRIPTS uninstall-toolsmainDATA \
 	uninstall-toolsmainSCRIPTS
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-confDATA install-confdDATA install-data \
-	install-data-am install-exec install-exec-am install-info \
-	install-info-am install-initdSCRIPTS install-man install-strip \
-	install-toolsmainDATA install-toolsmainSCRIPTS installcheck \
-	installcheck-am installdirs maintainer-clean \
+	install-confDATA install-confdDATA install-crondSCRIPTS \
+	install-data install-data-am install-exec install-exec-am \
+	install-info install-info-am install-initdSCRIPTS install-man \
+	install-strip install-toolsmainDATA install-toolsmainSCRIPTS \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-confDATA uninstall-confdDATA uninstall-info-am \
-	uninstall-initdSCRIPTS uninstall-toolsmainDATA \
-	uninstall-toolsmainSCRIPTS
+	uninstall-confDATA uninstall-confdDATA uninstall-crondSCRIPTS \
+	uninstall-info-am uninstall-initdSCRIPTS \
+	uninstall-toolsmainDATA uninstall-toolsmainSCRIPTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

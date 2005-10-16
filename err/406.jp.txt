@@ -1,0 +1,13 @@
+
+                              406 Not Acceptable
+
+   The  resource  identified by the request is only capable of generating
+   response  entities  which  have content characteristics not acceptable
+   according to the accept headers sent in the request.
+     _________________________________________________________________
+
+   Generated using the [1]And-httpd Web Server.
+
+References
+
+   1. http://www.and.org/and-httpd

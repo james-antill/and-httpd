@@ -1,0 +1,77 @@
+.de Sh \" Subsection
+.br
+.if t .Sp
+.ne 5
+.PP
+\fB\\$1\fR
+.PP
+..
+.de Sp \" Vertical space (when we can't use .PP)
+.if t .sp .5v
+.if n .sp
+..
+.de Ip \" List item
+.br
+.ie \\n(.$>=3 .ne \\$3
+.el .ne 3
+.IP "\\$1" \\$2
+..
+.TH "AND-HTTPD.CONF" 5 "" "" ""
+.SH NAME
+and\-httpd.conf \- The configuration file for the And-httpd server
+.SH "SYNOPSIS"
+
+.PP
+The \fIand\-httpd\&.conf\fR file is a configuration file for the And-httpd server\&. \fIand\-httpd\&.conf\fR contains runtime configuration information for the And-httpd program\&. The complete description of the file format and possible
+parameters are listed below\&.
+
+.SH "FILE FORMAT"
+
+.PP
+The file consists of namespace selections and configuration statements\&. A namespace selection changes which configuration statements are allowed following it, until the next close bracket\&.
+Configuration statements can contain either strings, numbers or booleans like so:
+
+.PP
+(\fIconfiguration-statement-name\fR \fIstring-value\fR) ; string
+.PP
+(\fIconfiguration-statement-name\fR \fI12_345_678\fR)   ; number
+.PP
+(\fIconfiguration-statement-name\fR \fItrue\fR)         ; boolean
+
+.SH "TOP LEVEL NAMESPACES"
+
+.PP
+\fIorg.and.httpd-conf-main-1.0\fR - This specifies the namespace for the top level of the HTTPD specific configuration, in the main configuration file\&.
+.PP
+\fIorg.and.daemon-conf-1.0\fR - This specifies the namespace for the top level of the generic configuration, in the main configuration file\&.
+.PP
+\fIorg.and.httpd-conf-req-1.0\fR - This specifies the namespace for the top level of the HTTPD specific configuration, in a request configuration file\&.
+
+.SH "EXAMPLES"
+
+.PP
+; Request configuration to redirect to a file without ) on it's end
+
+(\fBorg.and.httpd-conf-req-1.0\fR
+  (Location: [limit <path>-end ')'] '')
+   \fBreturn\fR <permenant-redirect>)
+
+; Request configuration to map X to X.html
+
+(\fBorg.and.httpd-conf-req-1.0\fR
+   Content-Type: text/html
+  (filename += .html))
+
+.SH "VERSION"
+
+.PP
+This man page is correct for version 1\&.0\&.x of the And-httpd server\&.
+
+.SH "SEE ALSO"
+
+.PP
+\fBand-httpd\fR(8)
+.SH "AUTHOR"
+
+.PP
+The And-httpd software and related utilities were created by James Antill\&.

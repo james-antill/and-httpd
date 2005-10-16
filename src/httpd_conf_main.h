@@ -11,7 +11,7 @@
 
 /* **** defaults for runtime conf **** */
 #ifndef HTTPD_CONF_VERSION
-#define HTTPD_CONF_VERSION __DATE__
+# error "Set the version (via. configure.in)"
 #endif
 
 /* note that the strings are assigned in httpd_main_conf.c */
@@ -57,6 +57,7 @@
 #define HTTPD_CONF_USE_CHK_ENCODED_SLASH TRUE
 #define HTTPD_CONF_USE_CHK_ENCODED_DOT TRUE
 #define HTTPD_CONF_USE_NON_SPC_HDRS TRUE
+#define HTTPD_CONF_USE_NOATIME FALSE /* can't easily enable due to "security" */
 #define HTTPD_CONF_ADD_DEF_PORT TRUE
 #define HTTPD_CONF_MAX_REQUESTS           0
 #define HTTPD_CONF_MAX_NEG_A_NODES        8
@@ -126,8 +127,10 @@ typedef struct Httpd_policy_opts
 
  unsigned int add_def_port : 1;
 
- unsigned int use_non_spc_hdrs : 1; /* 22nd bitfield */
- 
+ unsigned int use_non_spc_hdrs : 1;
+
+ unsigned int use_noatime : 1; /* 23rd bitfield */
+
  unsigned int max_header_sz;
 
  unsigned int max_requests;

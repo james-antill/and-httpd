@@ -40,6 +40,25 @@
 
 #include <grp.h>
 
+#ifdef PR_SET_KEEPCAPS
+# ifdef HAVE_SYS_CAPABILITY_H
+#  include <sys/capability.h>
+# endif
+# define PROC_CNTL_KEEPCAPS(x1) prctl(PR_SET_KEEPCAPS, x1, 0, 0, 0)
+#else
+# define PROC_CNTL_KEEPCAPS(x1) (errno = ENOSYS, -1)
+# define cap_t void *
+# define cap_from_text(x) (errno = ENOSYS, NULL)
+# define cap_set_proc(x) (errno = ENOSYS, -1)
+# define cap_free(x) (errno = ENOSYS, -1)
+#endif
+
+#ifdef PR_SET_DUMPABLE
+# define PROC_CNTL_DUMPABLE(x1) prctl(PR_SET_DUMPABLE, x1, 0, 0, 0)
+#else
+# define PROC_CNTL_DUMPABLE(x1) (errno = ENOSYS, -1)
+#endif
+
 #define EX_UTILS_NO_USE_INIT  1
 #define EX_UTILS_NO_USE_EXIT  1
 #define EX_UTILS_NO_USE_LIMIT 1
@@ -639,28 +658,60 @@ static void serv_cmd_line(int argc, char *argv[])
     serv_mime_types(program_name);
     
     if (chroot_dir)
+    { /* preload locale info. so syslog can log in localtime, this doesn't work
+       * with current glibc's as they re-stat ... maybe set the ENV somehow? */
+      time_t now = time(NULL);
+      (void)localtime(&now);
+      
       vlg_sc_bind_mount(chroot_dir);
-  
-    /* after daemon so syslog works */
+    }
+    
+    /* after daemon so don't use err() anymore ... */
+    
     if (chroot_dir && ((chroot(chroot_dir) == -1) || (chdir("/") == -1)))
       vlg_err(vlg, EXIT_FAILURE, "chroot(%s): %m\n", chroot_dir);
     
     if (opts->drop_privs)
     {
+      if (opts->keep_cap_fowner && (PROC_CNTL_KEEPCAPS(TRUE) == -1))
+      {
+        vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_KEEPCAPS", "TRUE");
+        opts->keep_cap_fowner = FALSE;
+      }
+      
       OPT_SC_RESOLVE_UID(opts);
       OPT_SC_RESOLVE_GID(opts);
       opt_serv_sc_drop_privs(opts);
+      
+      if (opts->keep_cap_fowner)
+      {
+        cap_t caps = cap_from_text("cap_fowner+ep-i");
+
+        if (!caps)
+          vlg_err(vlg, EXIT_FAILURE, "cap_from_text(%s): %m\n",
+                  "cap_fowner+pe-i");
+        
+        if (PROC_CNTL_KEEPCAPS(FALSE) == -1)
+          vlg_err(vlg, EXIT_FAILURE,
+                  "prctl(%s, %s): %m\n", "PR_SET_KEEPCAPS", "FALSE");
+        
+        if (cap_set_proc(caps) == -1)
+          vlg_err(vlg, EXIT_FAILURE, "cap_set_proc(%s): %m\n",
+                  "cap_fowner+ep-i");
+        if (cap_free(caps) == -1)
+          vlg_err(vlg, EXIT_FAILURE, "cap_free(): %m\n");
+      }
     }
 
     if (opts->num_procs > 1)
       cntl_sc_multiproc(vlg, opts->num_procs, !!cntl_file, opts->use_pdeathsig);
+    
+    if (opts->make_dumpable && (PROC_CNTL_DUMPABLE(TRUE) == -1))
+      vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_DUMPABLE", "TRUE");
   }
 
   httpd_opts->beg_time = time(NULL);
   
-  /*  if (make_dumpable && (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) == -1))
-   *    vlg_warn(vlg, "prctl(SET_DUMPABLE, TRUE): %m\n"); */
-
   {
     struct Evnt *evnt = evnt_queue("accept");
     

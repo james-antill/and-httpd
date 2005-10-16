@@ -1,0 +1,11 @@
+
+                                400 Bad Request
+
+   The request could not be understood.
+     _________________________________________________________________
+
+   Generated using the [1]And-httpd Web Server.
+
+References
+
+   1. http://www.and.org/and-httpd

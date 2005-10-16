@@ -131,7 +131,8 @@ static const Httpd_policy_opts *httpd__policy_build(struct Con *con,
 }
 
 static int httpd__policy_connection_d1(struct Con *con,
-                                       Conf_parse *conf, Conf_token *token)
+                                       Conf_parse *conf, Conf_token *token,
+                                       int *stop)
 {
   int clist = FALSE;
   
@@ -164,6 +165,11 @@ static int httpd__policy_connection_d1(struct Con *con,
     evnt_close(con->evnt);
     return (TRUE);
   }
+  else if (OPT_SERV_SYM_EQ("<stop>"))
+  {
+    *stop = TRUE;
+    return (TRUE);
+  }
   else if (OPT_SERV_SYM_EQ("policy"))
   {
     const Httpd_policy_opts *policy = NULL;
@@ -183,13 +189,15 @@ static int httpd__policy_connection_d1(struct Con *con,
 }
 
 static int httpd__policy_connection_d0(struct Con *con,
-                                       Conf_parse *conf, Conf_token *token)
+                                       Conf_parse *conf, Conf_token *token,
+                                       int *stop)
 {
   unsigned int depth = token->depth_num;
   int matches = TRUE;
 
-  CONF_SC_PARSE_SLIST_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
-  ++depth;
+  if (token->type != CONF_TOKEN_TYPE_SLIST)
+    return (FALSE);
+
   while (conf_token_list_num(token, depth))
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
@@ -206,44 +214,110 @@ static int httpd__policy_connection_d0(struct Con *con,
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
     
-    if (!httpd__policy_connection_d1(con, conf, token))
+    if (!httpd__policy_connection_d1(con, conf, token, stop))
       return (FALSE);
-    if (con->evnt->flag_q_closed) /* don't do anything else */
+    if (*stop || con->evnt->flag_q_closed) /* don't do anything else */
       return (TRUE);
   }
 
   return (TRUE);
 }
 
+static int httpd__match_iter_beg(Conf_parse *conf, Conf_token *token,
+                                 Vstr_ref    **ret_ref,
+                                 unsigned int *ret_num)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+static int httpd__match_iter_beg(Conf_parse *conf, Conf_token *token,
+                                 Vstr_ref    **ret_ref,
+                                 unsigned int *ret_num)
+{
+  *ret_ref = NULL;
+  *ret_num = 0;
+  
+  if (!token->num)
+    return (FALSE);
+
+  *ret_ref = conf_token_get_user_value(conf, token, ret_num);
+
+  return (TRUE);
+}
+
+static int httpd__match_iter_nxt(Conf_parse *conf, Conf_token *token,
+                                 Vstr_ref    **ret_ref,
+                                 unsigned int *ret_num)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+
+static int httpd__match_iter_nxt(Conf_parse *conf, Conf_token *token,
+                                 Vstr_ref    **ret_ref,
+                                 unsigned int *ret_num)
+{
+  Conf_token *update = NULL;
+
+  if (!*ret_num)
+    token->num = 0;
+  else
+  {
+    if (*ret_ref)
+    {
+      update = (*ret_ref)->ptr;
+      *token = *update;
+      if (update->num == *ret_num)
+        update = NULL;
+    }
+    if (update && ((token->num > *ret_num) || (token->num < update->num)))
+      *token = *update;
+    
+    if (!conf_parse_num_token(conf, token, *ret_num))
+      token = NULL;
+
+    if (update && token)
+      *update = *token;
+  }
+  
+  vstr_ref_del(*ret_ref); *ret_ref = NULL;
+
+  if (!token)
+    return (FALSE);
+  
+  return (httpd__match_iter_beg(conf, token, ret_ref, ret_num));
+}
+
 int httpd_policy_connection(struct Con *con,
                             Conf_parse *conf, const Conf_token *beg_token)
 {
   Conf_token token[1];
+  Vstr_ref *ref = NULL;
   unsigned int num = 0;
   
   if (!beg_token->num) /* not been parsed */
     return (TRUE);
   
   *token = *beg_token;
-
-  num = token->num;
-  while (num)
+  if (!httpd__match_iter_beg(conf, token, &ref, &num))
+    return (TRUE);
+  
+  do
   {
-    if (!conf_parse_num_token(conf, token, num))
-      goto conf_fail;
-    
+    int stop = FALSE;
+
+    conf_parse_num_token(conf, token, token->num);
     assert(token->type == (CONF_TOKEN_TYPE_USER_BEG+HTTPD_CONF_MAIN_MATCH_CON));
-
-    conf_token_get_user_value(conf, token, &num);
     
-    if (!httpd__policy_connection_d0(con, conf, token))
+    while (token->type != CONF_TOKEN_TYPE_SLIST)
+      conf_parse_token(conf, token);
+    
+    if (!httpd__policy_connection_d0(con, conf, token, &stop))
       goto conf_fail;
-  }
+    if (stop || con->evnt->flag_q_closed) /* don't do anything else */
+      break;
+  } while (httpd__match_iter_nxt(conf, token, &ref, &num));
 
+  vstr_ref_del(ref);
   vstr_del(conf->tmp, 1, conf->tmp->len);
   return (TRUE);
 
  conf_fail:
+  vstr_ref_del(ref);
   vstr_del(conf->tmp, 1, conf->tmp->len);
   conf_parse_backtrace(conf->tmp, "<policy-connection>", conf, token);
   return (FALSE);
@@ -536,7 +610,8 @@ static int httpd__policy_request_tst_d1(struct Con *con,
 }
 
 static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
-                                    Conf_parse *conf, Conf_token *token)
+                                    Conf_parse *conf, Conf_token *token,
+                                    int *stop)
 {
   int clist = FALSE;
   
@@ -573,6 +648,11 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
     evnt_close(con->evnt);
     return (TRUE);
   }
+  else if (OPT_SERV_SYM_EQ("<stop>"))
+  {
+    *stop = TRUE;
+    return (TRUE);
+  }
   else if (OPT_SERV_SYM_EQ("connection-policy"))
   {
     const Httpd_policy_opts *policy = NULL;
@@ -605,13 +685,15 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
 }
 
 static int httpd__policy_request_d0(struct Con *con, struct Httpd_req_data *req,
-                                    Conf_parse *conf, Conf_token *token)
+                                    Conf_parse *conf, Conf_token *token,
+                                    int *stop)
 {
   unsigned int depth = token->depth_num;
   int matches = TRUE;
 
-  CONF_SC_PARSE_SLIST_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
-  ++depth;
+  if (token->type != CONF_TOKEN_TYPE_SLIST)
+    return (FALSE);
+
   while (conf_token_list_num(token, depth))
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
@@ -628,9 +710,9 @@ static int httpd__policy_request_d0(struct Con *con, struct Httpd_req_data *req,
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
     
-    if (!httpd__policy_request_d1(con, req, conf, token))
+    if (!httpd__policy_request_d1(con, req, conf, token, stop))
       return (FALSE);
-    if (con->evnt->flag_q_closed) /* don't do anything else */
+    if (*stop || con->evnt->flag_q_closed) /* don't do anything else */
       return (TRUE);
   }
 
@@ -641,31 +723,38 @@ int httpd_policy_request(struct Con *con, struct Httpd_req_data *req,
                          Conf_parse *conf, const Conf_token *beg_token)
 {
   Conf_token token[1];
+  Vstr_ref *ref = NULL;
   unsigned int num = 0;
   
   if (!beg_token->num) /* not been parsed */
     return (TRUE);
   
   *token = *beg_token;
+  if (!httpd__match_iter_beg(conf, token, &ref, &num))
+    return (TRUE);  
 
-  num = token->num;
-  while (num)
+  do
   {
-    if (!conf_parse_num_token(conf, token, num))
-      goto conf_fail;
+    int stop = FALSE;
     
+    conf_parse_num_token(conf, token, token->num);
     assert(token->type == (CONF_TOKEN_TYPE_USER_BEG+HTTPD_CONF_MAIN_MATCH_REQ));
+    
+    while (token->type != CONF_TOKEN_TYPE_SLIST)
+      conf_parse_token(conf, token);
+    
+    if (!httpd__policy_request_d0(con, req, conf, token, &stop))
+      goto conf_fail;
+    if (stop || con->evnt->flag_q_closed) /* don't do anything else */
+      break;
+  } while (httpd__match_iter_nxt(conf, token, &ref, &num));
 
-    conf_token_get_user_value(conf, token, &num);
-
-    if (!httpd__policy_request_d0(con, req, conf, token))
-      goto conf_fail;    
-  }
-
+  vstr_ref_del(ref);
   vstr_del(conf->tmp, 1, conf->tmp->len);
   return (TRUE);
 
  conf_fail:
+  vstr_ref_del(ref);
   vstr_del(conf->tmp, 1, conf->tmp->len);
   if (!req->user_return_error_code)
   {
@@ -689,6 +778,12 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     unsigned int depth = token->depth_num;
 
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    if (OPT_SERV_SYM_EQ("off"))
+    {
+      vstr_del(opts->auth_realm, 1, opts->auth_realm->len);
+      vstr_del(opts->auth_token, 1, opts->auth_token->len);
+      return (TRUE);
+    }
     if (!OPT_SERV_SYM_EQ("basic-encoded")) return (FALSE);
     CONF_SC_MAKE_CLIST_MID(depth, clist);
 
@@ -781,6 +876,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     
     CONF_SC_MAKE_CLIST_END();
   }
+  else if (OPT_SERV_SYM_EQ("Server:") || OPT_SERV_SYM_EQ("server-name"))
+    OPT_SERV_X_VSTR(opts->server_name);
   
   CONF_SC_MAKE_CLIST_END();
   
@@ -824,7 +921,7 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
            OPT_SERV_SYM_EQ("req-err-dir"))
     return (opt_serv_sc_make_static_path(opts->s->beg, conf, token,
                                          opts->req_err_dir));
-  else if (OPT_SERV_SYM_EQ("server-name"))
+  else if (OPT_SERV_SYM_EQ("server-name")) /* compat. */
     OPT_SERV_X_VSTR(opts->server_name);
 
   else if (OPT_SERV_SYM_EQ("secure-directory-filename"))
@@ -844,6 +941,8 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
     OPT_SERV_X_TOGGLE(opts->use_public_only);
   else if (OPT_SERV_SYM_EQ("posix-fadvise"))
     OPT_SERV_X_TOGGLE(opts->use_posix_fadvise);
+  else if (OPT_SERV_SYM_EQ("update-atime"))
+    OPT_SERV_X_NEG_TOGGLE(opts->use_noatime);
   else if (OPT_SERV_SYM_EQ("tcp-cork"))
     OPT_SERV_X_TOGGLE(opts->use_tcp_cork);
   else if (OPT_SERV_SYM_EQ("allow-request-configuration"))
@@ -910,6 +1009,224 @@ static int httpd__conf_main_policy(Httpd_opts *opts,
   return (TRUE);
 }
 
+typedef struct Httpd__match_uval
+{
+ Conf_token opt_nxt; /* token first, so we can just use it as that */
+ void (*s_cb_func)(Vstr_ref *);
+ Vstr_base *name;
+} Httpd__match_uval;
+
+static int httpd__match_ref_del_eq(Vstr_base *s1, Vstr_ref *ref)
+{
+  int eq = FALSE;
+  
+  if (ref)
+  {
+    Httpd__match_uval *uval = ref->ptr;
+    if (uval->name)
+      eq = vstr_cmp_eq(uval->name, 1, uval->name->len, s1, 1, s1->len);
+  }
+
+  if (eq)
+    vstr_ref_del(ref);
+
+  return (eq);
+}
+
+static int httpd__match_find(Conf_parse *conf, Conf_token **token)
+{
+  Vstr_ref *ref = NULL;
+  unsigned int num = 0;
+  
+  if (!httpd__match_iter_beg(conf, *token, &ref, &num))
+    return (TRUE);
+  
+  do
+  {    
+    if (httpd__match_ref_del_eq(conf->tmp, ref))
+      return (TRUE);
+  } while (httpd__match_iter_nxt(conf, *token, &ref, &num));
+
+  return (FALSE);
+}
+
+static int httpd__match_find_before(Conf_parse *conf, Conf_token **token)
+{
+  Vstr_ref *ref = NULL;
+  unsigned int num = 0;
+  Conf_token prev[1];
+  
+  if (!httpd__match_iter_beg(conf, *token, &ref, &num))
+    return (TRUE);
+  
+  if (httpd__match_ref_del_eq(conf->tmp, ref))
+  {
+    *token = NULL;
+    return (TRUE);
+  }
+
+  *prev = **token;
+  while (httpd__match_iter_nxt(conf, *token, &ref, &num))
+  {
+    if (httpd__match_ref_del_eq(conf->tmp, ref))
+    {
+      **token = *prev;
+      return (TRUE);
+    }
+    
+    *prev = **token; 
+  }
+
+  return (FALSE);
+}
+
+static void httpd__match_ref_cb(Vstr_ref *ref)
+{
+  Httpd__match_uval *uval = ref->ptr;
+
+  vstr_free_base(uval->name);
+  
+  (*uval->s_cb_func)(ref);
+}
+
+static int httpd__match_make(Conf_parse *conf, Conf_token *token,
+                             unsigned int type,
+                             Conf_token *beg, Conf_token *end)
+{
+  unsigned int outer_depth = token->depth_num;
+  int ret = FALSE;
+  Vstr_ref *ref  = NULL;
+  Conf_token token_srch_tmp = CONF_TOKEN_INIT;
+  Conf_token save = CONF_TOKEN_INIT;
+  Conf_token *add_beg = end;
+  Httpd__match_uval *uval = NULL;
+  int auto_reclaim_ref = FALSE;
+  
+  ASSERT(beg && end && (!beg->num == !end->num));
+  
+  if (!conf_token_set_user_value(conf, token, type, NULL, 0))
+    return (FALSE);
+
+  if (!(ref = vstr_ref_make_malloc(sizeof(Httpd__match_uval))))
+    return (FALSE);
+  uval = ref->ptr;
+  
+  uval->name = NULL;
+  uval->s_cb_func = httpd__match_ref_cb;
+  uval->opt_nxt = save = *token;
+
+  ret = conf_token_set_user_value(conf, &save, type, ref, 0);
+  ASSERT(ret);
+
+  vstr_ref_del(ref); /* going to use uval/ref later, but that's OK */
+    
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+  if (token->type != CONF_TOKEN_TYPE_SLIST)
+  {
+    int clist_name = FALSE;
+    int clist_xtra = FALSE;
+    unsigned int inner_depth = 0;
+    const Vstr_sect_node *pv = NULL;
+    
+    CONF_SC_TOGGLE_CLIST_VAR(clist_name);
+
+    if (token->type == CONF_TOKEN_TYPE_CLIST)
+      goto skip_name;
+    
+    if (!(pv = conf_token_value(token)))
+      return (FALSE);
+    
+    if (!(uval->name = vstr_make_base(conf->tmp->conf)))
+      return (FALSE);
+
+    if (!vstr_add_vstr(uval->name, 0,
+                       conf->data, pv->pos, pv->len, VSTR_TYPE_ADD_BUF_REF))
+      return (FALSE);
+
+   skip_name:
+    inner_depth = token->depth_num;
+    CONF_SC_MAKE_CLIST_MID(inner_depth, clist_xtra);
+
+    else if (token->type == CONF_TOKEN_TYPE_SLIST)
+      goto skip_position;
+    else if (OPT_SERV_SYM_EQ("after")  && beg->num)
+    {
+      OPT_SERV_X_VSTR(conf->tmp);
+      token_srch_tmp = *beg;
+      add_beg = &token_srch_tmp;
+      if (!httpd__match_find(conf, &add_beg))
+        return (FALSE);
+    }
+    else if (OPT_SERV_SYM_EQ("before") && beg->num)
+    {
+      OPT_SERV_X_VSTR(conf->tmp);
+      token_srch_tmp = *beg;
+      add_beg = &token_srch_tmp;
+      if (!httpd__match_find_before(conf, &add_beg))
+        return (FALSE);
+    }
+    else if (OPT_SERV_SYM_EQ("end"))
+      add_beg = end;
+    else if (OPT_SERV_SYM_EQ("beg") || OPT_SERV_SYM_EQ("beginning"))
+      add_beg = NULL;
+    else if (OPT_SERV_SYM_EQ("<reclaim-memory>"))
+      OPT_SERV_X_TOGGLE(auto_reclaim_ref);
+      
+    CONF_SC_MAKE_CLIST_END();
+    
+    CONF_SC_PARSE_SLIST_DEPTH_TOKEN_RET(conf, token, outer_depth, FALSE);
+  }
+ skip_position:
+  if ((token->type != CONF_TOKEN_TYPE_SLIST) ||
+      (conf_token_at_depth(token) != outer_depth))
+    return (FALSE);
+
+  ASSERT(ref);
+
+  if (auto_reclaim_ref && !uval->name)
+    ref = NULL;
+  
+  if (!beg->num)
+  {
+    ret = conf_token_set_user_value(conf, &save, type, ref, 0);
+    ASSERT(ret);    
+    *beg = save;
+    *end = save;
+  }
+  else if (!add_beg) /* put before beg */
+  {
+    ret = conf_token_set_user_value(conf, &save, type, ref, beg->num);
+    ASSERT(ret);
+    *beg = save;
+  }
+  else
+  {
+    Vstr_ref *oref = NULL;
+    unsigned int nxt = 0;
+
+    ASSERT(add_beg && ((add_beg->type - CONF_TOKEN_TYPE_USER_BEG) == type));
+    ASSERT(add_beg->num != 0);
+
+    oref = conf_token_get_user_value(conf, add_beg, &nxt);
+    ASSERT(oref);
+
+    ret = conf_token_set_user_value(conf, &save, type, ref, nxt);
+    ASSERT(ret);
+    ret = conf_token_set_user_value(conf, add_beg, type, oref, save.num);
+    ASSERT(ret);
+
+    if (!nxt) /* put after end */
+    {
+      ASSERT(add_beg->num == end->num);
+      *end = save;
+    }
+    
+    vstr_ref_del(oref);
+  }
+  
+  return (TRUE);
+}
+
 static int httpd__conf_main_d1(Httpd_opts *httpd_opts,
                                Conf_parse *conf, Conf_token *token, int clist)
 {
@@ -931,33 +1248,23 @@ static int httpd__conf_main_d1(Httpd_opts *httpd_opts,
   
   else if (OPT_SERV_SYM_EQ("match-connection"))
   {
-    if (!conf_token_set_user_value(conf, token,
-                                   HTTPD_CONF_MAIN_MATCH_CON, NULL, 0))
+    if (!httpd__match_make(conf, token, HTTPD_CONF_MAIN_MATCH_CON,
+                           httpd_opts->match_connection,
+                           httpd_opts->tmp_match_connection))
       return (FALSE);
     
-    if (!httpd_opts->match_connection->num)
-      *httpd_opts->match_connection = *token;
-    else /* already have one, add this to end... */
-      conf_token_set_user_value(conf, httpd_opts->tmp_match_connection,
-                                HTTPD_CONF_MAIN_MATCH_CON, NULL, token->num);
-    *httpd_opts->tmp_match_connection = *token;
-    
-    conf_parse_end_token(conf, token, token->depth_num);
+    if (!conf_parse_end_token(conf, token, conf_token_at_depth(token)))
+      return (FALSE);
   }
   else if (OPT_SERV_SYM_EQ("match-request"))
   {
-    if (!conf_token_set_user_value(conf, token,
-                                   HTTPD_CONF_MAIN_MATCH_REQ, NULL, 0))
+    if (!httpd__match_make(conf, token, HTTPD_CONF_MAIN_MATCH_REQ,
+                           httpd_opts->match_request,
+                           httpd_opts->tmp_match_request))
       return (FALSE);
     
-    if (!httpd_opts->match_request->num)
-      *httpd_opts->match_request = *token;
-    else /* already have one, add this to end... */
-      conf_token_set_user_value(conf, httpd_opts->tmp_match_request,
-                                HTTPD_CONF_MAIN_MATCH_REQ, NULL, token->num);
-    *httpd_opts->tmp_match_request = *token;
-    
-    conf_parse_end_token(conf, token, token->depth_num);
+    if (!conf_parse_end_token(conf, token, conf_token_at_depth(token)))
+      return (FALSE);
   }
   
   else

@@ -1,3 +1,66 @@
+2005-10-15  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.3
+
+	* src/httpd.c (http_fin_err_req): Added more errors that can go through
+	FS.
+	(http__policy_req): Free current req when a match-request BLCOKs a
+	connection.
+
+	* tools/Makefile.am (crond_SCRIPTS): Added cron helpers.
+
+	* err/Makefile.am (err_DATA): Added error pages on FS.
+
+2005-10-14  James Antill  <james@and.org>
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Add return code names.
+
+2005-10-11  James Antill  <james@and.org>
+
+	* src/opt_policy.c (opt_policy_sc_conf_parse): Don't allow copy/inherit
+	from the current policy.
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Add 
+	content-language-extension and content-type-extension (renaming
+	negotiate-* to *-negotiate, with backwards compat.)
+
+	* src/httpd_conf_req.c (httpd__meta_build_path): Add none bracketed 
+	names.
+
+	* src/conf.h (conf_parse_num_token): Allow going to a previous token.
+
+	* src/conf.h (conf_parse_end_token): Fix bug when skipping a lower
+	depth than current.
+
+	* src/httpd_conf_main.c (httpd__match_make): Allow positions for
+	matches, and ability to add after/before them. Allow stopping of the
+	match. Minor opt.
+
+	* tools/Makefile.am (toolsmaindir): Move directory.
+	(toolsmain_SCRIPS): Remove extensions.
+	(toolsmain_DATA): Rename scons helper module.
+
+2005-10-09  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv__match_init_tst_d1): Allow hostname
+	comparison.
+	(opt_serv__conf_d1): Add dumpable.
+	(opt_serv_sc_append_cwd): Don't allocate forever.
+
+	* src/httpd_conf_main.c (httpd__conf_main_policy_http_d1): Add explicit
+	"off" authentication.
+	(httpd__conf_main_policy_http_d1): Move "Server:" configuration to this
+	depth.
+
+2005-10-07  James Antill  <james@and.org>
+
+	* src/cntl.c (cntl_pipe_acpt_fds): Add error checking to PDEATHSIG
+	setting.
+
+2005-09-29  James Antill  <james@and.org>
+
+	* src/ex_utils.h (O_NOATIME): Add O_NOATIME support, and configuration.
+
 2005-09-22  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.2
