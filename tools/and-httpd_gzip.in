@@ -1,4 +1,6 @@
 #! /bin/sh -e
 
-@prefix@/share/and-httpd-@VERSION@/gzip-r --type=all /var/www/generated_html
-@prefix@/share/and-httpd-@VERSION@/gzip-r --type=all --zero /var/www/html
+gz=@prefix@/share/and-httpd-@VERSION@-tools/gzip-r
+$gz --type=all /var/www/generated_html
+$gz --type=all /var/www/err
+$gz --type=all --zero /var/www/html

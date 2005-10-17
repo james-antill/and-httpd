@@ -44,7 +44,11 @@
   (match-connection (y after x)
                         [policy-eq conf-httpd-tst-9.1
                          tag-eq    beg] <close>)
-  (match-connection ('' beginning)
+  (match-connection ('' (beginning))
+                        [policy-eq <default>
+                         server-ipv4-cidr-eq 127.0.8.2]
+   (policy conf-httpd-tst-9.1) <stop>)
+  (match-connection ((before ''))
                         [policy-eq <default>
                          server-ipv4-cidr-eq 127.0.8.2]
     policy conf-httpd-tst-9.2))

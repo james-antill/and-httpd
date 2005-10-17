@@ -1,10 +1,27 @@
+2005-10-16  James Antill  <james@and.org>
+
+	* src/httpd.c (http_parse_quality): Fix bug in parsing quality values of
+	1.0 and 1.00
+	(http_fin_err_req): Fix assert() when outputting gzipped custom error
+	pages.
+
 2005-10-15  James Antill  <james@and.org>
 
-	* NEWS: Release 0.99.3
+	* src/httpd_conf_main.c (httpd__match_find): return failure if there is
+	no match list (couldn't happen).
+	(httpd__match_find_before): return failure if there is no match
+	list (couldn't happen).
+
+	* tools/and-httpd_gzip.in: Use correct path.
+
+	* Documentation/and-httpd_pad.xml: Add a PAD file.
+
+	* src/httpd.c (http__parse_hdrs): Fail if we've got content-type/lang
+	but no content-legnth = 0.
 
 	* src/httpd.c (http_fin_err_req): Added more errors that can go through
 	FS.
-	(http__policy_req): Free current req when a match-request BLCOKs a
+	(http__policy_req): Free current req when a match-request BLOCKs a
 	connection.
 
 	* tools/Makefile.am (crond_SCRIPTS): Added cron helpers.

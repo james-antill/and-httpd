@@ -1,6 +1,7 @@
 (org.and.httpd-conf-req-1.0
    content-lang-ext .en   ; If we don't accept anything, pretend it's english
    content-type-ext .bin  ; If we don't accept anything
+   Content-Type: application/octet-stream
   (content-lang-negotiate (en .en) (fr .fr) (de .de) (es .es) (it .it) (jp .jp))
   (content-type-negotiate (text/plain .txt) (text/html .html))
    filename [limit path-end .html] = <content-lang-ext> <content-type-ext>)

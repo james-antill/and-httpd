@@ -1039,7 +1039,7 @@ static int httpd__match_find(Conf_parse *conf, Conf_token **token)
   unsigned int num = 0;
   
   if (!httpd__match_iter_beg(conf, *token, &ref, &num))
-    return (TRUE);
+    return (FALSE);
   
   do
   {    
@@ -1057,7 +1057,7 @@ static int httpd__match_find_before(Conf_parse *conf, Conf_token **token)
   Conf_token prev[1];
   
   if (!httpd__match_iter_beg(conf, *token, &ref, &num))
-    return (TRUE);
+    return (FALSE);
   
   if (httpd__match_ref_del_eq(conf->tmp, ref))
   {

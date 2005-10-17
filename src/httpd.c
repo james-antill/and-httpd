@@ -891,8 +891,13 @@ static int http_parse_quality(Vstr_base *data,
     *val += vstr_parse_uint(data, pos, len, 10 | parse_flags, &num_len, NULL);
     if (!num_len || (num_len > 3) || (*val > 1000))
       return (FALSE);
-    if (num_len < 3) *val *= 10;
-    if (num_len < 2) *val *= 10;
+    if (!lead_zero)
+      ASSERT(*val == 1000);
+    else
+    {
+      if (num_len < 3) *val *= 10;
+      if (num_len < 2) *val *= 10;
+    }
     ASSERT(*val <= 1000);
     
     len -= num_len; pos += num_len;
@@ -1445,12 +1450,14 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       goto fail_custom_err;
     }
     con->fs_off = 0;
-    con->fs_num = 1;
+    con->fs_num = 0;
     con->fs->off = 0;
     con->fs->len = f_stat->st_size;
     
     if (!req->ver_0_9)
       httpd__try_fd_encoding(con, req, f_stat, fname);
+    
+    con->fs_num = 1; /* FIXME: gzipped error documents weren't tested for */
     
     con->use_mmap = FALSE;
     if (!req->head_op)
@@ -2355,6 +2362,8 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
   struct Http_hdrs *http_hdrs = req->http_hdrs;
   unsigned int num = 3; /* skip "method URI version" */
   int got_content_length = FALSE;
+  int got_content_lang = FALSE;
+  int got_content_type = FALSE;
   int got_transfer_encoding = FALSE;
   
   while (++num <= req->sects->num)
@@ -2402,6 +2411,10 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
       if (num_len != len)
         HTTPD_ERR_RET(req, 400, FALSE);
     }
+    else if (HDR__EQ("Content-Type"))
+      got_content_type = TRUE;
+    else if (HDR__EQ("Content-Language"))
+      got_content_lang = TRUE;
     
     /* in theory ,,identity;foo=bar;baz="zoom",, is ok ... who cares */
     else if (HDR__EQ("Transfer-Encoding"))
@@ -2430,6 +2443,11 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
         HTTPD_ERR_RET(req, 400, FALSE);
     }
   }
+
+  if (got_content_type && !got_content_length)
+    return (FALSE);
+  if (got_content_lang && !got_content_length)
+    return (FALSE);
 
   return (TRUE);
 }
