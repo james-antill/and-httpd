@@ -4,8 +4,9 @@
 #include <vstr.h>
 
 #define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DEFAULT 0
-#define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT  1
-#define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_NONMAIN 2
+#define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT  1 /* don't add conf root */
+#define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_NONMAIN 2 /* no secure/friendly chks
+                                                   * no backtrace */
 
 #define HTTPD_CONF_REQ_FLAGS_PARSE_FILE_UERR    3
 

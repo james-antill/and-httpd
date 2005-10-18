@@ -853,7 +853,7 @@ static void opt_serv__sig_raise_cont(int s_ig_num)
   sa.sa_handler = SIG_DFL;
   OPT_SERV__SIG_OR_ERR(s_ig_num);
 
-  vlg_sig_info(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
+  vlg_sig_warn(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
   raise(s_ig_num);
 }
 

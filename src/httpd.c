@@ -49,6 +49,8 @@
 #endif
 #define HTTP_CONF_MMAP_LIMIT_MAX (50 * 1024 * 1024)
 
+#define HTTPD_CONF_ZIP_LIMIT_MIN 8
+
 #define CLEN COMPILE_STRLEN
 
 /* is the cstr a prefix of the vstr */
@@ -767,7 +769,7 @@ static int http_con_close_cleanup(struct Con *con, Httpd_req_data *req)
 
 /* try to use gzip content-encoding on entity */
 static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
-                                     const struct stat64 *req_f_stat,
+                                     struct stat64 *req_f_stat,
                                      Vstr_base *fname,
                                      const char *zip_ext, size_t zip_len)
 {
@@ -775,6 +777,12 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
   int fd = -1;
   int ret = FALSE;
   int open_flags = O_NONBLOCK;
+
+  ASSERT(con->fs && !con->fs_num && !con->fs_off);
+  ASSERT(con->fs->len == (uintmax_t)req_f_stat->st_size);
+
+  if (req_f_stat->st_size < HTTPD_CONF_ZIP_LIMIT_MIN) /* minor opt. */
+    return (ret);
   
   if (req->policy->use_noatime)
     open_flags |= O_NOATIME;
@@ -800,14 +808,11 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
     { /* ignore the encoded version */ }
     else
     {
-      ASSERT(con->fs && !con->fs_num && !con->fs_off);
-      
       /* swap, close the old fd (later) and use the new */
       SWAP_TYPE(con->fs->fd, fd, int);
       
-      ASSERT(con->fs->len == (uintmax_t)req_f_stat->st_size);
       /* _only_ copy the new size over, mtime etc. is from the original file */
-      con->fs->len = req->f_stat->st_size = f_stat->st_size;
+      con->fs->len = req_f_stat->st_size = f_stat->st_size;
       req->encoded_mtime = f_stat->st_mtime;
       ret = TRUE;
     }
@@ -1028,7 +1033,7 @@ static int http_parse_accept_encoding(struct Httpd_req_data *req)
 }
 
 static void httpd__try_fd_encoding(struct Con *con, Httpd_req_data *req,
-                                   const struct stat64 *fs, Vstr_base *fname)
+                                   struct stat64 *fs, Vstr_base *fname)
 { /* Might normally add "!req->head_op && ..." but
    * http://www.w3.org/TR/chips/#gl6 says that's bad */
   if (http_parse_accept_encoding(req))
@@ -1435,20 +1440,12 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       goto fail_custom_err;
 
     if (fstat64(con->fs->fd, f_stat) == -1)
-    {
-      httpd_fin_fd_close(con);
       goto fail_custom_err;
-    }
     if (req->policy->use_public_only && !(f_stat->st_mode & S_IROTH))
-    {
-      httpd_fin_fd_close(con);
       goto fail_custom_err;
-    }
     if (!S_ISREG(f_stat->st_mode))
-    {
-      httpd_fin_fd_close(con);
       goto fail_custom_err;
-    }
+
     con->fs_off = 0;
     con->fs_num = 0;
     con->fs->off = 0;
@@ -1460,6 +1457,7 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     con->fs_num = 1; /* FIXME: gzipped error documents weren't tested for */
     
     con->use_mmap = FALSE;
+    
     if (!req->head_op)
       httpd_serv_call_mmap(con, req, con->fs);
 
@@ -1467,6 +1465,8 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     use_cust_err_msg = TRUE;
     
    fail_custom_err:
+    if (!use_cust_err_msg)
+      httpd_fin_fd_close(con);
     fname->conf->malloc_bad = FALSE;
     vstr_free_base(fname);
   }
@@ -1509,8 +1509,22 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     http_app_end_hdrs(out);
   }
 
-  if (!req->head_op)
+  if (use_cust_err_msg)
   {
+    if (con->use_mmap && !vstr_mov(con->evnt->io_w, con->evnt->io_w->len,
+                                   req->f_mmap, 1, req->f_mmap->len))
+      return (http_con_close_cleanup(con, req));
+    
+    vlg_dbg3(vlg, "ERROR CUSTOM-404 REPLY:\n$<vstr.all:%p>\n", out);
+    
+    if (out->conf->malloc_bad)
+      return (http_con_close_cleanup(con, req));
+    
+    return (http_fin_fd_req(con, req));
+  }
+  
+  if (!req->head_op)
+  { /* default internal error message */
     Vstr_base *loc = req->fname;
 
     switch (req->error_code)
@@ -1532,21 +1546,6 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
                              loc, (size_t)1, loc->len, VSTR_TYPE_ADD_ALL_BUF,
                              CONF_MSG__FMT_30x_END); break;
       default:
-        if (use_cust_err_msg)
-        {
-          if (con->use_mmap && !vstr_mov(con->evnt->io_w, con->evnt->io_w->len,
-                                         req->f_mmap, 1, req->f_mmap->len))
-            return (http_con_close_cleanup(con, req));
-
-          vlg_dbg3(vlg, "ERROR CUSTOM-404 REPLY:\n$<vstr.all:%p>\n", out);
-          
-          if (out->conf->malloc_bad)
-            return (http_con_close_cleanup(con, req));
-  
-          return (http_fin_fd_req(con, req));
-        }
-
-        /* default internal error message */
         assert(req->error_len < SIZE_MAX);
         vstr_add_ptr(out, out->len, req->error_msg, req->error_len);
     }

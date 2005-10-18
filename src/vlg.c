@@ -841,9 +841,11 @@ static volatile sig_atomic_t vlg__in_signal = FALSE;
                                                                         \
       if (vlg__in_signal) abort();                                      \
       else {                                                            \
-        Vstr_base *tmp = vlg->out_vstr;                                 \
+        Vstr_base *tmp = NULL;                                          \
                                                                         \
         vlg__in_signal = TRUE;                                          \
+                                                                        \
+        tmp               = vlg->out_vstr;                              \
         vlg->out_vstr     = vlg->sig_out_vstr;                          \
         vlg->sig_out_vstr = NULL;                                       \
         if (vlg->out_vstr->len) abort()
@@ -852,6 +854,7 @@ static volatile sig_atomic_t vlg__in_signal = FALSE;
         if (vlg->out_vstr->len) abort();                                \
         vlg->sig_out_vstr = vlg->out_vstr;                              \
         vlg->out_vstr     = tmp;                                        \
+                                                                        \
         vlg__in_signal = FALSE;                                         \
       }                                                                 \
                                                                         \

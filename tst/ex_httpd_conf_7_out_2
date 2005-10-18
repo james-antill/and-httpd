@@ -1,0 +1,207 @@
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+ERROR 406 en/txt
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Length: 185
+Content-Language: en
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo ERROR 406 en/html</title>
+  </head>
+  <body>
+    <h1>Foo ERROR 406 en/html</h1>
+  </body>
+</html>
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+Content-Language: fr
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: fr
+
+ERROR 406 fr/txt
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+
+ERROR 406 en/txt
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Encoding: gzip
+Content-Length: 144
+Content-Language: fr
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Encoding: gzip
+Content-Length: 144
+Content-Language: en
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+ERROR 406 en/txt
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Encoding: gzip
+Content-Length: 144
+Content-Language: fr
+
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Language
+Content-Type: text/html
+Content-Length: 486
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>406 Not Acceptable</title>
+  </head>
+  <body>
+    <h1>406 Not Acceptable</h1>
+    <p>The resource identified by the request is only capable of generating response entities which have content characteristics not acceptable according to the accept headers sent in the request.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: and-httpd/0.99.3
+Last-Modified:
+Connection: close
+Accept-Ranges: bytes
+Vary: Accept,Accept-Language
+Content-Type: text/html
+Content-Length: 486
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>406 Not Acceptable</title>
+  </head>
+  <body>
+    <h1>406 Not Acceptable</h1>
+    <p>The resource identified by the request is only capable of generating response entities which have content characteristics not acceptable according to the accept headers sent in the request.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

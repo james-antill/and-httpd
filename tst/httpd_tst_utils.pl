@@ -465,6 +465,31 @@ sub setup
     make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
     make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
 
+# Copied from err/406
+my $err_conf_406 = <<EOL;
+   content-lang-ext .en   ; If we don't accept anything, pretend it's english
+   content-type-ext .bin  ; If we don't accept anything
+   Content-Type: application/octet-stream
+  (content-lang-negotiate (en .en) (fr .fr) (de .de) (es .es) (it .it) (jp .jp))
+  (content-type-negotiate (text/plain .txt) (text/html .html))
+   filename [limit path-end .html] = <content-lang-ext> <content-type-ext>
+EOL
+
+    make_html(0, "ERROR 406 en/html",
+	      "$err_conf_7_root/foo.example.com/406.en.html");
+    make_html(0, "ERROR 406 fr/html",
+	      "$err_conf_7_root/foo.example.com/406.fr.html");
+    make_line(0, "ERROR 406 en/txt",
+	      "$err_conf_7_root/foo.example.com/406.en.txt");
+    make_line(0, "ERROR 406 fr/txt",
+	      "$err_conf_7_root/foo.example.com/406.fr.txt");
+    make_data(1, "", "$err_conf_7_root/foo.example.com/406.en.bin");
+    make_data(1, "", "$err_conf_7_root/foo.example.com/406.fr.bin");
+
+    make_conf($err_conf_406, "$err_conf_7_root/foo.example.com/406");
+
+    system("$ENV{_TOOLSDIR}/gzip-r --force --type=all $err_conf_7_root");
+
     system("mkfifo $root/default/fifo");
 
     my ($a, $b, $c, $d,

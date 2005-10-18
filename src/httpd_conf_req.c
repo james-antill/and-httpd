@@ -62,17 +62,20 @@
 
 
 static void httpd__conf_req_reset_expires(struct Httpd_req_data *req,
-                                          time_t now)
+                                          unsigned int off)
 {
   Vstr_base *s1 = req->xtra_content;
   size_t pos = req->expires_pos;
   size_t len = req->expires_len;
   Opt_serv_opts *opts = req->policy->s->beg;
-  Httpd_opts *hopts = (Httpd_opts *)opts;
+  Date_store *date = ((Httpd_opts *)opts)->date;
   
   ASSERT(vstr_sc_poslast(pos, len) == s1->len);
+
+  if (off > (60 * 60 * 24 * 365))
+    off = (60 * 60 * 24 * 365);
   
-  if (vstr_sub_cstr_buf(s1, pos, len, date_rfc1123(hopts->date, now)))
+  if (vstr_sub_cstr_buf(s1, pos, len, date_rfc1123(date, req->now + off)))
     req->expires_len = vstr_sc_posdiff(pos, s1->len);
 }
 
@@ -85,6 +88,9 @@ static void httpd__conf_req_reset_cache_control(struct Httpd_req_data *req,
   
   ASSERT(pos && len);
   ASSERT(vstr_sc_poslast(pos, len) == s1->len);
+  
+  if (val > (60 * 60 * 24 * 365))
+    val = (60 * 60 * 24 * 365);
   
   if (vstr_add_fmt(s1, pos - 1, "max-age=%u", val))
   {
@@ -425,6 +431,12 @@ static int httpd__content_location_valid(Httpd_req_data *req,
     do { } while (FALSE)
 
 
+#define HTTPD__EXPIRES_CMP(x, y)                                        \
+    (((num == 1) &&                                                     \
+      vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y ">")) ||     \
+     ((num > 1) &&                                                      \
+      vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y "s>")))
+
 static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                               time_t file_timestamp,
                               Conf_parse *conf, Conf_token *token, int clist)
@@ -544,25 +556,40 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   }
   else if (OPT_SERV_SYM_EQ("Cache-Control:"))
   { 
+    unsigned int num = 1;
+    unsigned int tmp = 0;
+    unsigned int num_flags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
+    size_t num_len = 0;
+    
     HTTPD_CONF_REQ__X_CONTENT_VSTR(cache_control);
-    if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                         "<expires-now>"))
+
+    tmp = vstr_parse_uint(HTTP__CONTENT_PARAMS(req, cache_control),
+                          num_flags, &num_len, NULL);
+    if (req->cache_control_len != num_len) /* reset, as though we didn't try */
+      num_len = 0;
+    else
+    {
+      num = tmp;
+      HTTPD_CONF_REQ__X_CONTENT_VSTR(cache_control);
+    }
+    
+    if (!num_len && vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+                                     "<expires-now>"))
       httpd__conf_req_reset_cache_control(req, 0);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                              "<expire-minute>"))
-      httpd__conf_req_reset_cache_control(req, (60 *  1));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                              "<expire-hour>"))
-      httpd__conf_req_reset_cache_control(req, (60 * 60));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                              "<expire-day>"))
-      httpd__conf_req_reset_cache_control(req, (60 * 60 * 24));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                              "<expire-week>"))
-      httpd__conf_req_reset_cache_control(req, (60 * 60 * 24 * 7));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+    else if (HTTPD__EXPIRES_CMP(cache_control, "expire-minute"))
+      httpd__conf_req_reset_cache_control(req, (num * 60 *  1));
+    else if (HTTPD__EXPIRES_CMP(cache_control, "expire-hour"))
+      httpd__conf_req_reset_cache_control(req, (num * 60 * 60));
+    else if (HTTPD__EXPIRES_CMP(cache_control, "expire-day"))
+      httpd__conf_req_reset_cache_control(req, (num * 60 * 60 * 24));
+    else if (HTTPD__EXPIRES_CMP(cache_control, "expire-week"))
+      httpd__conf_req_reset_cache_control(req, (num * 60 * 60 * 24 * 7));
+    else if (!num_len &&
+             vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
                               "<expires-never>"))
       httpd__conf_req_reset_cache_control(req, (60 * 60 * 24 * 365));
+    else if (num_len)
+      return (FALSE);
     HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(cache_control);
   }
   else if (OPT_SERV_SYM_EQ("Content-Disposition:"))
@@ -664,24 +691,44 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(bzip2_etag);
   }
   else if (OPT_SERV_SYM_EQ("Expires:"))
-  {
+  { /* note that rfc2616 says only go upto a year into the future */
+    unsigned int num = 1;
+    unsigned int tmp = 0;
+    unsigned int num_flags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
+    size_t num_len = 0;
+    
     HTTPD_CONF_REQ__X_CONTENT_VSTR(expires);
+
+    tmp = vstr_parse_uint(HTTP__CONTENT_PARAMS(req, expires),
+                          num_flags, &num_len, NULL);
+    if (req->expires_len != num_len) /* reset, as though we didn't try */
+      num_len = 0;
+    else
+    {
+      num = tmp;
+      HTTPD_CONF_REQ__X_CONTENT_VSTR(expires);
+    }
+    
     HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(expires);
 
-    /* note that rfc2616 says only go upto a year into the future */
+    /* if we dynamically generate use current timestamp, else filetimestamp */
     req->expires_time = req->now;
-    if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<now>"))
-      httpd__conf_req_reset_expires(req, req->now);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<minute>"))
-      httpd__conf_req_reset_expires(req, req->now + (60 *  1));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<hour>"))
-      httpd__conf_req_reset_expires(req, req->now + (60 * 60));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<day>"))
-      httpd__conf_req_reset_expires(req, req->now + (60 * 60 * 24));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<week>"))
-      httpd__conf_req_reset_expires(req, req->now + (60 * 60 * 24 * 7));
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<never>"))
-      httpd__conf_req_reset_expires(req, req->now + (60 * 60 * 24 * 365));
+    if (!num_len &&
+        vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<now>"))
+      httpd__conf_req_reset_expires(req, 0);
+    else if (HTTPD__EXPIRES_CMP(expires, "minute"))
+      httpd__conf_req_reset_expires(req, (num * 60 *  1));
+    else if (HTTPD__EXPIRES_CMP(expires, "hour"))
+      httpd__conf_req_reset_expires(req, (num * 60 * 60));
+    else if (HTTPD__EXPIRES_CMP(expires, "day"))
+      httpd__conf_req_reset_expires(req, (num * 60 * 60 * 24));
+    else if (HTTPD__EXPIRES_CMP(expires, "week"))
+      httpd__conf_req_reset_expires(req, (num * 60 * 60 * 24 * 7));
+    else if (!num_len &&
+             vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<never>"))
+      httpd__conf_req_reset_expires(req, (60 * 60 * 24 * 365));
+    else if (num_len) /* must be one of the above symbols */
+      return (FALSE);
     else
       req->expires_time = file_timestamp;
   }
@@ -714,6 +761,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                            lim, full, ref, FALSE, NULL))
       return (FALSE);
     if (!req->skip_document_root &&
+        !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT) &&
         (!req->fname->len || !vstr_cmp_cstr_eq(req->fname, 1, 1, "/")))
       vstr_add_cstr_ptr(req->fname, 0, "/");
     req->direct_filename = TRUE;
@@ -802,6 +850,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   
   return (TRUE);
 }
+#undef HTTPD__EXPIRES_CMP
 #undef HTTPD__NEG_BEG
 #undef HTTPD__NEG_END
 

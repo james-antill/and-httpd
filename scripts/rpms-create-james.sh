@@ -64,7 +64,7 @@ bzip2 -9f and-httpd-$v.tar
 tar -cf and-httpd-$v.tar and-httpd-$v
 gzip -9f and-httpd-$v.tar
 
-sudo rpmbuild -ta --define "chk $chk" --define "rel $rel" and-httpd-$v.tar.gz
+sudo rpmbuild -ta --define "chk $chk" and-httpd-$v.tar.gz
 
 echo "/usr/src/redhat/RPMS/*/and-httpd*-$v-$rel*"
 echo "/usr/src/redhat/SRPMS/and-httpd*-$v-$rel*"
