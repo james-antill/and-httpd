@@ -465,6 +465,14 @@ sub setup
     make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
     make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
 
+# Can't be tested because it's based on "now" ... *sigh*.
+    make_conf("Expires: <day>",
+	      "$conf_root/foo.example.com/conf4/exp1");
+    make_conf("Expires: 2 <days>",
+	      "$conf_root/foo.example.com/conf4/exp2");
+    make_conf("Expires: 4_0 <years>",
+	      "$conf_root/foo.example.com/conf4/exp2");
+
 # Copied from err/406
 my $err_conf_406 = <<EOL;
    content-lang-ext .en   ; If we don't accept anything, pretend it's english

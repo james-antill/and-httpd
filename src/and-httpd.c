@@ -617,19 +617,7 @@ static void serv_cmd_line(int argc, char *argv[])
 
   if (!popts->document_root->len)
     usage(program_name, EXIT_FAILURE, " Not specified a document root.\n");
-  
-  if (httpd_opts->s->become_daemon)
-  {
-    if (daemon(FALSE, FALSE) == -1)
-      err(EXIT_FAILURE, "daemon");
-    vlg_daemon(vlg, program_name);
-  }
 
-  if (httpd_opts->s->rlim_core_call)
-    opt_serv_sc_rlim_core_num(httpd_opts->s->rlim_core_num);
-  if (httpd_opts->s->rlim_file_call)
-    opt_serv_sc_rlim_file_num(httpd_opts->s->rlim_file_num);
-  
   {
     const char *pid_file = NULL;
     const char *cntl_file = NULL;
@@ -639,10 +627,37 @@ static void serv_cmd_line(int argc, char *argv[])
     OPT_SC_EXPORT_CSTR(cntl_file,  opts->cntl_file,  FALSE, "control file");
     OPT_SC_EXPORT_CSTR(chroot_dir, opts->chroot_dir, FALSE, "chroot directory");
     
+    if (opts->drop_privs)
+    {
+      OPT_SERV_SC_RESOLVE_UID(opts);
+      OPT_SERV_SC_RESOLVE_GID(opts);
+    }
+  
+    if (!httpd_init_default_hostname(opts->def_policy))
+      errno = ENOMEM, err(EXIT_FAILURE, "default_hostname");
+  
     serv_make_bind(program_name);
 
-    if (!httpd_init_default_hostname(httpd_opts->s->def_policy))
-      errno = ENOMEM, err(EXIT_FAILURE, "default_hostname");
+    serv_mime_types(program_name);
+    
+    serv_canon_policies();
+  
+    OPT_SC_EXPORT_CSTR(document_root, popts->document_root, TRUE,
+                       "document root");
+    
+    if (opts->become_daemon)
+    {
+      if (daemon(FALSE, FALSE) == -1)
+        err(EXIT_FAILURE, "daemon");
+      vlg_daemon(vlg, program_name);
+    }
+    
+    /* NOTE: after daemon so don't use err() anymore ... */
+    
+    if (httpd_opts->s->rlim_core_call)
+      opt_serv_sc_rlim_core_num(httpd_opts->s->rlim_core_num);
+    if (httpd_opts->s->rlim_file_call)
+      opt_serv_sc_rlim_file_num(httpd_opts->s->rlim_file_num);
   
     if (pid_file)
       vlg_pid_file(vlg, pid_file);
@@ -650,13 +665,6 @@ static void serv_cmd_line(int argc, char *argv[])
     if (cntl_file)
       cntl_make_file(vlg, cntl_file);
 
-    serv_canon_policies();
-  
-    OPT_SC_EXPORT_CSTR(document_root, popts->document_root, TRUE,
-                       "document root");
-    
-    serv_mime_types(program_name);
-    
     if (chroot_dir)
     { /* preload locale info. so syslog can log in localtime, this doesn't work
        * with current glibc's as they re-stat ... maybe set the ENV somehow? */
@@ -665,8 +673,6 @@ static void serv_cmd_line(int argc, char *argv[])
       
       vlg_sc_bind_mount(chroot_dir);
     }
-    
-    /* after daemon so don't use err() anymore ... */
     
     if (chroot_dir && ((chroot(chroot_dir) == -1) || (chdir("/") == -1)))
       vlg_err(vlg, EXIT_FAILURE, "chroot(%s): %m\n", chroot_dir);
@@ -679,8 +685,6 @@ static void serv_cmd_line(int argc, char *argv[])
         opts->keep_cap_fowner = FALSE;
       }
       
-      OPT_SC_RESOLVE_UID(opts);
-      OPT_SC_RESOLVE_GID(opts);
       opt_serv_sc_drop_privs(opts);
       
       if (opts->keep_cap_fowner)

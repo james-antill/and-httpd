@@ -16,33 +16,6 @@
         errno = ENOMEM, err(EXIT_FAILURE, "options");                   \
     } while (FALSE)
 
-#ifndef CONF_FULL_STATIC
-# include <pwd.h>
-# include <grp.h>
-# include <sys/types.h>
-# define OPT_SC_RESOLVE_UID(opts) do {                                  \
-      const char *name  = NULL;                                         \
-      struct passwd *pw = NULL;                                         \
-                                                                        \
-      OPT_SC_EXPORT_CSTR(name, opts->vpriv_uid, FALSE, "privilage uid"); \
-                                                                        \
-      if (name && (pw = getpwnam(name)))                                \
-        (opts)->priv_uid = pw->pw_uid;                                  \
-    } while (FALSE)
-# define OPT_SC_RESOLVE_GID(opts) do {                                  \
-      const char *name = NULL;                                          \
-      struct group *gr = NULL;                                          \
-                                                                        \
-      OPT_SC_EXPORT_CSTR(name, opts->vpriv_gid, FALSE, "privilage gid"); \
-                                                                        \
-      if (name && (gr = getgrnam(name)))                                \
-        (opts)->priv_uid = gr->gr_gid;                                  \
-    } while (FALSE)
-#else
-# define OPT_SC_RESOLVE_UID(opts)
-# define OPT_SC_RESOLVE_GID(opts)
-#endif
-
 #define OPT_TOGGLE_ARG(val) (val = opt_toggle(val, optarg))
 #define OPT_NUM_ARG(val, desc, min, max, range_desc) do {               \
       Vstr_base *opt__parse_num = vstr_dup_cstr_ptr(NULL, optarg);      \
@@ -87,5 +60,6 @@ extern int opt_toggle(int, const char *);
 extern const char *opt_program_name(const char *, const char *);
 
 extern const char *opt_def_toggle(int);
+
 
 #endif

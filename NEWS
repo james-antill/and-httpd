@@ -1,4 +1,9 @@
-0.99.3 - 2005-10-15
+0.99.4 - 2005-10-18
+ Bug fixes, added homedir support for main config file paths. Resolve usernames
+before chroot. Fix some bugs, mostly on custom error pages. Add PAD file. More
+checking on requests. Added gzip cronjob.
+
+0.99.3 - Not released
  Add named matches, and ability to add matches at positions other than the end.
 Minor changes to default config file for that. Add O_NOATIME support.
 

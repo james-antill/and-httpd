@@ -2444,9 +2444,9 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
   }
 
   if (got_content_type && !got_content_length)
-    return (FALSE);
+    HTTPD_ERR_RET(req, 400, FALSE);
   if (got_content_lang && !got_content_length)
-    return (FALSE);
+    HTTPD_ERR_RET(req, 400, FALSE);
 
   return (TRUE);
 }

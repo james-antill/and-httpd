@@ -56,6 +56,7 @@ http://www.sans.org/top20/#u2
         tst
           expires header.
 
+        remove strftime() from signal handler ... unsafe/slow
 	man pages
         conf
          Allow req_conf to have matches (maybe (match-allow [] ...) ?)

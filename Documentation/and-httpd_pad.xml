@@ -33,9 +33,9 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>and-httpd</Program_Name>
-    <Program_Version>0.99.3</Program_Version>
+    <Program_Version>0.99.4</Program_Version>
     <Program_Release_Month>10</Program_Release_Month>
-    <Program_Release_Day>15</Program_Release_Day>
+    <Program_Release_Day>18</Program_Release_Day>
     <Program_Release_Year>2005</Program_Release_Year>
     <Program_Cost_Dollars>0</Program_Cost_Dollars>
     <Program_Cost_Other_Code>USD</Program_Cost_Other_Code>
@@ -54,12 +54,12 @@
     <Includes_DirectX>N</Includes_DirectX>
     <File_Info>
       <Filename_Generic>and-httpd</Filename_Generic>
-      <Filename_Versioned>and-httpd-0.99.3</Filename_Versioned>
+      <Filename_Versioned>and-httpd-0.99.4</Filename_Versioned>
       <Filename_Previous>and-httpd-0.99.2</Filename_Previous>
-      <Filename_Long>and-httpd-0.99.3.tar.gz</Filename_Long>
-      <File_Size_Bytes>603696</File_Size_Bytes>
-      <File_Size_K>589.54</File_Size_K>
-      <File_Size_MB>0.57</File_Size_MB>
+      <Filename_Long>and-httpd-0.99.4.tar.gz</Filename_Long>
+      <File_Size_Bytes>610045</File_Size_Bytes>
+      <File_Size_K>595.74</File_Size_K>
+      <File_Size_MB>0.58</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -95,9 +95,9 @@ that can do them outside of the daemon.
       <Application_XML_File_URL>http://www.and.org/and-httpd/and-httpd_pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.3/and-httpd-0.99.3.tar.gz</Primary_Download_URL>
-      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.3/and-httpd-0.99.3.tar.gz</Secondary_Download_URL>
-      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.3/</Additional_Download_URL_1>
+      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.4/and-httpd-0.99.4.tar.gz</Primary_Download_URL>
+      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.4/and-httpd-0.99.4.tar.gz</Secondary_Download_URL>
+      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.4/</Additional_Download_URL_1>
     </Download_URLs>
   </Web_Info>
   <Permissions>

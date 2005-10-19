@@ -13,6 +13,12 @@
 #include <grp.h>
 #include <signal.h>
 
+#ifndef CONF_FULL_STATIC
+# include <pwd.h>
+# include <grp.h>
+# include <sys/types.h>
+#endif
+
 /* need better way to test for this */
 #ifndef __GLIBC__
 # define strsignal(x) ""
@@ -988,6 +994,52 @@ int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
   return (ret);
 }
 
+static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
+                                  Conf_parse *conf, Conf_token *token)
+{
+  const Vstr_sect_node *pv = NULL;
+  const char *env_name = NULL;
+  const char *env_data = NULL;
+  
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+  if (!(pv = conf_token_value(token)))
+    return (FALSE);
+  
+  if (!(env_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
+    return (FALSE);
+  
+  env_data = getenv(env_name);
+  if (!env_data) env_data = "";
+  
+  return (vstr_add_cstr_buf(s1, pos, env_data));
+}
+
+#ifndef CONF_FULL_STATIC
+static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
+                                      Conf_parse *conf, Conf_token *token)
+{
+  const Vstr_sect_node *pv = NULL;
+  const char *usr_name = NULL;
+  const char *usr_data = "";
+  struct passwd *pw = NULL;
+  
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+  if (!(pv = conf_token_value(token)))
+    return (FALSE);
+  if (!(usr_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
+    return (FALSE);
+  
+  if ((pw = getpwnam(usr_name)))
+    usr_data = pw->pw_dir;
+  
+  return (vstr_add_cstr_buf(s1, pos, usr_data));
+}
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) \
+    opt_serv_sc_append_homedir(w, x, y, z)
+#else
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
+#endif
+
 /* into conf->tmp */
 static int opt_serv__build_static_path(struct Opt_serv_opts *
                                        COMPILE_ATTR_UNUSED(opts),
@@ -1006,19 +1058,13 @@ static int opt_serv__build_static_path(struct Opt_serv_opts *
     
     else if (OPT_SERV_SYM_EQ("ENV") || OPT_SERV_SYM_EQ("ENVIRONMENT"))
     {
-      const Vstr_sect_node *pv = NULL;
-      const char *env_name = NULL;
-      const char *env_data = NULL;
-      
-      CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-      pv = conf_token_value(token);
-      if (!(env_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
+      if (!opt_serv_sc_append_env(conf->tmp, conf->tmp->len, conf, token))
         return (FALSE);
-      
-      env_data = getenv(env_name);
-      if (!env_data) env_data = "";
-
-      vstr_add_cstr_buf(conf->tmp, conf->tmp->len, env_data);
+    }
+    else if (OPT_SERV_SYM_EQ("HOME"))
+    {
+      if (!OPT_SERV_SC_APPEND_HOMEDIR(conf->tmp, conf->tmp->len, conf, token))
+        return (FALSE);
     }
     else if (OPT_SERV_SYM_EQ("<hostname>"))
       opt_serv_sc_append_hostname(conf->tmp, conf->tmp->len);
@@ -1040,7 +1086,7 @@ static int opt_serv__build_static_path(struct Opt_serv_opts *
       return (FALSE);
   }
   
-  return (TRUE);
+  return (!conf->tmp->conf->malloc_bad);
 }
 
 int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
@@ -1082,3 +1128,31 @@ int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
 
   return (FALSE);
 }
+
+#ifndef CONF_FULL_STATIC
+void opt_serv_sc_resolve_uid(struct Opt_serv_opts *opts,
+                             const char *program_name,
+                             void (*usage)(const char *, int, const char *))
+{
+  const char *name  = NULL;
+  struct passwd *pw = NULL;
+  
+  OPT_SC_EXPORT_CSTR(name, opts->vpriv_uid, FALSE, "privilage uid");
+  
+  if (name && (pw = getpwnam(name)))
+    opts->priv_uid = pw->pw_uid;
+}
+
+void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
+                             const char *program_name,
+                             void (*usage)(const char *, int, const char *))
+{
+  const char *name = NULL;
+  struct group *gr = NULL;
+  
+  OPT_SC_EXPORT_CSTR(name, opts->vpriv_gid, FALSE, "privilage gid");
+  
+  if (name && (gr = getgrnam(name)))
+    opts->priv_gid = gr->gr_gid;
+}
+#endif

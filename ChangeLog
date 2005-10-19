@@ -1,3 +1,15 @@
+2005-10-18  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.4
+
+2005-10-18  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv_sc_append_homedir): Resolve 
+	username -> homedir for paths.
+
+	* src/and-httpd.c (serv_cmd_line): Resolve username -> uids before
+	calling chroot().
+
 2005-10-17  James Antill  <james@and.org>
 
 	* src/httpd.c (HTTPD_CONF_ZIP_LIMIT_MIN): Add minimum file length for
@@ -5,7 +17,7 @@
 
 	* src/httpd.c (http_fin_err_req): Fix fd bug on zero length error
 	files.
-	(http_fin_err_req): Fix bug on HEAD ops on customer files.
+	(http_fin_err_req): Fix bug on HEAD ops on custom err files.
 
 	* src/httpd_conf_req.c (httpd__conf_req_d1): Add ability to give
 	numbers to dynamic expires configurations.

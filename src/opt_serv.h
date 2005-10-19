@@ -132,35 +132,58 @@ typedef struct Opt_serv_opts
 extern void opt_serv_conf_free(Opt_serv_opts *);
 extern int  opt_serv_conf_init(Opt_serv_opts *);
 
-extern Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *);
+extern Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 
-extern int opt_serv_conf(Opt_serv_opts *, Conf_parse *, Conf_token *);
-extern int opt_serv_conf_parse_cstr(Vstr_base *, Opt_serv_opts *, const char *);
-extern int opt_serv_conf_parse_file(Vstr_base *, Opt_serv_opts *, const char *);
+extern int opt_serv_conf(Opt_serv_opts *, Conf_parse *, Conf_token *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_conf_parse_cstr(Vstr_base *, Opt_serv_opts *, const char *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_conf_parse_file(Vstr_base *, Opt_serv_opts *, const char *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 
-extern void opt_serv_logger(Vlg *);
+extern void opt_serv_logger(Vlg *)
+    COMPILE_ATTR_NONNULL_A();
 
 extern int opt_serv_sc_tst(Conf_parse *, Conf_token *, int *,
                            int (*tst_func)(Conf_parse *, Conf_token *,
-                                           int *, void *), void *);
-    
-extern int opt_serv_match_init(struct Opt_serv_opts *,
-                               Conf_parse *, Conf_token *, int *);
+                                           int *, void *), void *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 
-extern void opt_serv_sc_drop_privs(Opt_serv_opts *);
+extern int opt_serv_match_init(struct Opt_serv_opts *,
+                               Conf_parse *, Conf_token *, int *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+
+extern void opt_serv_sc_drop_privs(Opt_serv_opts *)
+    COMPILE_ATTR_NONNULL_A();
 extern void opt_serv_sc_rlim_file_num(unsigned int);
 extern void opt_serv_sc_rlim_core_num(unsigned int);
 extern int  opt_serv_sc_acpt_end(const Opt_serv_policy_opts *,
-                                 struct Evnt *, struct Evnt *);
-extern void opt_serv_sc_free_beg(struct Evnt *, struct Vstr_ref *);
+                                 struct Evnt *, struct Evnt *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern void opt_serv_sc_free_beg(struct Evnt *, struct Vstr_ref *)
+    COMPILE_ATTR_NONNULL_A();
 extern void opt_serv_sc_signals(void);
 extern void opt_serv_sc_check_children(void);
-extern void opt_serv_sc_cntl_resources(const Opt_serv_opts *);
-extern int opt_serv_sc_append_hostname(Vstr_base *, size_t);
-extern int opt_serv_sc_append_cwd(Vstr_base *, size_t);
+extern void opt_serv_sc_cntl_resources(const Opt_serv_opts *)
+    COMPILE_ATTR_NONNULL_A();
+extern int opt_serv_sc_append_hostname(Vstr_base *, size_t)
+    COMPILE_ATTR_NONNULL_A();
+extern int opt_serv_sc_append_cwd(Vstr_base *, size_t)
+    COMPILE_ATTR_NONNULL_A();
 extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
                                         Conf_parse *, Conf_token *,
-                                        Vstr_base *);
+                                        Vstr_base *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+
+#ifndef CONF_FULL_STATIC
+extern void opt_serv_sc_resolve_uid(struct Opt_serv_opts *, const char *,
+                                    void (*)(const char *, int, const char *))
+    COMPILE_ATTR_NONNULL_A();
+extern void opt_serv_sc_resolve_gid(struct Opt_serv_opts *, const char *,
+                                    void (*)(const char *, int, const char *))
+    COMPILE_ATTR_NONNULL_A();
+#endif
 
 
 #define OPT_SERV_DECL_GETOPTS()                         \
@@ -288,5 +311,17 @@ extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
           return (FALSE);                                               \
       }                                                                 \
     } while (FALSE)
+
+#ifndef CONF_FULL_STATIC
+# define OPT_SERV_SC_RESOLVE_UID(opts)                  \
+    opt_serv_sc_resolve_uid(opts, program_name, usage)
+# define OPT_SERV_SC_RESOLVE_GID(opts)                  \
+    opt_serv_sc_resolve_gid(opts, program_name, usage)
+#else
+# define OPT_SERV_SC_RESOLVE_UID(opts)
+# define OPT_SERV_SC_RESOLVE_GID(opts)
+#endif
+
+
 
 #endif
