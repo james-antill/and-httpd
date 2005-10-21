@@ -37,8 +37,6 @@
 # define TRUE 1
 #endif
 
-/* FIXME: fix this to use constant data which is always in the C locale */
-
 void date_free(Date_store *data)
 {
   F(data);
@@ -51,7 +49,10 @@ Date_store *date_make(void)
 
   if (!data)
     return (NULL);
-  
+
+  if (COMPILE_DEBUG)
+    data->tmt = DATE__TYPE_TM_UNKNOWN;
+
   data->saved_count = DATE__CACHE_NUM - 1;
 
   while (num < DATE__CACHE_NUM)
@@ -60,11 +61,15 @@ Date_store *date_make(void)
   return (data);
 }
 
-const struct tm *date_gmtime(Date_store *data, time_t val)
+static const struct tm *date__srch(Date_store *data, time_t val)
 {
   unsigned int num = 0;
 
   ASSERT(malloc_check_sz_mem(data, sizeof(Date_store)) || TRUE);
+
+  ASSERT((data->tmt == DATE__TYPE_TM_UNKNOWN) ||
+         (data->tmt == DATE__TYPE_TM_GMT) ||
+         (data->tmt == DATE__TYPE_TM_LOC));
   
   while (num < DATE__CACHE_NUM)
   {
@@ -74,16 +79,55 @@ const struct tm *date_gmtime(Date_store *data, time_t val)
     ++num;
   }
   
-  num = (data->saved_count + 1) % DATE__CACHE_NUM;
+  return (NULL);
+}
+
+#define DATE__GET(x) do {                              \
+      num = (data->saved_count + 1) % DATE__CACHE_NUM; \
+                                                       \
+      data->saved_val[num] = -1;                       \
+      if (! x (&val, data->saved_tm + num))            \
+        return (NULL);                                 \
+      data->saved_val[num] = val;                      \
+      data->saved_count    = num;                      \
+    } while (FALSE)
+    
+const struct tm *date_gmtime(Date_store *data, time_t val)
+{
+  unsigned int num = 0;
+  const struct tm *ret = NULL;
+
+  if (COMPILE_DEBUG && (data->tmt == DATE__TYPE_TM_UNKNOWN))
+    data->tmt = DATE__TYPE_TM_GMT;
   
-  data->saved_val[num] = -1;
-  if (!gmtime_r(&val, data->saved_tm + num))
-    return (NULL);
-  data->saved_val[num] = val;
-  data->saved_count    = num;
+  ASSERT(data->tmt == DATE__TYPE_TM_GMT);
+  
+  if ((ret = date__srch(data, val)))
+    return (ret);
+
+  DATE__GET(gmtime_r);
   
   return (data->saved_tm + num);
 }
+
+const struct tm *date_localtime(Date_store *data, time_t val)
+{
+  unsigned int num = 0;
+  const struct tm *ret = NULL;
+  
+  if (COMPILE_DEBUG && (data->tmt == DATE__TYPE_TM_UNKNOWN))
+    data->tmt = DATE__TYPE_TM_LOC;
+  
+  ASSERT(data->tmt == DATE__TYPE_TM_LOC);
+  
+  if ((ret = date__srch(data, val)))
+    return (ret);
+  
+  DATE__GET(localtime_r);
+  
+  return (data->saved_tm + num);
+}
+#undef DATE__GET
 
 
 static const char date__days_shrt[7][4] =
@@ -214,6 +258,28 @@ const char *date_asctime(Date_store *data, time_t val)
   
   return (data->ret_buf);
 }
+const char *date_syslog(Date_store *data, time_t val)
+{
+  const struct tm *tm = NULL;
+  char *ptr = NULL;
+  
+  if (!(tm = date_localtime(data, val)))
+    err(EXIT_FAILURE, "localtime_r(%s)", "%h %e %T");
+
+  CP_BEG();
+  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP_LEN(" ");
+  CP__2NUM(tm->tm_mday); /* %e */
+  CP_LEN(" ");
+  CP_02NUM(tm->tm_hour); /* %T */
+  CP_LEN(":");
+  CP_02NUM(tm->tm_min);
+  CP_LEN(":");
+  CP_02NUM(tm->tm_sec);
+  CP_END();
+  
+  return (data->ret_buf);
+}
 
 #if 0
 #define VPREFIX(vstr, p, l, cstr)                                       \
@@ -329,18 +395,3 @@ static time_t date__parse_http(Date_storage *date,
   return (-1);  
 }
 #endif
-
-/* syslog is "special" as it might be called from a signal handler etc. */
-const char *date_syslog(time_t val, char *buf, size_t len)
-{
-  struct tm store_tm_val[1];
-  struct tm *tm_val = NULL;
-  
-  if (!(tm_val = localtime_r(&val, store_tm_val)))
-    err(EXIT_FAILURE, "localtime_r(%s)", "syslog");
-
-  strftime(buf, len, "%h %e %T", tm_val);
-  
-  return (buf);
-}
-

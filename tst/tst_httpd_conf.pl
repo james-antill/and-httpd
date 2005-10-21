@@ -9,7 +9,11 @@ require 'httpd_tst_utils.pl';
 our $truncate_segv;
 our $root;
 
-my $conf_end_num = 7;
+my $conf_end_num = undef;
+
+{ my @conf_files = <$ENV{SRCDIR}/../tst/ex_conf_httpd_tst_*>;
+   $conf_end_num = @conf_files;
+}
 
 setup();
 

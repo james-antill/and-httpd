@@ -45,9 +45,9 @@ if [ -f /etc/and-httpd/and-httpd.conf ]; then
   AND_HTTPD_ARGS='-C /etc/and-httpd/and-httpd.conf'
 fi
 
-AND_HTTPD_ARGS="$AND_HTTPD_ARGS \
-$(LC_ALL=C find /etc/and-httpd/conf.d/ -name \*.conf | \
-LC_ALL=C sort | xargs -n 1 printf ' -C %s')"
+if [ -d /etc/and-httpd/conf.d ]; then
+  AND_HTTPD_ARGS="$AND_HTTPD_ARGS --config-dir /etc/and-httpd/conf.d"
+fi
 
 [ -r /etc/sysconfig/and-httpd ] && . /etc/sysconfig/and-httpd
 

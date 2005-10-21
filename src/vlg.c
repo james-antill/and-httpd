@@ -150,14 +150,11 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
 {
   Vstr_base *dlg = vlg->out_vstr;
   time_t now = (*vlg->tm_get)();
+  const char *tm_data = NULL;
   
   ASSERT(vstr_export_chr(dlg, dlg->len) == '\n');
 
-  if (now != vlg->tm_time)
-  {
-    vlg->tm_time = now;
-    date_syslog(vlg->tm_time, vlg->tm_data, sizeof(vlg->tm_data));
-  }
+  tm_data = date_syslog(vlg->dt, now);
   
   if (vlg->daemon_mode)
   {
@@ -177,7 +174,7 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
       size_t beg_len = 0;
 
       vstr_add_fmt(dlg, 0, "<%u>%s %s[%lu]: ", type | LOG_DAEMON,
-                   vlg->tm_data, vlg->prog_name, (unsigned long)pid);
+                   tm_data, vlg->prog_name, (unsigned long)pid);
       
       if (vlg->syslog_stream)
         vstr_sub_buf(dlg, dlg->len, 1, "", 1);
@@ -228,7 +225,7 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
           errno = ENOMEM, err(EXIT_FAILURE, "prefix");
       }
       
-      if (!vstr_add_cstr_ptr(dlg, 0, vlg->tm_data) ||
+      if (!vstr_add_cstr_ptr(dlg, 0, tm_data) ||
           !vstr_add_cstr_ptr(dlg, 0, "["))
         errno = ENOMEM, err(EXIT_FAILURE, "prefix");      
     }
@@ -596,12 +593,17 @@ Vlg *vlg_make(void)
     goto malloc_err_vstr_base;
   
   if (!(vlg->sig_out_vstr = vstr_make_base(vlg__sig_conf)))
-    goto malloc_err_vstr_base;
+    goto malloc_err_sig_vstr_base;
+  
+  if (!(vlg->dt = date_make()))
+    goto malloc_err_date_store;
+  
+  if (!(vlg->sig_dt = date_make()))
+    goto malloc_err_sig_date_store;
   
   vlg->prog_name          = NULL;
   vlg->syslog_fd          = -1;
   
-  vlg->tm_time            = -1;
   vlg->tm_get             = vlg__tm_get;
   
   vlg->syslog_stream      = FALSE;
@@ -612,6 +614,12 @@ Vlg *vlg_make(void)
   
   return (vlg);
 
+ malloc_err_sig_date_store:
+  date_free(vlg->dt);
+ malloc_err_date_store:
+  vstr_free_base(vlg->sig_out_vstr);
+ malloc_err_sig_vstr_base:
+  vstr_free_base(vlg->out_vstr);
  malloc_err_vstr_base:
   free(vlg);
  malloc_err_vlg:
@@ -624,6 +632,8 @@ void vlg_free(Vlg *vlg)
 {
   vstr_free_base(vlg->out_vstr);     vlg->out_vstr     = NULL;
   vstr_free_base(vlg->sig_out_vstr); vlg->sig_out_vstr = NULL;
+  date_free(vlg->dt);                vlg->dt = NULL;
+  date_free(vlg->sig_dt);            vlg->sig_dt = NULL;
 }
 
 void vlg_daemon(Vlg *vlg, const char *name)
@@ -841,19 +851,28 @@ static volatile sig_atomic_t vlg__in_signal = FALSE;
                                                                         \
       if (vlg__in_signal) abort();                                      \
       else {                                                            \
-        Vstr_base *tmp = NULL;                                          \
+        Vstr_base  *tmp_out = NULL;                                     \
+        Date_store *tmp_dt  = NULL;                                     \
                                                                         \
         vlg__in_signal = TRUE;                                          \
                                                                         \
-        tmp               = vlg->out_vstr;                              \
+        tmp_out           = vlg->out_vstr;                              \
         vlg->out_vstr     = vlg->sig_out_vstr;                          \
         vlg->sig_out_vstr = NULL;                                       \
+                                                                        \
+        tmp_dt            = vlg->dt;                                    \
+        vlg->dt           = vlg->sig_dt;                                \
+        vlg->sig_dt       = NULL;                                       \
+                                                                        \
         if (vlg->out_vstr->len) abort()
 
 #define VLG__SIG_BLOCK_END()                                            \
         if (vlg->out_vstr->len) abort();                                \
         vlg->sig_out_vstr = vlg->out_vstr;                              \
-        vlg->out_vstr     = tmp;                                        \
+        vlg->out_vstr     = tmp_out;                                    \
+                                                                        \
+        vlg->sig_dt       = vlg->dt;                                    \
+        vlg->dt           = tmp_dt;                                     \
                                                                         \
         vlg__in_signal = FALSE;                                         \
       }                                                                 \

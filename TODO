@@ -53,10 +53,10 @@
 
 http://www.sans.org/top20/#u2
 
-        tst
-          expires header.
-
-        remove strftime() from signal handler ... unsafe/slow
+        gzip-r bld in scons
+        getgroups before setgroups
+        change gethostbyname() to the new BS.
+          IPv6 (and flying cars)
 	man pages
         conf
          Allow req_conf to have matches (maybe (match-allow [] ...) ?)
@@ -96,7 +96,6 @@ http://www.sans.org/top20/#u2
 	IP_TOS && IP_RECVTOS
 	Child dies in --procs, when sent SIGCONT after SIGTSTP or SIGSTOP
          C-z fg
-	ipv6
 	edge triggered events
 	FreeBSD sendfile
 	FreeBSD kqueue

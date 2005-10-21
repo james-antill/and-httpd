@@ -68,91 +68,93 @@
     68. <Symbol> = beg
     69. <Symbol> = beg
   70. [Square bracket list]
-  71. <Symbol> = tag
-  72. <Quoted string (double, RAW)> = beg
-73. [Circular bracket list]
-  74. <Symbol> = org.and.httpd-conf-main-1.0
-  75. [Circular bracket list]
-    76. <Symbol> = match-connection
-    77. <Symbol> = baz
-    78. [Square bracket list]
-      79. <Symbol> = tag-eq
-      80. <Symbol> = beg
-    81. <Symbol> = tag
-    82. <Quoted string (double, RAW)> = baz
-  83. [Circular bracket list]
-    84. <Symbol> = match-connection
-    85. [Circular bracket list]
-      86. <Symbol> = x
-      87. <Symbol> = before
-      88. <Symbol> = baz
-    89. [Square bracket list]
-      90. <Symbol> = policy-eq
-      91. <Symbol> = conf-httpd-tst-9.1
-      92. <Symbol> = tag-eq
-      93. <Symbol> = beg
-    94. <Symbol> = tag
-    95. <Quoted string (double, RAW)> = x
-  96. [Circular bracket list]
-    97. <Symbol> = match-connection
-    98. [Circular bracket list]
-      99. <Symbol> = y
-      100. <Symbol> = after
-      101. <Symbol> = x
-    102. [Square bracket list]
-      103. <Symbol> = policy-eq
-      104. <Symbol> = conf-httpd-tst-9.1
-      105. <Symbol> = tag-eq
-      106. <Symbol> = beg
-    107. <Symbol> = <close>
-  108. [Circular bracket list]
-    109. <Symbol> = match-connection
-    110. [Circular bracket list]
-      111. <Quoted string (single, RAW)> = 
-      112. [Circular bracket list]
-        113. <Symbol> = beginning
-    114. [Square bracket list]
-      115. <Symbol> = policy-eq
-      116. <Symbol> = <default>
-      117. <Symbol> = server-ipv4-cidr-eq
-      118. <Symbol> = 127.0.8.2
-    119. [Circular bracket list]
-      120. <Symbol> = policy
-      121. <Symbol> = conf-httpd-tst-9.1
-    122. <Symbol> = <stop>
-  123. [Circular bracket list]
-    124. <Symbol> = match-connection
-    125. [Circular bracket list]
-      126. [Circular bracket list]
-        127. <Symbol> = before
-        128. <Quoted string (single, RAW)> = 
-    129. [Square bracket list]
-      130. <Symbol> = policy-eq
-      131. <Symbol> = <default>
-      132. <Symbol> = server-ipv4-cidr-eq
-      133. <Symbol> = 127.0.8.2
-    134. <Symbol> = policy
-    135. <Symbol> = conf-httpd-tst-9.2
-136. [Circular bracket list]
-  137. <Symbol> = org.and.httpd-conf-main-1.0
-  138. [Circular bracket list]
-    139. <Symbol> = match-request
-    140. [Circular bracket list]
-      141. [Circular bracket list]
-        142. <Symbol> = end
-    143. [Square bracket list]
-      144. <Symbol> = hostname-eq
-      145. <Symbol> = .
-    146. <Symbol> = <stop>
-  147. [Circular bracket list]
-    148. <Symbol> = match-request
-    149. [Circular bracket list]
-      150. <Symbol> = A
-      151. [Circular bracket list]
-        152. <Symbol> = end
-    153. [Square bracket list]
-      154. <Symbol> = tag-eq
-      155. <Symbol> = x
-      156. <Symbol> = path-eq
-      157. <Symbol> = /index.html
-    158. <Symbol> = <close>
+    71. <Symbol> = server-ipv4-cidr-eq
+    72. <Symbol> = 127.0.8.1/24
+  73. <Symbol> = tag
+  74. <Quoted string (double, RAW)> = beg
+75. [Circular bracket list]
+  76. <Symbol> = org.and.httpd-conf-main-1.0
+  77. [Circular bracket list]
+    78. <Symbol> = match-connection
+    79. <Symbol> = baz
+    80. [Square bracket list]
+      81. <Symbol> = tag-eq
+      82. <Symbol> = beg
+    83. <Symbol> = tag
+    84. <Quoted string (double, RAW)> = baz
+  85. [Circular bracket list]
+    86. <Symbol> = match-connection
+    87. [Circular bracket list]
+      88. <Symbol> = x
+      89. <Symbol> = before
+      90. <Symbol> = baz
+    91. [Square bracket list]
+      92. <Symbol> = policy-eq
+      93. <Symbol> = conf-httpd-tst-9.1
+      94. <Symbol> = tag-eq
+      95. <Symbol> = beg
+    96. <Symbol> = tag
+    97. <Quoted string (double, RAW)> = x
+  98. [Circular bracket list]
+    99. <Symbol> = match-connection
+    100. [Circular bracket list]
+      101. <Symbol> = y
+      102. <Symbol> = after
+      103. <Symbol> = x
+    104. [Square bracket list]
+      105. <Symbol> = policy-eq
+      106. <Symbol> = conf-httpd-tst-9.1
+      107. <Symbol> = tag-eq
+      108. <Symbol> = beg
+    109. <Symbol> = <close>
+  110. [Circular bracket list]
+    111. <Symbol> = match-connection
+    112. [Circular bracket list]
+      113. <Quoted string (single, RAW)> = 
+      114. [Circular bracket list]
+        115. <Symbol> = beginning
+    116. [Square bracket list]
+      117. <Symbol> = policy-eq
+      118. <Symbol> = <default>
+      119. <Symbol> = server-ipv4-cidr-eq
+      120. <Symbol> = 127.0.8.2
+    121. [Circular bracket list]
+      122. <Symbol> = policy
+      123. <Symbol> = conf-httpd-tst-9.1
+    124. <Symbol> = <stop>
+  125. [Circular bracket list]
+    126. <Symbol> = match-connection
+    127. [Circular bracket list]
+      128. [Circular bracket list]
+        129. <Symbol> = before
+        130. <Quoted string (single, RAW)> = 
+    131. [Square bracket list]
+      132. <Symbol> = policy-eq
+      133. <Symbol> = <default>
+      134. <Symbol> = server-ipv4-cidr-eq
+      135. <Symbol> = 127.0.8.2
+    136. <Symbol> = policy
+    137. <Symbol> = conf-httpd-tst-9.2
+138. [Circular bracket list]
+  139. <Symbol> = org.and.httpd-conf-main-1.0
+  140. [Circular bracket list]
+    141. <Symbol> = match-request
+    142. [Circular bracket list]
+      143. [Circular bracket list]
+        144. <Symbol> = end
+    145. [Square bracket list]
+      146. <Symbol> = hostname-eq
+      147. <Symbol> = .
+    148. <Symbol> = <stop>
+  149. [Circular bracket list]
+    150. <Symbol> = match-request
+    151. [Circular bracket list]
+      152. <Symbol> = A
+      153. [Circular bracket list]
+        154. <Symbol> = end
+    155. [Square bracket list]
+      156. <Symbol> = tag-eq
+      157. <Symbol> = x
+      158. <Symbol> = path-eq
+      159. <Symbol> = /index.html
+    160. <Symbol> = <close>

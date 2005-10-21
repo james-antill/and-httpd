@@ -4,6 +4,9 @@ application/x-bittorrent torrent
 application/x-zsync      zsync
 image/x-icon             ico
 
+# Fix xml to not have text/xml
+application/xml          xml
+
 # Open Office files should be seen...
 application/vnd.oasis.opendocument.text                  odt
 application/vnd.oasis.opendocument.text-template         ott

@@ -1,3 +1,31 @@
+2005-10-20  James Antill  <james@and.org>
+
+	* src/evnt.c (EVNT__RESOLVE_NAME): Minor performance tweak for addrs
+	that are really IPs.
+
+	* src/httpd_conf_main.c (httpd__match_make): Fix bad reference setup,
+	leaks Vstr's.
+
+	* src/evnt.c (evnt_poll_add): Work around valgrind uninit errors.
+
+	* tst/tst_httpd_conf.pl: Auto work out max conf files (and fix 8 and 9
+	to work together).
+
+	* scripts/tst-run.sh: Added script to run local config.
+
+	* src/date.c (date_localtime): Added function.
+	(date_syslog): Changed to use the Date_store, as strftime() is
+	horrible to use from a signal handler ... and _slow_ on FC4.
+
+	* tools/and-httpd.in: Use --config-dir
+
+	* src/and-httpd.c (usage): Add --config-dir options.
+
+	* src/opt_serv.c (opt_serv_sc_config_dir): Add internal conf.d
+	processing.
+
+	* tools/mime_types_extra.txt: Fix .xml files mime/type
+
 2005-10-18  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.4

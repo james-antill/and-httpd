@@ -185,6 +185,10 @@ extern void opt_serv_sc_resolve_gid(struct Opt_serv_opts *, const char *,
     COMPILE_ATTR_NONNULL_A();
 #endif
 
+extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
+                                  int (*)(Vstr_base *, void *, const char *))
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+
 
 #define OPT_SERV_DECL_GETOPTS()                         \
    {"help", no_argument, NULL, 'h'},                    \

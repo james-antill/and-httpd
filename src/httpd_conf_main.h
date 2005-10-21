@@ -196,5 +196,6 @@ extern int httpd_policy_request(struct Con *, struct Httpd_req_data *,
 extern int httpd_conf_main(Httpd_opts *, Conf_parse *, Conf_token *);
 extern int httpd_conf_main_parse_cstr(Vstr_base *, Httpd_opts *, const char *);
 extern int httpd_conf_main_parse_file(Vstr_base *, Httpd_opts *, const char *);
+extern int httpd_sc_conf_main_parse_dir_file(Vstr_base *, void *, const char *);
 
 #endif

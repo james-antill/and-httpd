@@ -112,7 +112,10 @@ static void usage(const char *program_name, int ret, const char *prefix)
  Format: %s [options] <dir>\n\
   Daemon options\n\
     --configuration-file\n\
-                   -C - Load configuration file specified.\n\
+    --config-file  -C - Load configuration file specified.\n\
+    --configuration-directory\n\
+    --config-dir      - Load <dir>/*.conf as configuration files.\n\
+\n\
     --configuration-data-daemon\n\
                       - Parse configuration given in the\n\
                         org.and.daemon-conf-1.0 namespace.\n\
@@ -478,6 +481,8 @@ static void serv_cmd_line(int argc, char *argv[])
    
    {"configuration-file", required_argument, NULL, 'C'},
    {"config-file",        required_argument, NULL, 'C'},
+   {"configuration-directory", required_argument, NULL, 140},
+   {"config-dir",         required_argument, NULL, 140},
    {"configuration-data-daemon", required_argument, NULL, 143},
    {"config-data-daemon",        required_argument, NULL, 143},
    {"configuration-data-httpd", required_argument, NULL, 144},
@@ -501,7 +506,7 @@ static void serv_cmd_line(int argc, char *argv[])
    {"gzip-content-replacement", optional_argument, NULL, 137},
    /* 138 */
    {"error-406", optional_argument, NULL, 139},
-   /* 140 */
+   /* 140 -- config. dir above */
    {"mime-types-main", required_argument, NULL, 141},
    {"mime-types-extra", required_argument, NULL, 142},
    {"mime-types-xtra", required_argument, NULL, 142},
@@ -519,6 +524,8 @@ static void serv_cmd_line(int argc, char *argv[])
   Vstr_base *out = vstr_make_base(NULL);
   Httpd_policy_opts *popts = NULL;
 
+  getenv("LANGUAGE");
+  
   if (!out)
     errno = ENOMEM, err(EXIT_FAILURE, "command line");
 
@@ -561,6 +568,11 @@ static void serv_cmd_line(int argc, char *argv[])
 
       case 'C':
         if (!httpd_conf_main_parse_file(out, httpd_opts, optarg))
+          goto out_err_conf_msg;
+        break;
+      case 140:
+        if (!opt_serv_sc_config_dir(out, httpd_opts, optarg,
+                                    httpd_sc_conf_main_parse_dir_file))
           goto out_err_conf_msg;
         break;
       case 143: /* FIXME: ... need to integrate */

@@ -19,8 +19,8 @@ typedef struct Vlg
  const char *prog_name;
  int syslog_fd;
 
- time_t tm_time;
- char tm_data[VLG__TM_SYSLOG_SZ];
+ Date_store *dt;
+ Date_store *sig_dt;
 
  time_t (*tm_get)(void);
  

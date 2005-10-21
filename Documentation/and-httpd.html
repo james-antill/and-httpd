@@ -120,9 +120,9 @@ path in the request configuration directory:
 <span class="comment">; Negotiate language and content</span>
 <span class="comment">; Ie. request is http://foo/bar.c and this file is at</span>
 <span class="comment">;  /&lt;req-conf-dir&gt;/bar.c And-httpd will serve either</span>
-<span class="comment">;  /&lt;docroot&gt;/bar.c as text/plain or /&lt;docroot&gt;/bar.c as text/html</span>
+<span class="comment">;  /&lt;docroot&gt;/bar.c as text/plain or /&lt;docroot&gt;/bar.c.html as text/html</span>
 (<span class="namespace">org.and.httpd-conf-req-1.0</span>
-  (negotiate-content-type (text/plain '') (text/html .html))
+  (content-type-negotiate (text/plain '') (text/html .html))
   (filename += &lt;content-type-extension&gt;))
 </pre>
 
@@ -225,12 +225,13 @@ is actually encouraged by rfc2616)</li>
 <li>Range requests of more than a single byterange (this is just ignored,
 and the rest of the request is processed)</li>
 <li>PUT/POST methods</li>
-<li>Any kind of payload (Ie. content-length on a request)</li>
+<li>Any kind of payload (Ie. non-zero content-length, or a transfer encoding on a request)</li>
+<li>A content-type or content-language header with a content-length header.</li>
 <li>Any "extra" CR or LF characters in the hostname or URL-path. </li>
 <li>Any whitespace in a header name.</li>
 <li>Any repeating of headers that aren't allowed to be repeated.</li>
 <li>A URL-path that ends in any of: .shtml ~ # .tmp .htaccess or .sconsign
-(or their compressed versions)</li>
+(or their compressed versions) -- enforced by the extra mime types file</li>
 </ul>
 
 <p>...while some of these might make it "non-compliant" with rfc2616, no real
@@ -331,7 +332,7 @@ match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd|s v/and-httpd///
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Tue Oct 18 20:21:28 EDT 2005
+Last modified: Fri Oct 21 00:46:48 EDT 2005
 <!-- hhmts end -->
   </body>
 </html>

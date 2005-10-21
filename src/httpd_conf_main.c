@@ -1112,9 +1112,10 @@ static int httpd__match_make(Conf_parse *conf, Conf_token *token,
   uval = ref->ptr;
   
   uval->name = NULL;
-  uval->s_cb_func = httpd__match_ref_cb;
+  uval->s_cb_func = ref->func;
+  ref->func = httpd__match_ref_cb;
   uval->opt_nxt = save = *token;
-
+  
   ret = conf_token_set_user_value(conf, &save, type, ref, 0);
   ASSERT(ret);
 
@@ -1440,6 +1441,12 @@ int httpd_conf_main_parse_file(Vstr_base *out,
   conf_parse_free(conf);
  conf_malloc_fail:
   return (FALSE);
+}
+
+int httpd_sc_conf_main_parse_dir_file(Vstr_base *out, void *opts,
+                                      const char *fname)
+{
+  return (httpd_conf_main_parse_file(out, opts, fname));
 }
 
 void httpd_conf_main_free(Httpd_opts *opts)

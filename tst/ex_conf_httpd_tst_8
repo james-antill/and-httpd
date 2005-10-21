@@ -31,7 +31,7 @@
      request-configuration-directory ex_httpd_conf_root
      req-err-dir ex_httpd_err_conf_7_root)
 (org.and.httpd-conf-main-1.0
-   match-connection [] tag "abcd")
+   match-connection [server-ipv4-cidr-eq 127.0.7.1/24] tag "abcd")
 (org.and.httpd-conf-main-1.0
    match-connection [policy-eq conf-httpd-tst-8.1] tag "conf-httpd-tst-8.1")
 (org.and.httpd-conf-main-1.0

@@ -1014,7 +1014,9 @@ static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
   return (vstr_add_cstr_buf(s1, pos, env_data));
 }
 
-#ifndef CONF_FULL_STATIC
+#ifdef CONF_FULL_STATIC
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
+#else
 static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
                                       Conf_parse *conf, Conf_token *token)
 {
@@ -1036,8 +1038,6 @@ static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
 }
 # define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) \
     opt_serv_sc_append_homedir(w, x, y, z)
-#else
-# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
 #endif
 
 /* into conf->tmp */
@@ -1156,3 +1156,111 @@ void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
     opts->priv_gid = gr->gr_gid;
 }
 #endif
+
+#include <dirent.h>
+#ifndef _D_EXACT_NAMLEN
+# _D_EXACT_NAMLEN(x) strlen((x)->d_name)
+#endif
+
+static int opt_serv__sort_conf_files(const void *passed_a, const void *passed_b)
+{
+  const struct dirent * const *a = passed_a;
+  const struct dirent * const *b = passed_b;
+  
+  return strcmp((*a)->d_name, (*b)->d_name);
+}
+
+/* filter to files that:
+ * 1. _don't_ start with a '.'
+ * 1. _do_    end   with a ".conf"
+ */
+#define CSTR_EQ(x, y) (!strcmp(x, y))
+static int opt_serv__filt_conf_files(const struct dirent *dent)
+{
+  size_t len = _D_EXACT_NAMLEN(dent);
+  
+  ASSERT(!dent->d_name[len]);
+  
+  if (dent->d_name[0] == '.')
+    return (FALSE);
+  
+  if (len < strlen("a.conf"))
+    return (FALSE);
+  if (!CSTR_EQ(dent->d_name + len - strlen(".conf"), ".conf"))
+    return (FALSE);
+  
+  return (TRUE);
+}
+
+int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
+                           int (*func)(Vstr_base *, void *, const char *))
+{
+  struct dirent **dents = NULL;
+  int num = -1;
+  int scan = 0;
+  int ends_with_slash = FALSE;
+  int ret = TRUE;
+  Vstr_base *bld = vstr_make_base(s1->conf);
+
+  if (!bld || bld->conf->malloc_bad)
+  {
+    errno = ENOMEM;
+    goto fail;
+  }
+
+  if (!dir[0])
+  {
+    errno = ENOENT;
+    goto fail;
+  }
+
+  if (dir[strlen(dir) - 1] == '/')
+    ends_with_slash = TRUE;
+  
+  num = scandir(dir, &dents,
+                opt_serv__filt_conf_files, opt_serv__sort_conf_files);
+  if (num == -1)
+    goto fail;
+
+  /* *******************************************************************
+   * These free's are for malloc's done inside scandir, so we __MUST__
+   * use the normal free().
+   * ***************************************************************** */
+  while (scan < num)
+  {
+    if (ret)
+    { /* create the full path... */
+      const char *fname = NULL;
+      const struct dirent *dent = dents[scan];
+      
+      vstr_del(bld, 1, bld->len);
+      vstr_add_cstr_ptr(bld, bld->len, dir);
+      if (!ends_with_slash)
+        vstr_add_cstr_ptr(bld, bld->len, "/");
+      vstr_add_ptr(bld, bld->len, dent->d_name, _D_EXACT_NAMLEN(dent));
+
+      if (bld->conf->malloc_bad)
+      {
+        bld->conf->malloc_bad = FALSE;
+        ret = FALSE;
+      }
+      
+      if (ret && !(fname = vstr_export_cstr_ptr(bld, 1, bld->len)))
+        ret = FALSE;
+      if (ret && !(*func)(s1, data, fname))
+        ret = FALSE;
+    }
+    
+    free(dents[scan]);
+    ++scan;
+  }
+
+  free(dents);
+  vstr_free_base(bld);
+  return (ret);
+
+ fail:
+  vstr_add_fmt(s1, s1->len, "scandir(%s): %m", dir);
+  vstr_free_base(bld);
+  return (FALSE);
+}

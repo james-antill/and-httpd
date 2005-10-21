@@ -69,20 +69,10 @@
     <English>
       <Keywords>http httpd webserver secure</Keywords>
       <Char_Desc_45>Secure, simple and fast HTTP server.</Char_Desc_45>
-      <Char_Desc_80>Secure (has a security guarantee), simple and fast HTTP server.</Char_Desc_80>
-      <Char_Desc_250>Secure, simple and fast HTTP server, maps URLs to files in a number of ways. Has a security guarantee.</Char_Desc_250>
-      <Char_Desc_450>And-httpd is currently only a URL to file mapping daemon,
-in other words in can take an incomming URL and map it
-to a file in a number of ways. However it cannot do CGI
-or anything like apache-httpd mod_python etc. ... it cannot
-even dynamically create directory listings, however it contains utilities
-that can do them outside of the daemon.</Char_Desc_450>
-      <Char_Desc_2000> And-httpd is currently only a URL to file mapping daemon,
-in other words in can take an incomming URL and map it
-to a file in a number of ways. However it cannot do CGI
-or anything like apache-httpd mod_python etc. ... it cannot
-even dynamically create directory listings, however it contains utilities
-that can do them outside of the daemon.
+      <Char_Desc_80>Secure (has a $500 security guarantee), simple and fast HTTP server.</Char_Desc_80>
+      <Char_Desc_250>Secure, simple and fast HTTP server, maps URLs to files in a number of ways. Has a $500 security guarantee.</Char_Desc_250>
+      <Char_Desc_450>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $500 "security guarantee" against remote attacks.</Char_Desc_450>
+      <Char_Desc_2000>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $500 "security guarantee" against remote attacks.
 </Char_Desc_2000>
     </English>
   </Program_Descriptions>

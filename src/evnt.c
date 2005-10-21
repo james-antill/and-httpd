@@ -49,22 +49,25 @@
 #define CONF_EVNT_DUP_EPOLL TRUE /* doesn't work if FALSE and multi proc */
 #define CONF_GETTIMEOFDAY_TIME TRUE /* does tv_sec contain time(NULL) */
 
-#ifndef CONF_FULL_STATIC
-# include <netdb.h>
-# define EVNT__RESOLVE_NAME(evnt, x) do {                       \
-      struct hostent *h = gethostbyname(x);                     \
-                                                                \
-      if (h)                                                    \
-        memcpy(&EVNT_SA_IN4(evnt)->sin_addr.s_addr,              \
-               h->h_addr_list[0],                               \
-               sizeof(EVNT_SA_IN4(evnt)->sin_addr.s_addr));      \
-                                                                \
-    } while (FALSE)
+#ifdef CONF_FULL_STATIC
+# define EVNT__RESOLVE_NAME(evnt, x) do {                               \
+   if ((EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
+     EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);            \
+ } while (FALSE)
 #else
-# define EVNT__RESOLVE_NAME(evnt, x) do {               \
-      if ((EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
-        EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);          \
-    } while (FALSE)
+# include <netdb.h>
+# define EVNT__RESOLVE_NAME(evnt, x) do {                               \
+   if ((EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
+   {                                                                    \
+     struct hostent *h = gethostbyname(x);                              \
+                                                                        \
+     EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);            \
+     if (h)                                                             \
+       memcpy(&EVNT_SA_IN4(evnt)->sin_addr.s_addr,                      \
+              h->h_addr_list[0],                                        \
+              sizeof(EVNT_SA_IN4(evnt)->sin_addr.s_addr));              \
+   }                                                                    \
+ } while (FALSE)
 #endif
 
 #if !defined(SO_DETACH_FILTER) || !defined(SO_ATTACH_FILTER)
@@ -744,7 +747,6 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
 
   EVNT_SA_IN4(evnt)->sin_family = AF_INET;
 
-  EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);
   if (acpt_addr && *acpt_addr) /* silent error becomes <any> */
     EVNT__RESOLVE_NAME(evnt, acpt_addr);
   if (EVNT_SA_IN4(evnt)->sin_addr.s_addr == htonl(INADDR_ANY))
@@ -2296,9 +2298,12 @@ static int evnt__epoll_readd(struct Evnt *evnt)
   while (evnt)
   {
     int flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
+
     vlg_dbg2(vlg, "epoll_mod_add(%p,%d)\n", evnt, flags);
     epevent->events   = flags;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
+
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_ADD, evnt_fd(evnt), epevent) == -1)
       vlg_err(vlg, EXIT_FAILURE, "epoll_readd: %m\n");
     
@@ -2342,7 +2347,9 @@ void evnt_wait_cntl_add(struct Evnt *evnt, int flags)
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
     vlg_dbg2(vlg, "epoll_mod_add(%p,%d)\n", evnt, flags);
     epevent->events   = flags;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
+
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_MOD, evnt_fd(evnt), epevent) == -1)
       vlg_err(vlg, EXIT_FAILURE, "epoll: %m\n");
   }
@@ -2363,7 +2370,9 @@ void evnt_wait_cntl_del(struct Evnt *evnt, int flags)
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;
     vlg_dbg2(vlg, "epoll_mod_del(%p,%d)\n", evnt, flags);
     epevent->events   = flags;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
+
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_MOD, evnt_fd(evnt), epevent) == -1)
       vlg_err(vlg, EXIT_FAILURE, "epoll: %m\n");
   }
@@ -2380,6 +2389,7 @@ unsigned int evnt_poll_add(struct Evnt *evnt, int fd)
 
     vlg_dbg2(vlg, "epoll_add(%p,%d)\n", evnt, flags);
     epevent->events   = flags;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
     
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_ADD, fd, epevent) == -1)
@@ -2406,6 +2416,7 @@ void evnt_poll_del(struct Evnt *evnt)
 
     vlg_dbg2(vlg, "epoll_del(%p,%d)\n", evnt, 0);
     epevent->events   = 0;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
     
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_DEL, fd, epevent) == -1)
@@ -2446,6 +2457,7 @@ int evnt_poll_swap_accept_read(struct Evnt *evnt, int fd)
     vlg_dbg2(vlg, "epoll_swap(%p,%d,%d)\n", evnt, old_fd, fd);
     
     epevent->events   = POLLIN;
+    epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
     
     if (epoll_ctl(evnt__epoll_fd, EPOLL_CTL_DEL, old_fd, epevent) == -1)

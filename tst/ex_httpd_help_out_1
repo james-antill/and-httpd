@@ -2,7 +2,10 @@
  Format: and-httpd [options] <dir>
   Daemon options
     --configuration-file
-                   -C - Load configuration file specified.
+    --config-file  -C - Load configuration file specified.
+    --configuration-directory
+    --config-dir      - Load <dir>/*.conf as configuration files.
+
     --configuration-data-daemon
                       - Parse configuration given in the
                         org.and.daemon-conf-1.0 namespace.
