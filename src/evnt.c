@@ -747,6 +747,7 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
 
   EVNT_SA_IN4(evnt)->sin_family = AF_INET;
 
+  EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);
   if (acpt_addr && *acpt_addr) /* silent error becomes <any> */
     EVNT__RESOLVE_NAME(evnt, acpt_addr);
   if (EVNT_SA_IN4(evnt)->sin_addr.s_addr == htonl(INADDR_ANY))

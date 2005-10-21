@@ -264,8 +264,6 @@ static int httpd__match_iter_nxt(Conf_parse *conf, Conf_token *token,
       if (update->num == *ret_num)
         update = NULL;
     }
-    if (update && ((token->num > *ret_num) || (token->num < update->num)))
-      *token = *update;
     
     if (!conf_parse_num_token(conf, token, *ret_num))
       token = NULL;

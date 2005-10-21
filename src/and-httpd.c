@@ -524,8 +524,6 @@ static void serv_cmd_line(int argc, char *argv[])
   Vstr_base *out = vstr_make_base(NULL);
   Httpd_policy_opts *popts = NULL;
 
-  getenv("LANGUAGE");
-  
   if (!out)
     errno = ENOMEM, err(EXIT_FAILURE, "command line");
 
@@ -614,7 +612,7 @@ static void serv_cmd_line(int argc, char *argv[])
     }
   }
   vstr_free_base(out); out = NULL;
-  
+
   argc -= optind;
   argv += optind;
 

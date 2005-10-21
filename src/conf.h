@@ -248,9 +248,9 @@ extern inline int conf_parse_token(const Conf_parse *conf, Conf_token *token)
   CONF__ASSERT(conf && conf->sects && token);
   CONF__ASSERT(!conf->depth); /* finished lex */
   CONF__ASSERT(conf->state == CONF_PARSE_STATE_END); /* finished lex */
-
-  if (!token->num)
-    token->depth_nums[0] = conf->sects->num;
+  CONF__ASSERT(token->depth_num <= CONF_PARSE_LIST_DEPTH_SZ);
+  
+  token->depth_nums[0] = conf->sects->num;
   
   if (token->num >= conf->sects->num)
     return (CONF__FALSE);
@@ -258,6 +258,7 @@ extern inline int conf_parse_token(const Conf_parse *conf, Conf_token *token)
   
   while (token->depth_nums[token->depth_num] < token->num)
   {
+    CONF__ASSERT(token->depth_num);
     CONF__ASSERT(token->depth_nums[token->depth_num] == (token->num - 1));
     --token->depth_num;
   }
@@ -326,6 +327,11 @@ extern inline int conf_parse_num_token(const Conf_parse *conf,
   while (token->num < num)
   {
     if (!conf_parse_token(conf, token))
+      return (CONF__FALSE);
+    
+    if (token->depth_num && /* try to skip to end of current list */
+        (token->depth_nums[token->depth_num] <= num) &&
+        !conf_parse_end_token(conf, token, token->depth_num))
       return (CONF__FALSE);
   }
 
