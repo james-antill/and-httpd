@@ -790,7 +790,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     
     CONF_SC_MAKE_CLIST_END();
   }
-  else if (OPT_SERV_SYM_EQ("canonize-host"))
+  else if (OPT_SERV_SYM_EQ("canonize-host") ||
+           OPT_SERV_SYM_EQ("make-canonical-host"))
     OPT_SERV_X_TOGGLE(opts->use_canonize_host);
   else if (OPT_SERV_SYM_EQ("check-dot-directory") ||
            OPT_SERV_SYM_EQ("chk-dot-dir") ||

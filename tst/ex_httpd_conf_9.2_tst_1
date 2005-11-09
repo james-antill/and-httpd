@@ -1,1 +1,10 @@
-ex_httpd_conf_9.1_tst_1
+HEAD / HTTP/1.1
+Host: .
+
+HEAD / HTTP/1.1
+Host:  default 
+
+HEAD /index.html HTTP/1.1
+Host:  default 
+Connection: close
+

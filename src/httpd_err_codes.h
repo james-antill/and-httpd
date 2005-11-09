@@ -156,36 +156,23 @@
 #define CONF_MSG_RET_505 \
     CONF_MSG__MAKE("505", "Version not supported", "The version of http used is not supported")
 
-#define HTTPD_ERR_301(req) do {                           \
-      (req)->error_code = 301;                            \
-      (req)->error_line = CONF_LINE_RET_301;              \
-      (req)->error_len  = CONF_MSG_LEN_301((req)->fname); \
-    } while (0)
-
-#define HTTPD_ERR_302(req) do {                           \
-      (req)->error_code = 302;                            \
-      (req)->error_line = CONF_LINE_RET_302;              \
-      (req)->error_len  = CONF_MSG_LEN_302((req)->fname); \
-    } while (0)
-
-#define HTTPD_ERR_303(req) do {                           \
-      (req)->error_code = 303;                            \
-      (req)->error_line = CONF_LINE_RET_303;              \
-      (req)->error_len  = CONF_MSG_LEN_303((req)->fname); \
-    } while (0)
-
-#define HTTPD_ERR_307(req) do {                           \
-      (req)->error_code = 307;                            \
-      (req)->error_line = CONF_LINE_RET_307;              \
-      (req)->error_len  = CONF_MSG_LEN_307((req)->fname); \
+#define HTTPD_REDIR_MSG(req, code, xmsg) do {                  \
+      (req)->error_xmsg  = xmsg;                               \
+      (req)->error_code = (code);                              \
+      (req)->error_line = CONF_LINE_RET_ ## code;                 \
+      (req)->error_len  = CONF_MSG_LEN_ ## code ((req)->fname);   \
     } while (0)
 
 #define HTTPD_ERR(req, code) do {                                       \
       (req)->error_code  = (code);                                      \
       (req)->error_line  = CONF_LINE_RET_ ## code ;                     \
       (req)->error_len   = COMPILE_STRLEN( CONF_MSG_RET_ ## code );     \
-      if (!(req)->head_op)                                              \
-        (req)->error_msg = CONF_MSG_RET_ ## code ;                      \
+      (req)->error_msg   = CONF_MSG_RET_ ## code ;                      \
+    } while (0)
+
+#define HTTPD_ERR_MSG(req, code, xmsg) do {             \
+      (req)->error_xmsg  = xmsg;                        \
+      HTTPD_ERR(req, code);                             \
     } while (0)
 
 #define HTTPD_ERR_RET(req, code, val) do {              \
@@ -193,9 +180,10 @@
       return val ;                                      \
     } while (0)
 
-#define HTTPD_ERR_GOTO(req, code, label) do {           \
+#define HTTPD_ERR_MSG_RET(req, code, xmsg, val) do {    \
+      (req)->error_xmsg  = xmsg;                        \
       HTTPD_ERR(req, code);                             \
-      goto label ;                                      \
+      return val ;                                      \
     } while (0)
       
 #endif

@@ -162,7 +162,8 @@ static int httpd__build_path(struct Con *con, Httpd_req_data *req,
                        conf->tmp, 1, conf->tmp->len, VSTR_TYPE_SUB_BUF_REF))
       return (FALSE);
   }
-  else if (OPT_SERV_SYM_EQ("append") || OPT_SERV_SYM_EQ("+="))
+  else if (OPT_SERV_SYM_EQ("append") || OPT_SERV_SYM_EQ("+=") ||
+           OPT_SERV_SYM_EQ(".=") || OPT_SERV_SYM_EQ(">>="))
   {
     *type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_APPEND;
   
@@ -170,6 +171,16 @@ static int httpd__build_path(struct Con *con, Httpd_req_data *req,
       return (FALSE);
 
     return (vstr_add_vstr(s1, vstr_sc_poslast(pos, len),
+                          conf->tmp, 1, conf->tmp->len, VSTR_TYPE_ADD_BUF_REF));
+  }
+  else if (OPT_SERV_SYM_EQ("prepend") || OPT_SERV_SYM_EQ("<<="))
+  {
+    *type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_APPEND;
+  
+    if (!httpd_policy_build_path(con, req, conf, token, NULL, NULL))
+      return (FALSE);
+
+    return (vstr_add_vstr(s1, pos - 1,
                           conf->tmp, 1, conf->tmp->len, VSTR_TYPE_ADD_BUF_REF));
   }
   else if (!clist)
@@ -195,7 +206,7 @@ static int httpd__build_path(struct Con *con, Httpd_req_data *req,
 
 static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
                                   Conf_parse *conf, Conf_token *token,
-                                  int *full,
+                                  int *full, int *canon,
                                   unsigned int *lim, Vstr_ref **ret_ref)
 {
   unsigned int depth = token->depth_num;
@@ -216,6 +227,9 @@ static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
     else if (full && (OPT_SERV_SYM_EQ("skip-virtual-hosts") ||
                       OPT_SERV_SYM_EQ("skip-vhosts")))
       OPT_SERV_X_TOGGLE(*full);
+    else if (canon && (OPT_SERV_SYM_EQ("make-abs-url") ||
+                       OPT_SERV_SYM_EQ("make-absolute-url")))
+      OPT_SERV_X_TOGGLE(*canon);
     else if (full && OPT_SERV_SYM_EQ("skip-document-root"))
       OPT_SERV_X_TOGGLE(req->skip_document_root);
     else if (OPT_SERV_SYM_EQ("limit"))
@@ -437,6 +451,15 @@ static int httpd__content_location_valid(Httpd_req_data *req,
      ((num > 1) &&                                                      \
       vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y "s>")))
 
+#define HTTPD__CONF_REDIR(req, code) do {                               \
+      if ((req)->direct_uri) {                                          \
+        HTTPD_REDIR_MSG(req, code, "Req conf");                         \
+        httpd_req_absolute_uri(con, req,                                \
+                               (req)->fname, 1, (req)->fname->len);     \
+        return (FALSE);                                                 \
+      }                                                                 \
+    } while (FALSE)
+
 static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                               time_t file_timestamp,
                               Conf_parse *conf, Conf_token *token, int clist)
@@ -457,7 +480,9 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       if (0) { }
       else if (OPT_SERV_SYM_EQ("<perm>") ||
                OPT_SERV_SYM_EQ("<perm-redirect>") ||
-               OPT_SERV_SYM_EQ("<permenant>") ||
+               OPT_SERV_SYM_EQ("<permanent>") || /* sp is permanent */
+               OPT_SERV_SYM_EQ("<permenant>") || /* allow bad sp */
+               OPT_SERV_SYM_EQ("<permanent-redirect>") ||
                OPT_SERV_SYM_EQ("<permenant-redirect>"))
         code = 301;
       else if (OPT_SERV_SYM_EQ("<found>"))
@@ -493,23 +518,20 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     req->error_code = 0;
     switch (code)
     {
-      case 301: if (!req->error_code && req->direct_uri) HTTPD_ERR_301(req);
-      case 302: if (!req->error_code && req->direct_uri) HTTPD_ERR_302(req);
-      case 303: if (!req->error_code && req->direct_uri) HTTPD_ERR_303(req);
-      case 307: if (!req->error_code && req->direct_uri) HTTPD_ERR_307(req);
+      case 301: HTTPD__CONF_REDIR(req, 301);
+      case 302: HTTPD__CONF_REDIR(req, 302);
+      case 303: HTTPD__CONF_REDIR(req, 303);
+      case 307: HTTPD__CONF_REDIR(req, 307);
       default:
-        if (req->error_code)
-          httpd_req_absolute_uri(con, req, req->fname, 1, req->fname->len);
-        else
-          req->user_return_error_code = FALSE;
+        req->user_return_error_code = FALSE;
         return (FALSE);
         
-      case 400: HTTPD_ERR_RET(req, 400, FALSE);
-      case 403: HTTPD_ERR_RET(req, 403, FALSE);
-      case 404: HTTPD_ERR_RET(req, 404, FALSE);
-      case 410: HTTPD_ERR_RET(req, 410, FALSE);
-      case 500: HTTPD_ERR_RET(req, 500, FALSE);
-      case 503: HTTPD_ERR_RET(req, 503, FALSE);
+      case 400: HTTPD_ERR_MSG_RET(req, 400, "Req conf", FALSE);
+      case 403: HTTPD_ERR_MSG_RET(req, 403, "Req conf", FALSE);
+      case 404: HTTPD_ERR_MSG_RET(req, 404, "Req conf", FALSE);
+      case 410: HTTPD_ERR_MSG_RET(req, 410, "Req conf", FALSE);
+      case 500: HTTPD_ERR_MSG_RET(req, 500, "Req conf", FALSE);
+      case 503: HTTPD_ERR_MSG_RET(req, 503, "Req conf", FALSE);
     }
   }
   else if (OPT_SERV_SYM_EQ("Location:"))
@@ -518,12 +540,14 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     Vstr_ref *ref = NULL;
     size_t orig_len = 0;
     int bp_type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP;
+    int canon = FALSE;
     
     if (req->direct_filename)
       return (FALSE);
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (!httpd__meta_build_path(con, req, conf, token, NULL, &lim, &ref))
+    if (!httpd__meta_build_path(con, req, conf, token,
+                                NULL, &canon, &lim, &ref))
     {
       vstr_ref_del(ref);
       return (FALSE);
@@ -553,6 +577,9 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     
     req->direct_uri = TRUE;
     HTTPD_CONF_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);
+
+    if (canon)
+      httpd_req_absolute_uri(con, req, req->fname, 1, req->fname->len);
   }
   else if (OPT_SERV_SYM_EQ("Cache-Control:"))
   { 
@@ -631,7 +658,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     }
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (!httpd__meta_build_path(con, req, conf, token, NULL, &lim, &ref))
+    if (!httpd__meta_build_path(con, req, conf, token, NULL, NULL, &lim, &ref))
     {
       vstr_ref_del(ref);
       return (FALSE);
@@ -751,7 +778,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     if (req->direct_uri)
       return (FALSE);
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (!httpd__meta_build_path(con, req, conf, token, &full, &lim, &ref))
+    if (!httpd__meta_build_path(con, req, conf, token, &full, NULL, &lim, &ref))
     {
       vstr_ref_del(ref);
       return (FALSE);
@@ -850,6 +877,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   
   return (TRUE);
 }
+#undef HTTPD__CONF_REDIR
 #undef HTTPD__EXPIRES_CMP
 #undef HTTPD__NEG_BEG
 #undef HTTPD__NEG_END
@@ -1061,7 +1089,7 @@ int httpd_conf_req_parse_file(Conf_parse *conf,
     conf_parse_backtrace(conf->tmp, "<conf-request>", conf, token);
  read_fail:
   if (!req->user_return_error_code)
-    HTTPD_ERR(req, 503);
+    HTTPD_ERR_MSG(req, 503, "Req conf parse error");
   conf->data->conf->malloc_bad = FALSE;
   return (FALSE);
 }

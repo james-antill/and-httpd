@@ -4,6 +4,7 @@ use strict;
 
 use File::Find;
 use File::Temp qw/tempfile/;
+use File::Basename;
 
 use FileHandle;
 
@@ -34,6 +35,7 @@ my $tidy_compress = 0;
 my $force_compress = 0;
 my $re_compress = 0;
 my $chown_compress = 0;
+my $once_compress = undef;
 my $verbose_compress = 0;
 my $zero_compress = 0;
 my $type_compress = "gzip";
@@ -42,6 +44,7 @@ pod2usage(0) if !
 GetOptions ("force!"   => \$force_compress,
 	    "all!"     => \$re_compress,
 	    "chown!"   => \$chown_compress,
+	    "output|o=s" => \$once_compress,
 	    "tidy!"    => \$tidy_compress,
 	    "zero!"    => \$zero_compress,
 	    "type|t=s" => \$type_compress,
@@ -90,13 +93,13 @@ sub cleanup
 
 sub zip__file
   {
-    my $name   = shift;
+    my $name              = shift;
     my $type_compress     = shift;
     my $ext_compress      = shift;
     my $cmd_compress_args = shift;
     my $other_sz          = shift;
 
-    my $namegz = $name . $ext_compress;
+    my $namegz = shift || ($name . $ext_compress);
 
     if (-l $name && -f $name)
       { # deal with symlinks...
@@ -143,12 +146,14 @@ sub zip__file
 
     if (!$force_compress)
       { # This will error out...
-	($out, $fname) = tempfile("gzip-r.XXXXXXXX", SUFFIX => ".tmp");
+	($out, $fname) = tempfile("gzip-r.XXXXXXXX", SUFFIX => ".tmp",
+				  DIR => File::Basename::dirname($namegz));
       }
     else
       {
 	eval {
-	  ($out, $fname) = tempfile("gzip-r.XXXXXXXX", SUFFIX => ".tmp");
+	  ($out, $fname) = tempfile("gzip-r.XXXXXXXX", SUFFIX => ".tmp",
+				    DIR => File::Basename::dirname($namegz));
 	};
 	return $other_sz if ($@);
       }
@@ -160,7 +165,7 @@ sub zip__file
     if (!$force_compress)
       {
 	open($in, "-|", @$cmd_compress_args, "--", $name) ||
-	  die("Can't $type_compress: $!");
+	  die("Can't $$cmd_compress_args[0]: $!");
       }
     else
       {
@@ -230,6 +235,25 @@ sub zip_file
       if (($type_compress eq "bzip2") || ($type_compress eq "all"));
   }
 
+if (defined ($once_compress))
+  {
+    die " Can't use type=all with --output" if ($type_compress eq "all");
+
+    my $name = shift;
+
+    die " Too many arguments for --output"  if (@ARGV);
+
+    zip__file($name, "gzip",  ".gz",
+	      ["gzip", "--to-stdout", "--no-name", "--best"], 0, $once_compress)
+      if ($type_compress eq "gzip");
+
+    zip__file($name, "bzip2", ".bz2",
+	      ["bzip2", "--stdout", "--best"], 0, $once_compress)
+      if ($type_compress eq "bzip2");
+
+    exit;
+  }
+
 find({ preprocess => \&grep_files, wanted => \&zip_file }, @ARGV);
 
 END {
@@ -243,11 +267,11 @@ __END__
 
 =head1 NAME
 
-gzip-r.pl - Recursive "intelligent" gzip/bzip2
+gzip-r - Recursive "intelligent" gzip/bzip2
 
 =head1 SYNOPSIS
 
-gzip-r.pl [options] [dirs|files ...]
+gzip-r [options] [dirs|files ...]
 
  Options:
   --help -?         brief help message
@@ -256,7 +280,8 @@ gzip-r.pl [options] [dirs|files ...]
   --all             compress files that already have a compressed version
   --tidy            tidy unused files
   --verbose         print filenames
-  --chown           chown gzip files
+  --chown           chown compressed files
+  --output -o       compress a single file, passing the compressed filename
   --type -t         type of compression files
 
 =head1 OPTIONS
@@ -284,6 +309,13 @@ source.
 
 Make the compressed output files have the same owner as the input files.
 
+=item B<--output>
+
+Only compress a single file, the argument for the option is the compressed
+output filename.
+ Note: You can't use this option when using --type=all.
+ Note: You can't specify multiple sources.
+
 =item B<--tidy>
 
 Cleanup any old compressed files that wouldn't be created (due to not being
@@ -291,7 +323,7 @@ significantly smaller).
 
 =item B<--type>
 
-Make the compression type either gzip or bzip2.
+Make the compression type either gzip, bzip2 or all.
 
 =item B<--verbose>
 
@@ -304,7 +336,7 @@ created.
 
 =head1 DESCRIPTION
 
-B<gzip-r.pl> will take all files from the directories and filenames passed
+B<gzip-r> will take all files from the directories and filenames passed
 as fname. If the extensions of the files are not likely to be compressible
 (Ie. .gz, .bz2, .rpm, .zip) or are tmp files (Ie. .tmp, ~, #) then they are
 skipped.

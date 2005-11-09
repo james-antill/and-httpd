@@ -23,5 +23,5 @@ fake_root="$r/tmp/code.and.org-fake-root"
 
 exec $b/src/and-httpd --config-file $fake_root/and-httpd.conf \
                       --config-file /etc/and-httpd/and-httpd.conf \
-                      --config-dir  /etc/and-httpd/conf.d
+                      --config-dir  /etc/and-httpd/conf.d $@
 

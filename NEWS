@@ -1,3 +1,7 @@
+0.99.5 - 2005-10-25
+ Bug fixes, added native conf.d support. Make syslog date generation native.
+Added w3c like ",tools". Seperate out index redirect into a conf.d file.
+
 0.99.4 - 2005-10-18
  Bug fixes, added homedir support for main config file paths. Resolve usernames
 before chroot. Fix some bugs, mostly on custom error pages. Add PAD file. More

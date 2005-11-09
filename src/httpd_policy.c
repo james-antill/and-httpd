@@ -265,7 +265,8 @@ int httpd_policy_build_path(struct Con *con, Httpd_req_data *req,
         return (FALSE);
       *used_policy = TRUE;
     }
-    else if (OPT_SERV_SYM_EQ("<file-path>") || OPT_SERV_SYM_EQ("<path>"))
+    else if (OPT_SERV_SYM_EQ("<file-path>") || OPT_SERV_SYM_EQ("<path>") ||
+             OPT_SERV_SYM_EQ("<Location:>"))
     {
       *used_req = TRUE;
       HTTPD_APP_REF_ALLVSTR(conf->tmp, req->fname);

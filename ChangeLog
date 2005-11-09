@@ -1,4 +1,53 @@
+2005-11-08  James Antill  <james@and.org>
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Fix spelling of permanent.
+
+	* src/httpd.c (http__resp_len): Calc. real length of response data for
+	multipart/byterange responses.
+
+	* src/httpd_err_codes.h (HTTPD_ERR_MSG): Add internal message, so we
+	can tell how common errors are generated.
+	(HTTPD_REDIR_MSG): Use single redir. macro, with internal message.
+
+2005-11-01  James Antill  <james@and.org>
+
+	* src/and-httpd.c: Move PROC_CNTL defines so they work.
+
+2005-10-26  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv_sc_rlim_as_num): Added RLIMIT_AS support.
+	(opt_serv__conf_d1): Added <max> support to queue listen length.
+
+2005-10-25  James Antill  <james@and.org>
+
+	* tools/scons_and_httpd_helpers.py.in (init_builders): Fix path to have
+	-tools on the end.
+
+2005-10-25  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.5
+
+2005-10-25  James Antill  <james@and.org>
+
+	* tools/_,tools.conf: Add w3c like tools urls.
+
+	* tools/_redirect-index.conf: Seperate the redirect out into a conf.d
+	file.
+
+	* tools/scons_and_httpd_helpers.py.in (init_builders): The compress
+	builders use the gzip-r script now that you can specify an output file.
+
+	* tools/gzip-r (zip__file): Allow specifying the output name.
+
+	* src/httpd_conf_req.c (httpd__meta_build_path): Add a meta command
+	to make the URL absolute immediately after doing a Location:.
+
+	* src/httpd.c (http__try_encoded_content): Remove encoded extension from
+	filename on failure.
+
 2005-10-21  James Antill  <james@and.org>
+
+	* src/vlg.c (vlg_pid_file): Add return to pidfile.
 
 	* src/conf.h (conf_parse_num_token): Speed improvement.
 	(conf_parse_token): Always reset the copy of sects->num, as it could
@@ -7,6 +56,8 @@
 	* src/httpd_conf_main.c (httpd__match_iter_nxt): Remove dead code.
 
 2005-10-20  James Antill  <james@and.org>
+
+	* tools/Makefile.am (cronddir): Made gzip-r hourly.
 
 	* src/evnt.c (EVNT__RESOLVE_NAME): Minor performance tweak for addrs
 	that are really IPs.

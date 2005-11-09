@@ -66,10 +66,15 @@ typedef struct Httpd_req_data
  size_t len;
  size_t path_pos;
  size_t path_len;
+
+ VSTR_AUTOCONF_uintmax_t fs_len; /* total length of all range's */
+ 
  unsigned int             error_code;
  const char              *error_line;
  const char              *error_msg;
+ const char              *error_xmsg;
  VSTR_AUTOCONF_uintmax_t  error_len; /* due to custom files */
+ 
  Vstr_sects *sects;
  struct stat64 f_stat[1];
  size_t orig_io_w_len;

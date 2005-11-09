@@ -40,25 +40,6 @@
 
 #include <grp.h>
 
-#ifdef PR_SET_KEEPCAPS
-# ifdef HAVE_SYS_CAPABILITY_H
-#  include <sys/capability.h>
-# endif
-# define PROC_CNTL_KEEPCAPS(x1) prctl(PR_SET_KEEPCAPS, x1, 0, 0, 0)
-#else
-# define PROC_CNTL_KEEPCAPS(x1) (errno = ENOSYS, -1)
-# define cap_t void *
-# define cap_from_text(x) (errno = ENOSYS, NULL)
-# define cap_set_proc(x) (errno = ENOSYS, -1)
-# define cap_free(x) (errno = ENOSYS, -1)
-#endif
-
-#ifdef PR_SET_DUMPABLE
-# define PROC_CNTL_DUMPABLE(x1) prctl(PR_SET_DUMPABLE, x1, 0, 0, 0)
-#else
-# define PROC_CNTL_DUMPABLE(x1) (errno = ENOSYS, -1)
-#endif
-
 #define EX_UTILS_NO_USE_INIT  1
 #define EX_UTILS_NO_USE_EXIT  1
 #define EX_UTILS_NO_USE_LIMIT 1
@@ -79,6 +60,30 @@ MALLOC_CHECK_DECL();
 
 #include "httpd.h"
 #include "httpd_policy.h"
+
+
+/* need prctl.h from evnt.h */
+#ifdef PR_SET_KEEPCAPS
+# ifdef HAVE_SYS_CAPABILITY_H
+#  include <sys/capability.h>
+# endif
+# define PROC_CNTL_KEEPCAPS(x1) prctl(PR_SET_KEEPCAPS, x1, 0, 0, 0)
+#else
+# define PROC_CNTL_KEEPCAPS(x1) (errno = ENOSYS, -1)
+# define cap_t void *
+# define cap_from_text(x) (errno = ENOSYS, NULL)
+# define cap_set_proc(x) (errno = ENOSYS, -1)
+# define cap_free(x) (errno = ENOSYS, -1)
+#endif
+
+#ifdef PR_SET_DUMPABLE
+# define PROC_CNTL_DUMPABLE(x1) prctl(PR_SET_DUMPABLE, x1, 0, 0, 0)
+#else
+# define PROC_CNTL_DUMPABLE(x1) (errno = ENOSYS, -1)
+#endif
+
+
+
 
 #define CLEN COMPILE_STRLEN
 
@@ -664,6 +669,8 @@ static void serv_cmd_line(int argc, char *argv[])
     
     /* NOTE: after daemon so don't use err() anymore ... */
     
+    if (httpd_opts->s->rlim_as_call)
+      opt_serv_sc_rlim_as_num(httpd_opts->s->rlim_as_num);
     if (httpd_opts->s->rlim_core_call)
       opt_serv_sc_rlim_core_num(httpd_opts->s->rlim_core_num);
     if (httpd_opts->s->rlim_file_call)
@@ -698,7 +705,8 @@ static void serv_cmd_line(int argc, char *argv[])
       opt_serv_sc_drop_privs(opts);
       
       if (opts->keep_cap_fowner)
-      {
+      { /* use + instead of = because that's how getpcaps prints it,
+         * however they do the same due to no input */
         cap_t caps = cap_from_text("cap_fowner+ep-i");
 
         if (!caps)

@@ -440,6 +440,8 @@ sub setup
     munge_mtime(44, "$root/foo.example.com/empty");
 
     system("$ENV{_TOOLSDIR}/gzip-r --force --type=all $root");
+    system("$ENV{_TOOLSDIR}/gzip-r --zero --type=all $root/foo.example.com/index.html");
+
     munge_mtime(0, "$root/index.html.gz");
     munge_mtime(0, "$root/index.html.bz2");
     munge_mtime(0, "$root/default/index.html.gz");

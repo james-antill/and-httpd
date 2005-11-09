@@ -1,3 +1,7 @@
- You can place arbitrary configuration files in this directory (must end ini
-".conf") and they will be loaded in LC_ALL=C order after the main configuration
-file is loaded.
+ You can place arbitrary configuration files in this directory (must end in
+".conf" and not start with '.') and they will be loaded in mostly
+LC_ALL=C order after the main configuration file is loaded.
+
+ The difference in sort order is that files starting with an _ are loaded before
+all others ... this is because all the files that and-httpd ships in the conf.d
+directory will start with an '_'.

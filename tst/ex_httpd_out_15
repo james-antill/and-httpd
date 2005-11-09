@@ -1,27 +1,27 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.4
+Server: and-httpd/0.99.5
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.4
+Server: and-httpd/0.99.5
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.4
+Server: and-httpd/0.99.5
 Accept-Ranges: bytes
 Content-Length: 0
 Allow: GET, HEAD, OPTIONS, TRACE
 
 HTTP/1.1 403 Forbidden
 Date:
-Server: and-httpd/0.99.4
+Server: and-httpd/0.99.5
 Last-Modified:
 Content-Type: text/html
 Content-Length: 312
@@ -40,7 +40,7 @@ Content-Length: 312
 </html>
 HTTP/1.1 400 Bad Request
 Date:
-Server: and-httpd/0.99.4
+Server: and-httpd/0.99.5
 Last-Modified:
 Connection: close
 Content-Type: text/html

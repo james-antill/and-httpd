@@ -117,10 +117,11 @@ fi
 %defattr(-,root,root,-)
 %{_sbindir}/
 %{_bindir}/
-%{_sysconfdir}/and-httpd/conf.d
+%{_sysconfdir}/and-httpd/conf.d/README
 %{_sysconfdir}/init.d/and-httpd
-%{_sysconfdir}/cron.daily/and-httpd_gzip
+%{_sysconfdir}/cron.hourly/and-httpd_gzip
 %config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
+%config %{_sysconfdir}/and-httpd/conf.d/_*.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
 %{wwwdir}/err/example.com/*
 %doc

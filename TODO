@@ -53,11 +53,19 @@
 
 http://www.sans.org/top20/#u2
 
-        gzip-r bld in scons
+        unit test ",tools" type redirects
+        super hostname checking != . ... isalnum(^str)
+        config. for content-* with no content-len checking.
         getgroups before setgroups
-        change gethostbyname() to the new BS.
-          IPv6 (and flying cars)
+        do translations for error pages
+        tst zsync
+        include a default start page?
+         /server-status/ - from and-cntl -e list
 	man pages
+	static app.
+         way to enable CONF_FULL_STATIC
+         way to not include libcap, which doesn't have a static file
+         way to use -Wl,-Bstatic?
         conf
          Allow req_conf to have matches (maybe (match-allow [] ...) ?)
           Match needed for different ETags for content neg.
@@ -65,7 +73,11 @@ http://www.sans.org/top20/#u2
           ACL lists for ipv4-etc.
          CGI / fast_cgi / SCGI http://python.ca/nas/scgi/protocol.txt
          Better error reporting.
-
+        update config. while live.
+        optionally log full requests.
+        log to files / hosts
+        change gethostbyname() to the new BS.
+          IPv6 (and flying cars)
         Allow none 
 	Redirect for non-canonical URLs (Ie. %61 used) -- like %2e/%2f fixup
 	mime_types speed, by having explicit filename/ext matches

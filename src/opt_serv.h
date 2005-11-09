@@ -11,6 +11,7 @@
 #define OPT_SERV_CONF_USE_DAEMON FALSE
 #define OPT_SERV_CONF_USE_DROP_PRIVS FALSE
 #define OPT_SERV_CONF_USE_PDEATHSIG FALSE
+#define OPT_SERV_CONF_DEF_RLIM_AS_CALL FALSE
 #define OPT_SERV_CONF_DEF_RLIM_CORE_CALL FALSE
 #define OPT_SERV_CONF_DEF_RLIM_FILE_CALL FALSE
 #define OPT_SERV_CONF_DEF_TCP_DEFER_ACCEPT 8 /* HC usage txt */
@@ -21,6 +22,7 @@
 #define OPT_SERV_CONF_USE_INSTA_CLOSE FALSE
 #define OPT_SERV_CONF_DEF_Q_LISTEN_LEN 128
 #define OPT_SERV_CONF_DEF_MAX_CONNECTIONS 0
+#define OPT_SERV_CONF_DEF_RLIM_AS_NUM 0
 #define OPT_SERV_CONF_DEF_RLIM_CORE_NUM 0
 #define OPT_SERV_CONF_DEF_RLIM_FILE_NUM 0
 #define OPT_SERV_CONF_USE_CAP_FOWNER FALSE
@@ -70,8 +72,11 @@ typedef struct Opt_serv_opts
  unsigned int drop_privs : 1;
  unsigned int use_pdeathsig : 1;
  unsigned int no_conf_listen : 1;
+ 
+ unsigned int rlim_as_call : 1;
  unsigned int rlim_core_call : 1;
  unsigned int rlim_file_call : 1;
+ 
  unsigned int keep_cap_fowner : 1;
  unsigned int make_dumpable : 1;
 
@@ -85,6 +90,7 @@ typedef struct Opt_serv_opts
  gid_t priv_gid;
  unsigned int num_procs;
 
+ unsigned int rlim_as_num;
  unsigned int rlim_core_num;
  unsigned int rlim_file_num;
 
@@ -110,6 +116,7 @@ typedef struct Opt_serv_opts
     OPT_SERV_CONF_USE_DROP_PRIVS,                                       \
     OPT_SERV_CONF_USE_PDEATHSIG,                                        \
     FALSE,                                                              \
+    OPT_SERV_CONF_DEF_RLIM_AS_CALL,                                     \
     OPT_SERV_CONF_DEF_RLIM_CORE_CALL,                                   \
     OPT_SERV_CONF_DEF_RLIM_FILE_CALL,                                   \
     OPT_SERV_CONF_USE_CAP_FOWNER,                                       \
@@ -118,6 +125,7 @@ typedef struct Opt_serv_opts
     NULL, OPT_SERV_CONF_DEF_PRIV_UID,                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_GID,                                   \
     OPT_SERV_CONF_DEF_NUM_PROCS,                                        \
+    OPT_SERV_CONF_DEF_RLIM_AS_NUM,                                      \
     OPT_SERV_CONF_DEF_RLIM_CORE_NUM,                                    \
     OPT_SERV_CONF_DEF_RLIM_FILE_NUM,                                    \
     4,                                                                  \
@@ -156,8 +164,9 @@ extern int opt_serv_match_init(struct Opt_serv_opts *,
 
 extern void opt_serv_sc_drop_privs(Opt_serv_opts *)
     COMPILE_ATTR_NONNULL_A();
-extern void opt_serv_sc_rlim_file_num(unsigned int);
+extern void opt_serv_sc_rlim_as_num(unsigned int);
 extern void opt_serv_sc_rlim_core_num(unsigned int);
+extern void opt_serv_sc_rlim_file_num(unsigned int);
 extern int  opt_serv_sc_acpt_end(const Opt_serv_policy_opts *,
                                  struct Evnt *, struct Evnt *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
@@ -269,6 +278,28 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       if (conf_sc_token_parse_uint(conf, token, &opt__val))     \
         return (FALSE);                                         \
       (x) = opt__val;                                           \
+    } while (FALSE)
+
+/* take either a number or one of a few symbols */
+#define OPT_SERV_X_SYM_UINT_BEG(x) do {                                 \
+      const Vstr_sect_node *pv = NULL;                                  \
+      unsigned int val = 0;                                             \
+      int ern = 0;                                                      \
+                                                                        \
+      ern = conf_sc_token_parse_uint(conf, token, &val);                \
+      if ((ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                        \
+          !(pv = conf_token_value(token)))                              \
+        return (FALSE);                                                 \
+                                                                        \
+      if (!pv)                                                          \
+        (x) = val;                                                      \
+      else                                                              \
+      {                                                                 \
+        if (0) do { } while (FALSE)
+
+#define OPT_SERV_X_SYM_UINT_END(x)                                      \
+        else return (FALSE);                                            \
+      }                                                                 \
     } while (FALSE)
 
 #define OPT_SERV_X__ESC_VSTR(x, p, l) do {                              \

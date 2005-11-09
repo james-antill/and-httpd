@@ -6,8 +6,8 @@ import glob
 def init_builders(bldr):
     global gzip_bld
     global bzip_bld
-    global jhighlight_bld
-    global jssi_bld
+    global and_highlight_bld
+    global and_ssi_bld
     global make_examples_index_bld
     global make_index_bld
     global ln_bld
@@ -19,20 +19,21 @@ def init_builders(bldr):
 # Generic...
 
     gzip_bld = bldr(action = '\
-gzip  --to-stdout --no-name --best $SOURCE > $TARGET')
+gzip-r --zero --type=gzip  --output $TARGET $SOURCE')
 
     bzip2_bld = bldr(action = '\
-bzip2 --stdout --best $SOURCE > $TARGET')
+gzip-r --zero --type=bzip2 --output $TARGET $SOURCE')
 
 # Vstr/and-httpd-tools specific...
 
     # Can't use @"datadir"@ due to it containing ${prefix}
-    and_httpd_tools_path = "@prefix@/share/and-httpd-@VERSION@"
+    and_httpd_tools_path = "@prefix@/share/and-httpd-@VERSION@-tools"
 
-    jhighlight_bld = bldr(action = '\
-jhighlight --css-file=http://www.and.org/f_c.css $SOURCE > $TARGET')
+    and_highlight_bld = bldr(action = '\
+and-highlight --css-file=http://www.and.org/f_c.css $HIGHARGS $SOURCE > $TARGET')
 
-    jssi_bld       = bldr(action = 'jssi       $SOURCE > $TARGET')
+    and_ssi_bld       = bldr(action = '\
+and-ssi $SSIARGS $SOURCE > $TARGET')
 
     make_examples_index_bld = bldr(action = '\
 make_index --filter-args="-A README -A Makefile -A SConstruct --acpt-name-end .c --acpt-name-end .h --deny-all" --output $TARGET $SOURCE')
@@ -44,8 +45,8 @@ make_index $MKINDXARGS --output $TARGET $SOURCE')
     lns_bld = bldr(action = 'ln -s $SOURCE $TARGET')
 
     sc_path = "/usr/local/bin:/usr/bin:/bin:" + and_httpd_tools_path
-    sc_blders = {'Highlight'    : jhighlight_bld,
-                 'SSI'          : jssi_bld,
+    sc_blders = {'Highlight'    : and_highlight_bld,
+                 'SSI'          : and_ssi_bld,
                  'Make_indx'    : make_index_bld,
                  'GZip'         : gzip_bld,
                  'BZip2'        : bzip2_bld,
@@ -75,6 +76,10 @@ conf = {'GENERATE_INDEX_NAME' : "index.html",
 	'GENERATED_DIR' : "generated_html/",
 	'CONF_DIR' : "conf/",
 	}
+
+# Way to comment out a list...
+def ignore(x):
+    pass
 
 # Generate index.html files automatically in a different dir...
 def gen_dif_idx(env, data, x, rec=False):

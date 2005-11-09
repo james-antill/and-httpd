@@ -693,11 +693,8 @@ void vlg_pid_file(Vlg *vlg, const char *pid_file)
   if (out->len)
     vlg_err(vlg, EXIT_FAILURE, "Data in vlg for pid_file\n");
   
-  if (!vstr_add_fmt(out, out->len, "%lu", (unsigned long)getpid()))
-  {
-    vstr_del(out, 1, out->len);
+  if (!vstr_add_fmt(out, out->len, "%lu\n", (unsigned long)getpid()))
     vlg_err(vlg, EXIT_FAILURE, "vlg_pid_file: %m\n");
-  }
 
   if (!vstr_sc_write_file(out, 1, out->len,
                           pid_file, O_WRONLY | O_CREAT | O_TRUNC, 0644, 0,NULL))

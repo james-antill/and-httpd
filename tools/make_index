@@ -85,11 +85,11 @@ __END__
 
 =head1 NAME
 
-make_index.pl - Make index.html files from directories
+make_index - Make index.html files from directories
 
 =head1 SYNOPSIS
 
-make_index.pl [options] <dir>
+make_index [options] <dir>
 
  Options:
   --help -?         brief help message
@@ -98,7 +98,8 @@ make_index.pl [options] <dir>
   --sort-args       Sort arguments
   --html-args       HTML conversion arguments
   --dir-name        Directory name
-  --prefix-exes     prefix for executables
+  --output -o       Output filename
+  --prefix-exes -P  prefix for executables
 
 =head1 OPTIONS
 
@@ -128,6 +129,10 @@ Args to pass the dir_list2html.
 
 Name of directory for the title.
 
+=item B<--output>
+
+Filename to output directory contents to (defaults to index.html).
+
 =item B<--prefix>
 
 Prefix to add the executable names (can be a path).
@@ -137,10 +142,10 @@ Prefix to add the executable names (can be a path).
 
 =head1 DESCRIPTION
 
-B<make_index.pl> will create index.html files from a given directory.
+B<make_index> will create index.html files from a given directory.
  It filters the filenames in the directory and can use an executable prefix.
 
-B<make_index.pl> calls the programs dir_list, dir_filter, dir_sort and
+B<make_index> calls the programs dir_list, dir_filter, dir_sort and
 dir_list2html.
 
 =cut

@@ -24,6 +24,14 @@
 # define strsignal(x) ""
 #endif
 
+#ifdef RLIMIT_AS /* not sure how portable this one is,
+                  * modern stuff seems to have it */
+# define USE_RLIMIT_AS TRUE
+#else
+# define USE_RLIMIT_AS FALSE
+# define RLIMIT_AS 0
+#endif
+
 static Vlg *vlg = NULL;
 
 int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
@@ -288,31 +296,17 @@ int opt_serv_match_init(struct Opt_serv_opts *opts,
 }
 
 #define OPT_SERV__RLIM_VAL(x, y) do {                                   \
-      const Vstr_sect_node *pv = NULL;                                  \
-      unsigned int val = 0;                                             \
-      int ern = 0;                                                      \
-                                                                        \
       (y) = TRUE;                                                       \
                                                                         \
-      ern = conf_sc_token_parse_uint(conf, token, &val);                \
-      if (ern && (ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                 \
-          !(pv = conf_token_value(token)))                              \
-        return (FALSE);                                                 \
-                                                                        \
-      if (!pv)                                                          \
-        (x) = val;                                                      \
-      else                                                              \
-      {                                                                 \
-        if (0){ }                                                       \
-        else if (OPT_SERV_SYM_EQ("<infinity>"))  (x) = RLIM_INFINITY;   \
-        else if (OPT_SERV_SYM_EQ("<unlimited>")) (x) = RLIM_INFINITY;   \
-        else if (OPT_SERV_SYM_EQ("<none>"))      (x) = 0;               \
-        else if (OPT_SERV_SYM_EQ("<zero>"))      (x) = 0;               \
-        else if (OPT_SERV_SYM_EQ("<default>"))   (y) = FALSE;           \
-        else return (FALSE);                                            \
-      }                                                                 \
-    }                                                                   \
-    while (FALSE)
+      OPT_SERV_X_SYM_UINT_BEG(x);                                       \
+      else if (OPT_SERV_SYM_EQ("<infinity>"))  (x) = RLIM_INFINITY;     \
+      else if (OPT_SERV_SYM_EQ("<unlimited>")) (x) = RLIM_INFINITY;     \
+      else if (OPT_SERV_SYM_EQ("<none>"))      (x) = 0;                 \
+      else if (OPT_SERV_SYM_EQ("<zero>"))      (x) = 0;                 \
+      else if (OPT_SERV_SYM_EQ("<default>"))   (y) = FALSE;             \
+      OPT_SERV_X_SYM_UINT_END(x);                                       \
+    } while (FALSE)
+
 
 static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
                              Conf_parse *conf, Conf_token *token,
@@ -376,11 +370,14 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       OPT_SERV_X_UINT(addr->defer_accept);
     else if (OPT_SERV_SYM_EQ("port"))
       OPT_SERV_X_UINT(addr->tcp_port);
-    else if (OPT_SERV_SYM_EQ("address") ||
-             OPT_SERV_SYM_EQ("addr"))
+    else if (OPT_SERV_SYM_EQ("addr") || OPT_SERV_SYM_EQ("address"))
       OPT_SERV_X_VSTR(addr->ipv4_address);
     else if (OPT_SERV_SYM_EQ("queue-length"))
-      OPT_SERV_X_UINT(addr->q_listen_len);
+    {
+      OPT_SERV_X_SYM_UINT_BEG(addr->q_listen_len);
+      else if (OPT_SERV_SYM_EQ("<max>")) addr->q_listen_len = SOMAXCONN;
+      OPT_SERV_X_SYM_UINT_END(x);
+    }
     else if (OPT_SERV_SYM_EQ("filter"))
     {
       if (!opt_serv_sc_make_static_path(opts, conf, token,
@@ -440,12 +437,12 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
   {
     CONF_SC_MAKE_CLIST_BEG(rlimit, clist);
 
-    else if (OPT_SERV_SYM_EQ("CORE") ||
-             OPT_SERV_SYM_EQ("core"))
+    else if (OPT_SERV_SYM_EQ("AS")     || OPT_SERV_SYM_EQ("address-space"))
+      OPT_SERV__RLIM_VAL(opts->rlim_as_num, opts->rlim_as_call);
+    else if (OPT_SERV_SYM_EQ("CORE")   || OPT_SERV_SYM_EQ("core"))
       OPT_SERV__RLIM_VAL(opts->rlim_core_num, opts->rlim_core_call);
-    else if (OPT_SERV_SYM_EQ("NOFILE") ||
-             OPT_SERV_SYM_EQ("file-descriptor-number") ||
-             OPT_SERV_SYM_EQ("fd-num"))
+    else if (OPT_SERV_SYM_EQ("NOFILE") || OPT_SERV_SYM_EQ("fd-num") ||
+             OPT_SERV_SYM_EQ("file-descriptor-number"))
       OPT_SERV__RLIM_VAL(opts->rlim_file_num, opts->rlim_file_call);
       
     CONF_SC_MAKE_CLIST_END();
@@ -752,7 +749,7 @@ static void opt_serv__sc_rlim_num(const char *name, int resource,
   struct rlimit rlim[1];
     
   if (getrlimit(resource, rlim) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "getrlimit(%s): %m\n", name);
+    vlg_err(vlg, EXIT_FAILURE, "getrlimit(RLIMIT_%s): %m\n", name);
 
 
   if (num == RLIM_INFINITY) /* only attempt upwards, if we are privilaged */
@@ -772,17 +769,23 @@ static void opt_serv__sc_rlim_num(const char *name, int resource,
   rlim->rlim_cur = rlim->rlim_max; /* upgrade soft to hard */
   
   if (setrlimit(resource, rlim) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "setrlimit(%s): %m\n", name);
+    vlg_err(vlg, EXIT_FAILURE, "setrlimit(RLIMIT_%s): %m\n", name);
 }
 
-void opt_serv_sc_rlim_file_num(unsigned int rlim_file_num)
+void opt_serv_sc_rlim_as_num(unsigned int rlim_as_num)
 {
-  opt_serv__sc_rlim_num("NOFILE", RLIMIT_NOFILE, rlim_file_num);
+  if (USE_RLIMIT_AS)
+    opt_serv__sc_rlim_num("AS", RLIMIT_AS, rlim_as_num);
 }
 
 void opt_serv_sc_rlim_core_num(unsigned int rlim_core_num)
 {
   opt_serv__sc_rlim_num("CORE", RLIMIT_CORE, rlim_core_num);
+}
+
+void opt_serv_sc_rlim_file_num(unsigned int rlim_file_num)
+{
+  opt_serv__sc_rlim_num("NOFILE", RLIMIT_NOFILE, rlim_file_num);
 }
 
 int opt_serv_sc_acpt_end(const Opt_serv_policy_opts *popts,
@@ -1166,6 +1169,11 @@ static int opt_serv__sort_conf_files(const void *passed_a, const void *passed_b)
 {
   const struct dirent * const *a = passed_a;
   const struct dirent * const *b = passed_b;
+
+  /* treat leading _ as system conf.d files and process those first...
+   * Ie. if a is _y and b is x, then (a is < b), hence return -1 */
+  if (((*a)->d_name[0] == '_') != ((*b)->d_name[0] == '_'))
+    return (((*b)->d_name[0] == '_') - ((*a)->d_name[0] == '_'));
   
   return strcmp((*a)->d_name, (*b)->d_name);
 }
