@@ -33,10 +33,11 @@
         keep-alive FALSE
         range false
         encoded-content-replacement false
-        error-406 false
-       (limit header-size 2_048)
-        canonize-host true
-        error-host-400 false)
+       (strictness error-406 false
+                   hostname
+                      canonize true
+                      validation fast virtual-hosts-default)
+       (limit header-size 2_048))
      
      MIME/types-default-type bar/baz 
      MIME/types-filename-main (= ENV _MIMEDIR /mime_types_extra.txt)

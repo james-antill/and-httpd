@@ -1,11 +1,6 @@
+404 Non trouvé
 
-                                 404 Not Found
+Le document demandé n'a pas été trouvé.
 
-   The document requested was not found.
-     _________________________________________________________________
+Produit �  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

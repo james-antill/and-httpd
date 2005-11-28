@@ -1,12 +1,7 @@
+503 Halten Sie Nicht erreichbares Instand
 
-                            503 Service Unavailable
+Der Bediener ist z.Z. nicht imstande, den Antrag wegen einer
+temporären Überbelastung oder einer Wartung des Bedieners anzufassen.
 
-   The server is currently unable to handle the request due to a temporary
-   overloading or maintenance of the server.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

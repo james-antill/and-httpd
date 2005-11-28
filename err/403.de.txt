@@ -1,11 +1,6 @@
+403 Verboten
 
-                                 403 Forbidden
+Der Antrag ist verboten.
 
-   The request is forbidden.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

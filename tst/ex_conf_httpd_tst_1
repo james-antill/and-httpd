@@ -44,7 +44,7 @@
      unspecified-hostname default ; -- so we always match in tests
      unspecified-hostname-append-port off
      secure-directory-filename no
-     (HTTP header-names-strict false)
+     (HTTP strictness headers allow-spaces true)
      MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
 
      virtual-hosts true

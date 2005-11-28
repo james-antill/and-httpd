@@ -790,35 +790,115 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     
     CONF_SC_MAKE_CLIST_END();
   }
-  else if (OPT_SERV_SYM_EQ("canonize-host") ||
-           OPT_SERV_SYM_EQ("make-canonical-host"))
-    OPT_SERV_X_TOGGLE(opts->use_canonize_host);
-  else if (OPT_SERV_SYM_EQ("check-dot-directory") ||
-           OPT_SERV_SYM_EQ("chk-dot-dir") ||
-           OPT_SERV_SYM_EQ("chk-.-dir"))
-    OPT_SERV_X_TOGGLE(opts->chk_dot_dir);
-  else if (OPT_SERV_SYM_EQ("check-double-headr") ||
-           OPT_SERV_SYM_EQ("chk-dbl-hdr") ||
-           OPT_SERV_SYM_EQ("check-*2-hdr") ||
-           OPT_SERV_SYM_EQ("check-*2-header"))
-    OPT_SERV_X_TOGGLE(opts->use_x2_hdr_chk);
-  else if (OPT_SERV_SYM_EQ("check-encoded-slash") ||
-           OPT_SERV_SYM_EQ("chk-enc-/"))
-    OPT_SERV_X_TOGGLE(opts->chk_encoded_slash);
-  else if (OPT_SERV_SYM_EQ("check-encoded-dot") ||
-           OPT_SERV_SYM_EQ("chk-enc-."))
-    OPT_SERV_X_TOGGLE(opts->chk_encoded_dot);
-  else if (OPT_SERV_SYM_EQ("check-host") ||
-           OPT_SERV_SYM_EQ("chk-host"))
-    OPT_SERV_X_TOGGLE(opts->use_host_err_chk);
-  else if (OPT_SERV_SYM_EQ("error-406"))
-    OPT_SERV_X_TOGGLE(opts->use_err_406);
-  else if (OPT_SERV_SYM_EQ("error-host-400"))
-    OPT_SERV_X_TOGGLE(opts->use_host_err_400);
-  else if (OPT_SERV_SYM_EQ("encoded-content-replacement"))
+  else if (OPT_SERV_SYM_EQ("strictness"))
+  {
+    CONF_SC_MAKE_CLIST_BEG(http_checks, clist);
+    
+    else if (OPT_SERV_SYM_EQ("hdrs") || OPT_SERV_SYM_EQ("headers"))
+    {
+      CONF_SC_MAKE_CLIST_BEG(checks_hdrs, clist);
+      
+      else if (OPT_SERV_SYM_EQ("allow-dbl") ||
+               OPT_SERV_SYM_EQ("allow-double") ||
+               OPT_SERV_SYM_EQ("allow-*2"))
+        OPT_SERV_X_NEG_TOGGLE(opts->use_hdrs_no_x2);
+      else if (OPT_SERV_SYM_EQ("allow-missing-length"))
+        OPT_SERV_X_NEG_TOGGLE(opts->use_hdrs_err_411);
+      else if (OPT_SERV_SYM_EQ("allow-spaces"))
+        OPT_SERV_X_NEG_TOGGLE(opts->use_hdrs_non_spc);
+      
+      CONF_SC_MAKE_CLIST_END();
+    }
+    
+    else if (OPT_SERV_SYM_EQ("host") || OPT_SERV_SYM_EQ("hostname"))
+    {
+      CONF_SC_MAKE_CLIST_BEG(checks_host, clist);
+      
+      else if (OPT_SERV_SYM_EQ("canonize") ||
+               OPT_SERV_SYM_EQ("make-canonical"))
+        OPT_SERV_X_TOGGLE(opts->use_canonize_host);
+      else if (OPT_SERV_SYM_EQ("validation"))
+      {
+        int use_internal_host_chk = FALSE;
+        int use_host_chk          = FALSE;
+        int use_host_err_400      = FALSE;
+        int validation_done       = FALSE;
+        
+        CONF_SC_MAKE_CLIST_BEG(checks_host, clist);
+        
+        else if (OPT_SERV_SYM_EQ("off")  || OPT_SERV_SYM_EQ("false") ||
+                 OPT_SERV_SYM_EQ("OFF")  || OPT_SERV_SYM_EQ("FALSE") ||
+                 OPT_SERV_SYM_EQ("no")   || OPT_SERV_SYM_EQ("NO") ||
+                 OPT_SERV_SYM_EQ("none") || OPT_SERV_SYM_EQ("NONE") ||
+                 OPT_SERV_SYM_EQ("0"))
+        {
+          use_internal_host_chk = FALSE;
+          use_host_chk          = FALSE;
+          use_host_err_400      = FALSE;
+          validation_done       = TRUE;
+        }
+        else if (OPT_SERV_SYM_EQ("fast") || OPT_SERV_SYM_EQ("internal"))
+        {
+          use_internal_host_chk = TRUE;
+          validation_done       = TRUE;
+        }
+        else if (OPT_SERV_SYM_EQ("virtual-hosts-default"))
+        {
+          use_host_chk          = TRUE;
+          use_host_err_400      = FALSE;
+          validation_done       = TRUE;
+        }
+        else if (OPT_SERV_SYM_EQ("virtual-hosts-error"))
+        {
+          use_host_chk          = TRUE;
+          use_host_err_400      = TRUE;
+          validation_done       = TRUE;
+        }
+        
+        CONF_SC_MAKE_CLIST_END();
+        
+        if (validation_done)
+        {
+          opts->use_internal_host_chk = use_internal_host_chk;
+          opts->use_host_chk          = use_host_chk;
+          opts->use_host_err_400      = use_host_err_400;
+        }
+      }
+      
+      CONF_SC_MAKE_CLIST_END();
+    }
+    
+    else if (OPT_SERV_SYM_EQ("allow-dot-directory") ||
+             OPT_SERV_SYM_EQ("allow-dot-dir") ||
+             OPT_SERV_SYM_EQ("allow-.-dir"))
+      OPT_SERV_X_NEG_TOGGLE(opts->chk_dot_dir);
+    else if (OPT_SERV_SYM_EQ("allow-encoded-slash") ||
+             OPT_SERV_SYM_EQ("allow-enc-/"))
+      OPT_SERV_X_NEG_TOGGLE(opts->chk_encoded_slash);
+    else if (OPT_SERV_SYM_EQ("allow-encoded-dot") ||
+             OPT_SERV_SYM_EQ("allow-enc-."))
+      OPT_SERV_X_NEG_TOGGLE(opts->chk_encoded_dot);
+    else if (OPT_SERV_SYM_EQ("error-406") ||
+             OPT_SERV_SYM_EQ("error-not-acceptable") ||
+             OPT_SERV_SYM_EQ("error-406-not-acceptable"))
+      OPT_SERV_X_TOGGLE(opts->use_err_406);
+    else if (OPT_SERV_SYM_EQ("url") || OPT_SERV_SYM_EQ("URL"))
+    {
+      CONF_SC_MAKE_CLIST_BEG(checks_host, clist);
+      
+      else if (OPT_SERV_SYM_EQ("remove-fragment"))
+        OPT_SERV_X_TOGGLE(opts->remove_url_frag);
+      else if (OPT_SERV_SYM_EQ("remove-query"))
+        OPT_SERV_X_TOGGLE(opts->remove_url_query);
+      
+      CONF_SC_MAKE_CLIST_END();
+    }
+    
+    CONF_SC_MAKE_CLIST_END(); /* end of http checks */
+  }
+  
+  else if (OPT_SERV_SYM_EQ("encoded-content-replacement")) /* allow gzip */
     OPT_SERV_X_TOGGLE(opts->use_enc_content_replacement);
-  else if (OPT_SERV_SYM_EQ("header-names-strict"))
-    OPT_SERV_X_TOGGLE(opts->use_non_spc_hdrs);
   else if (OPT_SERV_SYM_EQ("keep-alive"))
     OPT_SERV_X_TOGGLE(opts->use_keep_alive);
   else if (OPT_SERV_SYM_EQ("keep-alive-1.0"))

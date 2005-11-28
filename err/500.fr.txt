@@ -1,11 +1,6 @@
+500 Erreur Interne De Serveur
 
-                           500 Internal Server Error
+Le serveur a rencontr√© quelque chose de inattendu.
 
-   The server encountered something unexpected.
-     _________________________________________________________________
+Produit √  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

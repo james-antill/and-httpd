@@ -1,12 +1,7 @@
+503 Service Indisponible
 
-                            503 Service Unavailable
+Le serveur ne peut pas actuellement manipuler la demande due Ã  une
+surcharge ou Ã  un entretien provisoire du serveur.
 
-   The server is currently unable to handle the request due to a temporary
-   overloading or maintenance of the server.
-     _________________________________________________________________
+Produit Ã  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

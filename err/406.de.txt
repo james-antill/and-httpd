@@ -1,13 +1,9 @@
+406 Nicht Annehmbar
 
-                              406 Not Acceptable
+Das Hilfsmittel, das durch den Antrag gekennzeichnet wird, ist zum
+Erzeugen der Wartewesen nur fähig, die die zufriedenen Eigenschaften
+haben, die entsprechend den annehmenüberschriften nicht annehmbar
+sind, die im Antrag gesendet werden.
 
-   The  resource  identified by the request is only capable of generating
-   response  entities  which  have content characteristics not acceptable
-   according to the accept headers sent in the request.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

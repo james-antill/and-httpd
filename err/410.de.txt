@@ -1,13 +1,8 @@
+410 Gegangen
 
-                                   410 Gone
+Das erbetene Hilfsmittel ist nicht mehr am Bediener vorhanden und keine
+Nachsendeadresse bekannt. Diese Bedingung wird erwartet, als dauerhaft
+zu gelten.
 
-   The  requested  resource  is  no longer available at the server and no
-   forwarding address is known. This condition is expected to be considered
-   permanent.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

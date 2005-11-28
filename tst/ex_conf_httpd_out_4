@@ -56,37 +56,41 @@
     56. <Symbol> = false
     57. <Symbol> = encoded-content-replacement
     58. <Symbol> = false
-    59. <Symbol> = error-406
-    60. <Symbol> = false
-    61. [Circular bracket list]
-      62. <Symbol> = limit
-      63. <Symbol> = header-size
-      64. <Symbol> = 2_048
-    65. <Symbol> = canonize-host
-    66. <Symbol> = true
-    67. <Symbol> = error-host-400
-    68. <Symbol> = false
-  69. <Symbol> = MIME/types-default-type
-  70. <Symbol> = bar/baz
-  71. <Symbol> = MIME/types-filename-main
-  72. [Circular bracket list]
-    73. <Symbol> = =
-    74. <Symbol> = ENV
-    75. <Symbol> = _MIMEDIR
-    76. <Symbol> = /mime_types_extra.txt
-  77. <Symbol> = MIME/types-filename-xtra
-  78. [Circular bracket list]
-    79. <Symbol> = =
-    80. <Symbol> = ENV
-    81. <Symbol> = _TSTDIR
-    82. <Symbol> = /ex_httpd_bad_mime
-  83. <Symbol> = server-name
-  84. <Quoted string (double, RAW)> = Apache/2.0.40 (Red Hat Linux)
-  85. <Symbol> = directory-filename
-  86. <Quoted string (single, RAW)> = welcome.html
-  87. <Symbol> = document-root
-  88. <Quoted string (single, RAW)> = ex_httpd_root
-  89. <Symbol> = request-configuration-directory
-  90. <Quoted string (double, RAW)> = ex_httpd_conf
-  91. <Symbol> = req-err-dir
-  92. <Quoted string (single, RAW)> = ex_httpd_err/
+    59. [Circular bracket list]
+      60. <Symbol> = strictness
+      61. <Symbol> = error-406
+      62. <Symbol> = false
+      63. <Symbol> = hostname
+      64. <Symbol> = canonize
+      65. <Symbol> = true
+      66. <Symbol> = validation
+      67. <Symbol> = fast
+      68. <Symbol> = virtual-hosts-default
+    69. [Circular bracket list]
+      70. <Symbol> = limit
+      71. <Symbol> = header-size
+      72. <Symbol> = 2_048
+  73. <Symbol> = MIME/types-default-type
+  74. <Symbol> = bar/baz
+  75. <Symbol> = MIME/types-filename-main
+  76. [Circular bracket list]
+    77. <Symbol> = =
+    78. <Symbol> = ENV
+    79. <Symbol> = _MIMEDIR
+    80. <Symbol> = /mime_types_extra.txt
+  81. <Symbol> = MIME/types-filename-xtra
+  82. [Circular bracket list]
+    83. <Symbol> = =
+    84. <Symbol> = ENV
+    85. <Symbol> = _TSTDIR
+    86. <Symbol> = /ex_httpd_bad_mime
+  87. <Symbol> = server-name
+  88. <Quoted string (double, RAW)> = Apache/2.0.40 (Red Hat Linux)
+  89. <Symbol> = directory-filename
+  90. <Quoted string (single, RAW)> = welcome.html
+  91. <Symbol> = document-root
+  92. <Quoted string (single, RAW)> = ex_httpd_root
+  93. <Symbol> = request-configuration-directory
+  94. <Quoted string (double, RAW)> = ex_httpd_conf
+  95. <Symbol> = req-err-dir
+  96. <Quoted string (single, RAW)> = ex_httpd_err/

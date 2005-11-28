@@ -30,7 +30,7 @@ sub httpd__munge_ret
     $output =~ s/^(Date:).*$/$1/gm;
     # Remove last-modified = start date for error messages
     $output =~
-      s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[0234567]|50[0135]) .*)$ (\n)
+      s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
 	^(Date:)$ (\n)
 	^(Server: .*)$ (\n)
 	^(Last-Modified:) .*$
@@ -558,7 +558,7 @@ if (@ARGV)
     success();
   }
 
-our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP (header-names-strict false)))'";
+our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP strictness headers allow-spaces true))'";
 our $conf_args_strict = " --configuration-data-and-httpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))'";
 
 sub httpd_vhost_tst

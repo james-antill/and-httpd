@@ -1,11 +1,6 @@
+400 Mauvaise Demande
 
-                                400 Bad Request
+La demande n'a pas pu Ãªtre comprise.
 
-   The request could not be understood.
-     _________________________________________________________________
+Produit Ã  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

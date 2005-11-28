@@ -1,13 +1,9 @@
+406 Non acceptable
 
-                              406 Not Acceptable
+La ressource identifiée par la demande est seulement capable de
+produire des entités de réponse qui ont des caractéristiques
+contentes non acceptables selon les en-têtes d'accepter introduits la
+demande.
 
-   The  resource  identified by the request is only capable of generating
-   response  entities  which  have content characteristics not acceptable
-   according to the accept headers sent in the request.
-     _________________________________________________________________
+Produit �  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

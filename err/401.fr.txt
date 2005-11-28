@@ -1,11 +1,6 @@
+401 Non autoris√©
 
-                               401 Unauthorized
+La demande exige l'authentification d'utilisateur.
 
-   The request requires user authentication.
-     _________________________________________________________________
+Produit √  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

@@ -41,8 +41,11 @@
 #define HTTPD_CONF_USE_ERR_406 TRUE
 #define HTTPD_CONF_USE_CANONIZE_HOST FALSE
 #define HTTPD_CONF_USE_HOST_ERR_400 TRUE
-#define HTTPD_CONF_USE_HOST_ERR_CHK TRUE
-#define HTTPD_CONF_USE_x2_HDR_CHK TRUE
+#define HTTPD_CONF_USE_INTERNAL_HOST_CHK TRUE
+#define HTTPD_CONF_USE_HOST_CHK TRUE
+#define HTTPD_CONF_USE_HDRS_NO_x2 TRUE
+#define HTTPD_CONF_USE_HDRS_NON_SPC TRUE
+#define HTTPD_CONF_USE_HDRS_ERR_411 TRUE
 #define HTTPD_CONF_USE_TRACE_OP TRUE
 #define HTTPD_CONF_USE_REMOVE_FRAG TRUE
 #define HTTPD_CONF_USE_REMOVE_QUERY FALSE
@@ -56,7 +59,6 @@
 #define HTTPD_CONF_USE_CHK_DOT_DIR TRUE
 #define HTTPD_CONF_USE_CHK_ENCODED_SLASH TRUE
 #define HTTPD_CONF_USE_CHK_ENCODED_DOT TRUE
-#define HTTPD_CONF_USE_NON_SPC_HDRS TRUE
 #define HTTPD_CONF_USE_NOATIME FALSE /* can't easily enable due to "security" */
 #define HTTPD_CONF_ADD_DEF_PORT TRUE
 #define HTTPD_CONF_MAX_REQUESTS           0
@@ -105,19 +107,23 @@ typedef struct Httpd_policy_opts
  unsigned int use_err_406 : 1;
  unsigned int use_canonize_host : 1;
  unsigned int use_host_err_400 : 1;
- unsigned int use_host_err_chk : 1;
- unsigned int use_x2_hdr_chk : 1;
+ unsigned int use_internal_host_chk : 1;
+ unsigned int use_host_chk : 1;
+ unsigned int use_hdrs_no_x2 : 1;
+ unsigned int use_hdrs_non_spc : 1; /* 16th bitfield */
+ unsigned int use_hdrs_err_411 : 1;
+
  unsigned int use_trace_op : 1;
  unsigned int remove_url_frag : 1;
  unsigned int remove_url_query : 1;
  unsigned int use_secure_dirs : 1;
  unsigned int use_friendly_dirs : 1;
 
- unsigned int use_posix_fadvise : 1;
+ unsigned int use_posix_fadvise : 1; /* 24th bitfield */
  unsigned int use_tcp_cork : 1;
  
  unsigned int use_req_conf : 1;
- unsigned int allow_hdr_split : 1; /* 16th bitfield */
+ unsigned int allow_hdr_split : 1;
  unsigned int allow_hdr_nil : 1;
  
  unsigned int chk_dot_dir : 1;
@@ -125,11 +131,9 @@ typedef struct Httpd_policy_opts
  unsigned int chk_encoded_slash : 1;
  unsigned int chk_encoded_dot   : 1;
 
- unsigned int add_def_port : 1;
+ unsigned int add_def_port : 1; /* 32nd bitfield */
 
- unsigned int use_non_spc_hdrs : 1;
-
- unsigned int use_noatime : 1; /* 23rd bitfield */
+ unsigned int use_noatime : 1; /* 33rd bitfield */
 
  unsigned int max_header_sz;
 

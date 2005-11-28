@@ -1,3 +1,57 @@
+2005-11-27  James Antill  <james@and.org>
+
+	* scripts/tst-root-run.sh: Same as tst-run.sh, but as root.
+
+	* scripts/coverage.sh: Add coverage script.
+
+	* src/httpd_conf_main.c (httpd__conf_main_policy_http_d1): Move
+	HTTP strictness checks into namespaces.
+
+	* src/httpd.c (http_fin_err_req): Allow custom error pages for all but
+	redirect errors.
+	(http__parse_hdrs): Xtra Message changes.
+	(http_parse_host): Xtra Message changes.
+	(httpd_serv_add_vhost): Remove dots from the front in canonize.
+
+	* src/httpd.h (struct Http_hdrs): Move Range from multi header to single
+	header (didn't parse as a multi header anyway).
+
+	* src/and-cntl.c (cl_timer_con): Fix bug in many connects, where timer
+	didn't run.
+	(cl_timer_cli): Fix memory bug where timer isn't removed on deletion.
+	(cl_init): Add timer_q-1.0.5 workarounds.
+
+	* scripts/conv_err_html2txt.pl (html_to_text): Add non-lynx
+	html -> text converter (from jwz).
+
+	* err/400.de.html: Add german error page translations.
+
+	* err/400.fr.html: Add french error page translations.
+
+2005-11-22  James Antill  <james@and.org>
+
+	* src/Makefile.am (CFLAGS): Override CFLAGS to remove -O2 on debug
+
+	* src/httpd.c (httpd__valid_hostname): Do optional extra validity
+	checks on hostnames.
+	(httpd_valid_url_filename): Fix interface bug when checking hostnames
+	as a section of a Vstr.
+
+2005-11-21  James Antill  <james@and.org>
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Add 406 type to req conf.
+	error types.
+
+2005-11-20  James Antill  <james@and.org>
+
+	* src/httpd.c (http__parse_hdrs): Add 411 checking for
+	Transfer-Encoding header.
+
+2005-11-15  James Antill  <james@and.org>
+
+	* src/httpd.c (http__parse_hdrs): Add preference for no content-length
+	checking, and use a 411 error instead of a generic 400.
+
 2005-11-08  James Antill  <james@and.org>
 
 	* src/httpd_conf_req.c (httpd__conf_req_d1): Fix spelling of permanent.

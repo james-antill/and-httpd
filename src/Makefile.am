@@ -5,6 +5,7 @@
 AUTOMAKE_OPTIONS = no-dependencies 1.4
 
 if DBG_VSTR
+CFLAGS = # Remove -O2 automake/autoconf braindamage
 if VSTR_DBG_AVAIL
 
 GEN_CFLAGS = $(VSTR_DBG_CFLAGS) @CFLAGS@ @WARNS@

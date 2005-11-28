@@ -188,7 +188,7 @@ static void usage(const char *program_name, int ret, const char *prefix)
                opt_def_toggle(HTTPD_CONF_USE_ERR_406),
                opt_def_toggle(HTTPD_CONF_USE_CANONIZE_HOST),
                opt_def_toggle(HTTPD_CONF_USE_HOST_ERR_400),
-               opt_def_toggle(HTTPD_CONF_USE_HOST_ERR_CHK));
+               opt_def_toggle(HTTPD_CONF_USE_HOST_CHK));
 
   if (io_put_all(out, ret ? STDERR_FILENO : STDOUT_FILENO) == IO_FAIL)
     err(EXIT_FAILURE, "write");
@@ -610,7 +610,7 @@ static void serv_cmd_line(int argc, char *argv[])
       case 145: OPT_VSTR_ARG(popts->default_hostname);               break;
       case 146: OPT_TOGGLE_ARG(popts->use_canonize_host);            break;
       case 147: OPT_TOGGLE_ARG(popts->use_host_err_400);             break;
-      case 148: OPT_TOGGLE_ARG(popts->use_host_err_chk);
+      case 148: OPT_TOGGLE_ARG(popts->use_host_chk);
         
       
       ASSERT_NO_SWITCH_DEF();

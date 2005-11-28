@@ -445,8 +445,12 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   opts->use_err_406        = HTTPD_CONF_USE_ERR_406;
   opts->use_canonize_host  = HTTPD_CONF_USE_CANONIZE_HOST;
   opts->use_host_err_400   = HTTPD_CONF_USE_HOST_ERR_400;
-  opts->use_host_err_chk   = HTTPD_CONF_USE_HOST_ERR_CHK;
-  opts->use_x2_hdr_chk     = HTTPD_CONF_USE_x2_HDR_CHK;
+  opts->use_internal_host_chk = HTTPD_CONF_USE_INTERNAL_HOST_CHK;
+  opts->use_host_chk       = HTTPD_CONF_USE_HOST_CHK;
+  opts->use_hdrs_no_x2     = HTTPD_CONF_USE_HDRS_NO_x2;
+  opts->use_hdrs_non_spc   = HTTPD_CONF_USE_HDRS_NON_SPC;
+  opts->use_hdrs_err_411   = HTTPD_CONF_USE_HDRS_ERR_411;
+  
   opts->use_trace_op       = HTTPD_CONF_USE_TRACE_OP;
   opts->remove_url_frag    = HTTPD_CONF_USE_REMOVE_FRAG;
   opts->remove_url_query   = HTTPD_CONF_USE_REMOVE_QUERY;
@@ -467,8 +471,6 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   
   opts->add_def_port       = HTTPD_CONF_ADD_DEF_PORT;
 
-  opts->use_non_spc_hdrs   = HTTPD_CONF_USE_NON_SPC_HDRS;
-  
   opts->use_noatime        = HTTPD_CONF_USE_NOATIME; /* 23rd bitfield */
   
   opts->max_header_sz      = HTTPD_CONF_INPUT_MAXSZ;
@@ -570,8 +572,11 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(use_err_406);
   HTTPD_POLICY_CP_VAL(use_canonize_host);
   HTTPD_POLICY_CP_VAL(use_host_err_400);
-  HTTPD_POLICY_CP_VAL(use_host_err_chk);
-  HTTPD_POLICY_CP_VAL(use_x2_hdr_chk);
+  HTTPD_POLICY_CP_VAL(use_internal_host_chk);
+  HTTPD_POLICY_CP_VAL(use_host_chk);
+  HTTPD_POLICY_CP_VAL(use_hdrs_no_x2);
+  HTTPD_POLICY_CP_VAL(use_hdrs_err_411);
+  HTTPD_POLICY_CP_VAL(use_hdrs_non_spc);
   HTTPD_POLICY_CP_VAL(use_trace_op);
   HTTPD_POLICY_CP_VAL(remove_url_frag);
   HTTPD_POLICY_CP_VAL(remove_url_query);
@@ -586,7 +591,6 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(chk_encoded_slash);
   HTTPD_POLICY_CP_VAL(chk_encoded_dot);
   HTTPD_POLICY_CP_VAL(add_def_port);
-  HTTPD_POLICY_CP_VAL(use_non_spc_hdrs);
   HTTPD_POLICY_CP_VAL(use_noatime);
 
   HTTPD_POLICY_CP_VAL(max_header_sz);

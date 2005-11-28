@@ -29,7 +29,10 @@
      req-err-dir ex_httpd_err_conf_7_root)
 
 (org.and.httpd-conf-main-1.0
-   policy conf-httpd-tst-9.1 HTTP Server: "Apache/1.3.1" chk-.-dir false)
+   policy conf-httpd-tst-9.1 HTTP Server: "Apache/1.3.1"
+                                  strictness
+                                    allow-.-dir true
+                                    hostname validation false)
 (org.and.httpd-conf-main-1.0
    policy conf-httpd-tst-9.2[inherit conf-httpd-tst-9.1]HTTP
      Server: "Apache/1.3.2")

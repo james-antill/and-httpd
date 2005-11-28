@@ -1,13 +1,8 @@
+410 Allé
 
-                                   410 Gone
+La ressource demandée n'est plus disponible au serveur et aucune
+adresse de expédition n'est connue. On s'attend �  ce que cette
+condition soit considérée permanente.
 
-   The  requested  resource  is  no longer available at the server and no
-   forwarding address is known. This condition is expected to be considered
-   permanent.
-     _________________________________________________________________
+Produit �  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

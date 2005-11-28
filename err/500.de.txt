@@ -1,11 +1,6 @@
+500 Interne Bediener-Störung
 
-                           500 Internal Server Error
+Der Bediener traf unerwartetes etwas an.
 
-   The server encountered something unexpected.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

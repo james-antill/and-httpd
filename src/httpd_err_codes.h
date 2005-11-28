@@ -14,12 +14,12 @@
 </html>\r\n\
 "
 
-#define CONF_MSG__MAKE(code, sum, msg) \
+#define CONF_MSG__MAKE(code, msg) \
     CONF_MSG_RET_BEG \
-"    <title>" code " " sum "</title>\r\n\
+"    <title>" #code " " CONF_LINE_RET_ ## code "</title>\r\n\
   </head>\r\n\
   <body>\r\n\
-    <h1>" code " " sum "</h1>\r\n\
+    <h1>" #code " " CONF_LINE_RET_ ## code "</h1>\r\n\
     <p>" msg ".</p>\r\n" \
     CONF_MSG_RET_END
 
@@ -89,72 +89,75 @@
 
 #define CONF_LINE_RET_400 "Bad Request"
 #define CONF_MSG_RET_400 \
-    CONF_MSG__MAKE("400", "Bad Request", "The request could not be understood")
+    CONF_MSG__MAKE(400, "The request could not be understood")
 
 #define CONF_LINE_RET_401 "Unauthorized"
 #define CONF_MSG_RET_401 \
-    CONF_MSG__MAKE("401", "Unauthorized", "The request requires user authentication")
+    CONF_MSG__MAKE(401, "The request requires user authentication")
 
 #define CONF_LINE_RET_403 "Forbidden"
 #define CONF_MSG_RET_403 \
-    CONF_MSG__MAKE("403", "Forbidden", "The request is forbidden")
+    CONF_MSG__MAKE(403, "The request is forbidden")
 
 #define CONF_LINE_RET_404 "Not Found"
 #define CONF_MSG_RET_404 \
-    CONF_MSG__MAKE("404", "Not Found", "The document requested was not found")
+    CONF_MSG__MAKE(404, "The document requested was not found")
 
 #define CONF_LINE_RET_405 "Method Not Allowed"
 #define CONF_MSG_RET_405 \
-    CONF_MSG__MAKE("405", "Method Not Allowed", "The method specified is not allowed")
+    CONF_MSG__MAKE(405, "The method specified is not allowed")
 
 #define CONF_LINE_RET_406 "Not Acceptable"
 #define CONF_MSG_RET_406 \
-    CONF_MSG__MAKE("406", "Not Acceptable", "The resource identified by the request is only capable of generating response entities which have content characteristics not acceptable according to the accept headers sent in the request")
+    CONF_MSG__MAKE(406, "The resource identified by the request is only capable of generating response entities which have content characteristics not acceptable according to the accept headers sent in the request")
 
 #define CONF_LINE_RET_410 "Gone"
 #define CONF_MSG_RET_410 \
-    CONF_MSG__MAKE("410", "Gone", "The requested resource is no longer available at the server and no forwarding address is known. This condition is expected to be considered permanent")
+    CONF_MSG__MAKE(410, "The requested resource is no longer available at the server and no forwarding address is known. This condition is expected to be considered permanent")
+
+#define CONF_LINE_RET_411 "Length Required"
+#define CONF_MSG_RET_411 \
+    CONF_MSG__MAKE(411, "The server refuses to accept the request without a defined Content-Length")
 
 #define CONF_LINE_RET_412 "Precondition Failed"
 #define CONF_MSG_RET_412 \
-    CONF_MSG__MAKE("412", "Precondition Failed", "The precondition given in one or more of the request-header fields evaluated to false")
+    CONF_MSG__MAKE(412, "The precondition given in one or more of the request-header fields evaluated to false")
 
 #define CONF_LINE_RET_413 "Request Entity Too Large"
 #define CONF_MSG_RET_413 \
-    CONF_MSG__MAKE("413", "Request Entity Too Large", "The server does not accept any requests with Content (In other words if either a Content-Length or a Transfer-Encoding header is passed to the server, the request will fail)")
+    CONF_MSG__MAKE(413, "The server does not accept any requests with Content (In other words if either a Content-Length or a Transfer-Encoding header is passed to the server, the request will fail)")
 
 #define CONF_LINE_RET_414 "Request-URI Too Long"
 #define CONF_MSG_RET_414 \
-    CONF_MSG__MAKE("414", "Request-URI Too Long", "The document request was too long")
+    CONF_MSG__MAKE(414, "The document request was too long")
 
-/*    CONF_MSG__MAKE("415", "", "") */
 #define CONF_LINE_RET_415 "Unsupported Media Type"
 #define CONF_MSG_RET_415 \
-    CONF_MSG__MAKE("415", "Unsupported Media Type", "The server is refusing to service the request because the result of the request is in a format not supported, by the request")
+    CONF_MSG__MAKE(415, "The server is refusing to service the request because the result of the request is in a format not supported, by the request")
 
 #define CONF_LINE_RET_416 "Requested Range Not Satisfiable"
 #define CONF_MSG_RET_416 \
-    CONF_MSG__MAKE("416", "Requested Range Not Satisfiable", "The document request range was not valid")
+    CONF_MSG__MAKE(416, "The document request range was not valid")
 
 #define CONF_LINE_RET_417 "Expectation Failed"
 #define CONF_MSG_RET_417 \
-    CONF_MSG__MAKE("417", "Expectation Failed", "The expectation given in an Expect request-header field could not be met by this server")
+    CONF_MSG__MAKE(417, "The expectation given in an Expect request-header field could not be met by this server")
 
 #define CONF_LINE_RET_500 "Internal Server Error"
 #define CONF_MSG_RET_500 \
-    CONF_MSG__MAKE("500", "Internal Server Error", "The server encountered something unexpected")
+    CONF_MSG__MAKE(500, "The server encountered something unexpected")
 
 #define CONF_LINE_RET_501 "Not Implemented"
 #define CONF_MSG_RET_501 \
-    CONF_MSG__MAKE("501", "Not Implemented", "The request method is not implemented")
+    CONF_MSG__MAKE(501, "The request method is not implemented")
 
 #define CONF_LINE_RET_503 "Service Unavailable"
 #define CONF_MSG_RET_503 \
-    CONF_MSG__MAKE("503", "Service Unavailable", "The server is currently unable to handle the request due to a temporary overloading or maintenance of the server")
+    CONF_MSG__MAKE(503, "The server is currently unable to handle the request due to a temporary overloading or maintenance of the server")
 
 #define CONF_LINE_RET_505 "Version not supported"
 #define CONF_MSG_RET_505 \
-    CONF_MSG__MAKE("505", "Version not supported", "The version of http used is not supported")
+    CONF_MSG__MAKE(505, "The version of http used is not supported")
 
 #define HTTPD_REDIR_MSG(req, code, xmsg) do {                  \
       (req)->error_xmsg  = xmsg;                               \

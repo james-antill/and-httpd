@@ -502,6 +502,8 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
         code = 403;
       else if (OPT_SERV_SYM_EQ("<not-found>"))
         code = 404;
+      else if (OPT_SERV_SYM_EQ("<not-acceptable>"))
+        code = 406;
       else if (OPT_SERV_SYM_EQ("<gone>"))
         code = 410;
       else if (OPT_SERV_SYM_EQ("<error>") ||
@@ -529,6 +531,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       case 400: HTTPD_ERR_MSG_RET(req, 400, "Req conf", FALSE);
       case 403: HTTPD_ERR_MSG_RET(req, 403, "Req conf", FALSE);
       case 404: HTTPD_ERR_MSG_RET(req, 404, "Req conf", FALSE);
+      case 406: HTTPD_ERR_MSG_RET(req, 406, "Req conf", FALSE);
       case 410: HTTPD_ERR_MSG_RET(req, 410, "Req conf", FALSE);
       case 500: HTTPD_ERR_MSG_RET(req, 500, "Req conf", FALSE);
       case 503: HTTPD_ERR_MSG_RET(req, 503, "Req conf", FALSE);

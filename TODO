@@ -54,9 +54,6 @@
 http://www.sans.org/top20/#u2
 
         unit test ",tools" type redirects
-        super hostname checking != . ... isalnum(^str)
-        config. for content-* with no content-len checking.
-        getgroups before setgroups
         do translations for error pages
         tst zsync
         include a default start page?
@@ -67,6 +64,7 @@ http://www.sans.org/top20/#u2
          way to not include libcap, which doesn't have a static file
          way to use -Wl,-Bstatic?
         conf
+         getgroups before setgroups?
          Allow req_conf to have matches (maybe (match-allow [] ...) ?)
           Match needed for different ETags for content neg.
          Allow "macros", so you can say turn "extra speed" on etc.

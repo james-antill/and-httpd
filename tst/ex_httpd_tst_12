@@ -15,7 +15,6 @@ Accept-Languge : en-US
 Accept         : text/foo
 Range          : ,
 Accept         : text/html
-Range          : ,
 	         
 Accept-Languge :     
 	         fr,de

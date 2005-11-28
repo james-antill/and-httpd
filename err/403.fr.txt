@@ -1,11 +1,6 @@
+403 Interdit
 
-                                 403 Forbidden
+On interdit la demande.
 
-   The request is forbidden.
-     _________________________________________________________________
+Produit Ã  l'aide du serveur du Web Et-httpd.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

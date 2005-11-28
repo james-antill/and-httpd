@@ -1,11 +1,6 @@
+403 Forbidden
 
-                                 403 Forbidden
+The request is forbidden.
 
-   The request is forbidden.
-     _________________________________________________________________
+Generated using the And-httpd Web Server.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

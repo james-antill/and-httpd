@@ -1,11 +1,6 @@
+400 Schlechter Antrag
 
-                                400 Bad Request
+Der Antrag konnte nicht verstanden werden.
 
-   The request could not be understood.
-     _________________________________________________________________
+Erzeugt, das web server And-httpd verwendend.
 
-   Generated using the [1]And-httpd Web Server.
-
-References
-
-   1. http://www.and.org/and-httpd

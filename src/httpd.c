@@ -124,12 +124,13 @@ static void http__clear_hdrs(struct Httpd_req_data *req)
   HTTP__HDR_SET(req, ua,                  0, 0);
   HTTP__HDR_SET(req, referer,             0, 0);
 
+  HTTP__HDR_SET(req, authorization,       0, 0);
   HTTP__HDR_SET(req, expect,              0, 0);
   HTTP__HDR_SET(req, host,                0, 0);
   HTTP__HDR_SET(req, if_modified_since,   0, 0);
   HTTP__HDR_SET(req, if_range,            0, 0);
   HTTP__HDR_SET(req, if_unmodified_since, 0, 0);
-  HTTP__HDR_SET(req, authorization,       0, 0);
+  HTTP__HDR_SET(req, range,               0, 0);
 
   vstr_del(tmp, 1, tmp->len);
   HTTP__HDR_MULTI_SET(req, accept,          0, 0);
@@ -139,7 +140,6 @@ static void http__clear_hdrs(struct Httpd_req_data *req)
   HTTP__HDR_MULTI_SET(req, connection,      0, 0);
   HTTP__HDR_MULTI_SET(req, if_match,        0, 0);
   HTTP__HDR_MULTI_SET(req, if_none_match,   0, 0);
-  HTTP__HDR_MULTI_SET(req, range,           0, 0);
 
   if (req->xtra_content)
     vstr_del(req->xtra_content, 1, req->xtra_content->len);
@@ -1158,7 +1158,7 @@ static void httpd_serv_call_seek(struct Con *con, struct Httpd_req_data *req,
     vlg_warn(vlg, "lseek($<http-esc.vstr:%p%zu%zu>,off=%ju): %m\n",
              req->fname, (size_t)1, req->fname->len, fs->off);
     /* opts->use_range - turn off? */
-    req->http_hdrs->multi->hdr_range->pos = 0;
+    req->http_hdrs->hdr_range->pos = 0;
     *http_ret_code = 200;
     *http_ret_line = "OK - Range Failed";
   }
@@ -1377,9 +1377,13 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
 
   req->content_encoding_gzip  = FALSE;
   req->content_encoding_bzip2 = FALSE;
+
+  /* These are done before keep-alive parsing is done */
+  ASSERT((req->error_code != 411) || (con->keep_alive == HTTP_NON_KEEP_ALIVE));
+  ASSERT((req->error_code != 413) || (con->keep_alive == HTTP_NON_KEEP_ALIVE));
   
   if ((req->error_code == 400) || (req->error_code == 405) ||
-      (req->error_code == 413) ||
+      (req->error_code == 411) || (req->error_code == 413) ||
       (req->error_code == 500) || (req->error_code == 501))
     con->keep_alive = HTTP_NON_KEEP_ALIVE;
   
@@ -1390,14 +1394,10 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     vstr_del(con->evnt->io_r, 1, con->evnt->io_r->len);
     deleted_req_data = TRUE;
   }
-  else if (((req->error_code == 400) || /* must match below */
-            (req->error_code == 401) ||
-            (req->error_code == 403) ||
-            (req->error_code == 404) ||
-            (req->error_code == 406) ||
-            (req->error_code == 410) ||
-            (req->error_code == 500) ||
-            (req->error_code == 503)) && req->policy->req_err_dir->len)
+  else if (((req->error_code != 301) && /* don't do so href is passed */
+            (req->error_code != 302) &&
+            (req->error_code != 303) &&
+            (req->error_code != 307)) && req->policy->req_err_dir->len)
   { /* custom err message */
     Vstr_base *fname = vstr_make_base(req->fname->conf);
     size_t vhost_prefix_len = 0;
@@ -1456,15 +1456,25 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
 
       ncode = req->error_code;
       switch (code)
-      { /* restore default error info. in case of failure, must match above */
+      { /* restore default error info. in case of failure */
         case 400: HTTPD_ERR(req, 400); break;
         case 401: HTTPD_ERR(req, 401); break;
         case 403: HTTPD_ERR(req, 403); break;
         case 404: HTTPD_ERR(req, 404); break;
+        case 405: HTTPD_ERR(req, 405); break;
         case 406: HTTPD_ERR(req, 406); break;
         case 410: HTTPD_ERR(req, 410); break;
+        case 411: HTTPD_ERR(req, 411); break;
+        case 412: HTTPD_ERR(req, 412); break;
+        case 413: HTTPD_ERR(req, 413); break;
+        case 414: HTTPD_ERR(req, 414); break;
+        case 415: HTTPD_ERR(req, 415); break;
+        case 416: HTTPD_ERR(req, 416); break;
+        case 417: HTTPD_ERR(req, 417); break;
         case 500: HTTPD_ERR(req, 500); break;
-        case 503: HTTPD_ERR(req, 503);
+        case 501: HTTPD_ERR(req, 501); break;
+        case 503: HTTPD_ERR(req, 503); break;
+        case 505: HTTPD_ERR(req, 505);
           ASSERT_NO_SWITCH_DEF();
       }
       if (!conf_ret)
@@ -1564,7 +1574,7 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
                                    req->f_mmap, 1, req->f_mmap->len))
       return (http_con_close_cleanup(con, req));
     
-    vlg_dbg3(vlg, "ERROR CUSTOM-404 REPLY:\n$<vstr.all:%p>\n", out);
+    vlg_dbg3(vlg, "ERROR CUSTOM-ERR REPLY:\n$<vstr.all:%p>\n", out);
     
     if (out->conf->malloc_bad)
       return (http_con_close_cleanup(con, req));
@@ -2105,7 +2115,7 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
   Vstr_sect_node *h_ims  = req->http_hdrs->hdr_if_modified_since;
   Vstr_sect_node *h_ir   = req->http_hdrs->hdr_if_range;
   Vstr_sect_node *h_iums = req->http_hdrs->hdr_if_unmodified_since;
-  Vstr_sect_node *h_r    = req->http_hdrs->multi->hdr_range;
+  Vstr_sect_node *h_r    = req->http_hdrs->hdr_range;
   Vstr_base *comb = req->http_hdrs->multi->comb;
   Vstr_sect_node *h_im   = req->http_hdrs->multi->hdr_if_match;
   Vstr_sect_node *h_inm  = req->http_hdrs->multi->hdr_if_none_match;
@@ -2275,8 +2285,7 @@ static int http__app_multi_hdr(Vstr_base *data, struct Http_hdrs *hdrs,
          (hdr == hdrs->multi->hdr_accept_language) ||
          (hdr == hdrs->multi->hdr_connection) ||
          (hdr == hdrs->multi->hdr_if_match) ||
-         (hdr == hdrs->multi->hdr_if_none_match) ||
-         (hdr == hdrs->multi->hdr_range));
+         (hdr == hdrs->multi->hdr_if_none_match));
 
   ASSERT((comb == data) || (comb == hdrs->multi->combiner_store));
   
@@ -2298,7 +2307,6 @@ static int http__app_multi_hdr(Vstr_base *data, struct Http_hdrs *hdrs,
         !http__multi_hdr_cp(comb, data, hdrs->multi->hdr_connection) ||
         !http__multi_hdr_cp(comb, data, hdrs->multi->hdr_if_match) ||
         !http__multi_hdr_cp(comb, data, hdrs->multi->hdr_if_none_match) ||
-        !http__multi_hdr_cp(comb, data, hdrs->multi->hdr_range) ||
         FALSE)
       return (FALSE);
   }
@@ -2328,7 +2336,6 @@ static int http__app_multi_hdr(Vstr_base *data, struct Http_hdrs *hdrs,
   http__multi_hdr_fixup(hdr, hdrs->multi->hdr_connection,      pos, len);
   http__multi_hdr_fixup(hdr, hdrs->multi->hdr_if_match,        pos, len);
   http__multi_hdr_fixup(hdr, hdrs->multi->hdr_if_none_match,   pos, len);
-  http__multi_hdr_fixup(hdr, hdrs->multi->hdr_range,           pos, len);
     
   return (TRUE);
 }
@@ -2342,7 +2349,7 @@ static int http__hdr_eq(struct Con *con, size_t pos, size_t len,
   ASSERT(CLEN(hdr) == hdr_len);
   ASSERT(hdr[hdr_len - 1] == ':');
   
-  if (!con->policy->use_non_spc_hdrs)
+  if (!con->policy->use_hdrs_non_spc)
     --hdr_len;
   
   if ((len < hdr_len) ||
@@ -2350,7 +2357,7 @@ static int http__hdr_eq(struct Con *con, size_t pos, size_t len,
     return (FALSE);
   len -= hdr_len; pos += hdr_len;
 
-  if (!con->policy->use_non_spc_hdrs)
+  if (!con->policy->use_hdrs_non_spc)
   {
     HTTP_SKIP_LWS(data, pos, len);
     if (!len)
@@ -2393,7 +2400,7 @@ static void http__hdr_fixup(Vstr_base *data, size_t *pos, size_t *len,
 #define HDR__EQ_SET(x, h)                                               \
     else if (HDR__EQ(x)) do                                             \
     {                                                                   \
-      if (req->policy->use_x2_hdr_chk && http_hdrs-> hdr_ ## h ->pos)   \
+      if (req->policy->use_hdrs_no_x2 && http_hdrs-> hdr_ ## h ->pos)   \
         HTTPD_ERR_MSG_RET(req, 400, "Double header " x, FALSE);         \
       http__hdr_fixup(data, &pos, &len, hdr_val_pos);                   \
       http_hdrs-> hdr_ ## h ->pos = pos;                                \
@@ -2413,7 +2420,7 @@ static void http__hdr_fixup(Vstr_base *data, size_t *pos, size_t *len,
 #define HDR__EQ_IGNORE(x, h)                                            \
     else if (HDR__EQ(x)) do                                             \
     {                                                                   \
-      if (req->policy->use_x2_hdr_chk && got_ ## h)                     \
+      if (req->policy->use_hdrs_no_x2 && got_ ## h)                     \
         HTTPD_ERR_MSG_RET(req, 400, "Double header " x, FALSE);         \
       got_ ## h = TRUE;                                                 \
     } while (FALSE)
@@ -2437,12 +2444,13 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
     if (0) { /* nothing */ }
     HDR__EQ_SET("User-Agent",                ua);
     HDR__EQ_SET("Referer",                   referer);
+    HDR__EQ_SET("Authorization",             authorization);
     HDR__EQ_SET("Expect",                    expect);
     HDR__EQ_SET("Host",                      host);
     HDR__EQ_SET("If-Modified-Since",         if_modified_since);
     HDR__EQ_SET("If-Range",                  if_range);
     HDR__EQ_SET("If-Unmodified-Since",       if_unmodified_since);
-    HDR__EQ_SET("Authorization",             authorization);
+    HDR__EQ_SET("Range",                     range);
 
     /* allow continuations over multiple headers... *sigh* */
     HDR__EQ_MULTI_SET("Accept",              accept);
@@ -2452,7 +2460,6 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
     HDR__EQ_MULTI_SET("Connection",          connection);
     HDR__EQ_MULTI_SET("If-Match",            if_match);
     HDR__EQ_MULTI_SET("If-None-Match",       if_none_match);
-    HDR__EQ_MULTI_SET("Range",               range);
 
     /* allow a 0 (zero) length content-length, some clients do send these */
     else if (HDR__EQ("Content-Length"))
@@ -2462,7 +2469,7 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
       unsigned int num_val = 0;
       size_t num_len = 0;
       
-      if (req->policy->use_x2_hdr_chk && got_content_length)
+      if (req->policy->use_hdrs_no_x2 && got_content_length)
         HTTPD_ERR_MSG_RET(req, 400, "Double header Content-Length", FALSE);
 
       got_content_length = TRUE;
@@ -2481,7 +2488,7 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
     /* in theory ,,identity;foo=bar;baz="zoom",, is ok ... who cares */
     else if (HDR__EQ("Transfer-Encoding"))
     {
-      if (req->policy->use_x2_hdr_chk && got_transfer_encoding)
+      if (req->policy->use_hdrs_no_x2 && got_transfer_encoding)
         HTTPD_ERR_MSG_RET(req, 400, "Double header Transfer-Encoding", FALSE);
       got_transfer_encoding = TRUE;
       http__hdr_fixup(data, &pos, &len, hdr_val_pos);
@@ -2496,20 +2503,25 @@ static int http__parse_hdrs(struct Con *con, Httpd_req_data *req)
       /* all headers _must_ contain a ':' */
       tmp = vstr_srch_chr_fwd(data, pos, len, ':');
       if (!tmp)
-        HTTPD_ERR_MSG_RET(req, 400, "No ':' after header", FALSE);
+        HTTPD_ERR_MSG_RET(req, 400, "Header does not end with : marker", FALSE);
 
       /* make sure unknown header is whitespace "valid" */
       tmp = vstr_sc_posdiff(pos, tmp);
-      if (req->policy->use_non_spc_hdrs &&
+      if (req->policy->use_hdrs_non_spc &&
           (vstr_cspn_cstr_chrs_fwd(data, pos, tmp, HTTP_LWS) != tmp))
-        HTTPD_ERR_MSG_RET(req, 400, "Spaces before ':' after header", FALSE);
+        HTTPD_ERR_MSG_RET(req, 400, "Header has spaces before : marker", FALSE);
     }
   }
 
-  if (got_content_type && !got_content_length) /* FIXME: config. ? */
-    HTTPD_ERR_MSG_RET(req, 400, "Type but no Length", FALSE);
-  if (got_content_lang && !got_content_length)
-    HTTPD_ERR_MSG_RET(req, 400, "Language but no Length", FALSE);
+  if (!req->policy->use_hdrs_err_411)
+    return (TRUE);
+  
+  if (got_content_type      && !got_content_length)
+    HTTPD_ERR_MSG_RET(req, 411, "Type but no Length", FALSE);
+  if (got_content_lang      && !got_content_length)
+    HTTPD_ERR_MSG_RET(req, 411, "Language but no Length", FALSE);
+  if (got_transfer_encoding && !got_content_length)
+    HTTPD_ERR_MSG_RET(req, 411, "Transfer-Encoding but no Length", FALSE);
 
   return (TRUE);
 }
@@ -2621,12 +2633,13 @@ static void http__parse_connection(struct Con *con, struct Httpd_req_data *req)
     /* now fixup connection headers for HTTP/1.0 proxies */
     HDR__CON_1_0_FIXUP("User-Agent",          ua);
     HDR__CON_1_0_FIXUP("Referer",             referer);
+    HDR__CON_1_0_FIXUP("Authorization",       authorization);
     HDR__CON_1_0_FIXUP("Expect",              expect);
     HDR__CON_1_0_FIXUP("Host",                host);
     HDR__CON_1_0_FIXUP("If-Modified-Since",   if_modified_since);
     HDR__CON_1_0_FIXUP("If-Range",            if_range);
     HDR__CON_1_0_FIXUP("If-Unmodified-Since", if_unmodified_since);
-    HDR__CON_1_0_FIXUP("Authorization",       authorization);
+    HDR__CON_1_0_FIXUP("Range",               range);
     
     HDR__CON_1_0_MULTI_FIXUP("Accept",          accept);
     HDR__CON_1_0_MULTI_FIXUP("Accept-Charset",  accept_charset);
@@ -2634,7 +2647,6 @@ static void http__parse_connection(struct Con *con, struct Httpd_req_data *req)
     HDR__CON_1_0_MULTI_FIXUP("Accept-Language", accept_language);
     HDR__CON_1_0_MULTI_FIXUP("If-Match",        if_match);
     HDR__CON_1_0_MULTI_FIXUP("If-None-Match",   if_none_match);
-    HDR__CON_1_0_MULTI_FIXUP("Range",           range);
 
     /* skip to end, or after next ',' */
     tmp = vstr_cspn_cstr_chrs_fwd(data, pos, len, ",");    
@@ -2686,11 +2698,13 @@ static int http__parse_1_x(struct Con *con, struct Httpd_req_data *req)
  * response splitting */
 static int http__chk_single_crlf(Vstr_base *data, size_t pos, size_t len)
 {
-  if (vstr_srch_chr_fwd(data, pos, len, '\r') ||
-      vstr_srch_chr_fwd(data, pos, len, '\n'))
-    return (TRUE);
+  if (vstr_srch_chr_fwd(data, pos, len, '\r'))
+    return ('\r');
+  
+  if (vstr_srch_chr_fwd(data, pos, len, '\n'))
+    return ('\n');
 
-  return (FALSE);
+  return (0);
 }
 
 /* convert a http://abcd/foo into /foo with host=abcd ...
@@ -2726,7 +2740,7 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
 
   /* HTTP/1.1 requires a host -- allow blank hostnames */
   if (req->ver_1_1 && !req->http_hdrs->hdr_host->pos)
-    return (FALSE);
+    HTTPD_ERR_MSG_RET(req, 400, "Hostname is required in 1.1", FALSE);
   
   if (req->http_hdrs->hdr_host->len)
   { /* check host looks valid ... header must exist, but can be empty */
@@ -2736,7 +2750,8 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
 
     /* leaving out most checks for ".." or invalid chars in hostnames etc.
        as the default filename checks should catch them.
-       Note that "Host: ." is also caught by default due to the check for /./
+       Note: "Host: ." is also caught by default due to the check for /./
+       Note: There are also optional checks in http__valid_hostname()
      */
 
     /*  Check for Host header with extra / ...
@@ -2745,10 +2760,17 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
      * for at filepath time), but I feel like being anal and this way there
      * aren't multiple urls to a single path. */
     if (vstr_srch_chr_fwd(data, pos, len, '/'))
-      return (FALSE);
+      HTTPD_ERR_MSG_RET(req, 400, "Hostname contains /", FALSE);
 
-    if (http__chk_single_crlf(data, pos, len))
-      return (FALSE);
+    switch (http__chk_single_crlf(data, pos, len))
+    {
+      case '\r':
+        HTTPD_ERR_MSG_RET(req, 400, "Hostname contains \\r", FALSE);
+      case '\n':
+        HTTPD_ERR_MSG_RET(req, 400, "Hostname contains \\n", FALSE);
+      case 0:
+        ASSERT_NO_SWITCH_DEF();
+    }
 
     if ((tmp = vstr_srch_chr_fwd(data, pos, len, ':')))
     { /* NOTE: not sure if we have to 400 if the port doesn't match
@@ -2762,13 +2784,20 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
       {
         len -= 1; pos += 1; /* skip the ':' */
         if (vstr_spn_cstr_chrs_fwd(data, pos, len, "0123456789") != len)
-          return (FALSE);
+          HTTPD_ERR_MSG_RET(req, 400, "Port is not a number", FALSE);
       }
     }
   }
 
-  if (http__chk_single_crlf(data, op_pos, op_len))
-    return (FALSE);
+  switch (http__chk_single_crlf(data, op_pos, op_len))
+  {
+    case '\r':
+      HTTPD_ERR_MSG_RET(req, 400, "Path contains \\r", FALSE);
+    case '\n':
+      HTTPD_ERR_MSG_RET(req, 400, "Path contains \\n", FALSE);
+    case 0:
+      ASSERT_NO_SWITCH_DEF();
+  }
   
   /* uri#fragment ... craptastic clients pass this and assume it is ignored */
   if (req->policy->remove_url_frag)
@@ -2875,8 +2904,8 @@ static int httpd__file_sect_add(struct Con *con, Httpd_req_data *req,
  */
 static int http_parse_range(struct Con *con, Httpd_req_data *req)
 {
-  Vstr_base *data     = req->http_hdrs->multi->comb;
-  Vstr_sect_node *h_r = req->http_hdrs->multi->hdr_range;
+  Vstr_base *data     = con->evnt->io_r;
+  Vstr_sect_node *h_r = req->http_hdrs->hdr_range;
   size_t pos = h_r->pos;
   size_t len = h_r->len;
   uintmax_t fsize = req->f_stat->st_size;
@@ -2982,7 +3011,7 @@ static int http_req_1_x(struct Con *con, Httpd_req_data *req,
                         const char **http_ret_line)
 {
   Vstr_base *out = con->evnt->io_w;
-  Vstr_sect_node *h_r = req->http_hdrs->multi->hdr_range;
+  Vstr_sect_node *h_r = req->http_hdrs->hdr_range;
   time_t mtime = -1;
   
   if (req->ver_1_1 && req->http_hdrs->hdr_expect->len)
@@ -3565,7 +3594,7 @@ int http_req_op_opts(struct Con *con, Httpd_req_data *req)
   
   assert(VPREFIX(fname, 1, fname->len, "/") ||
          !req->policy->use_vhosts_name ||
-         !req->policy->use_host_err_chk ||
+         !req->policy->use_host_chk ||
 	 !req->policy->use_host_err_400 ||
          VEQ(con->evnt->io_r, req->path_pos, req->path_len, "*"));
   
@@ -3607,17 +3636,52 @@ int http_req_op_trace(struct Con *con, Httpd_req_data *req)
   return (http_fin_req(con, req));
 }
 
-/* characters that are valid in a part of a URL _and_ in a file basename ...
- * without encoding */
-#define HTTPD__VALID_CSTR_CHRS_URL_FILENAME \
+/* characters valid in a hostname -- these are also safe unencoded in a URL */
+#define HTTPD__VALID_CSTR_CHRS_HOSTNAME     \
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"            \
     "abcdefghijklmnopqrstuvwxyz"            \
     "0123456789"                            \
-    ":.-_~"
+    ".-_"
+/* characters that are valid in a part of a URL _and_ in a file basename ...
+ * without encoding */
+#define HTTPD__VALID_CSTR_CHRS_URL_FILENAME \
+    "!$,:=~" HTTPD__VALID_CSTR_CHRS_HOSTNAME
+
+static int httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len)
+{
+  const char *const cstr = HTTPD__VALID_CSTR_CHRS_HOSTNAME;
+  size_t tmp = 0;
+  
+   /* this is also checked via /./ path checking */
+  if (vstr_cmp_cstr_eq(s1, pos, len, "."))
+    return (FALSE);
+  
+  if (vstr_srch_cstr_buf_fwd(s1, pos, len, ".."))
+    return (FALSE); /* example..com */
+
+  /* canonical host affects these too */
+  if (VPREFIX(s1, pos, len, ".")) return (FALSE); /* .example.com. */
+  if (VSUFFIX(s1, pos, len, ".")) return (FALSE); /*  example.com. */
+
+  tmp = vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr);
+  if (tmp == len)
+    return (TRUE);
+
+  len -= tmp; pos += tmp;
+  if (vstr_export_chr(s1, pos) == ':') /* port, checks in http_parse_host() */
+  {
+    len -= 1; pos += 1;
+    ASSERT(len && (vstr_spn_cstr_chrs_fwd(s1, pos, len, "0123456789") == len));
+    return (TRUE);
+  }
+  
+  return (FALSE);
+}
+
 int httpd_valid_url_filename(Vstr_base *s1, size_t pos, size_t len)
 {
   const char *const cstr = HTTPD__VALID_CSTR_CHRS_URL_FILENAME;
-  return (vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr) == s1->len);
+  return (vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr) == len);
 }
 
 int httpd_init_default_hostname(Opt_serv_policy_opts *sopts)
@@ -3626,7 +3690,7 @@ int httpd_init_default_hostname(Opt_serv_policy_opts *sopts)
   Vstr_base *nhn = popts->default_hostname;
   Vstr_base *chn = NULL;
 
-  if (!httpd_valid_url_filename(nhn, 1, nhn->len))
+  if (!httpd__valid_hostname(nhn, 1, nhn->len))
     vstr_del(nhn, 1, nhn->len);
 
   if (nhn->len)
@@ -3656,7 +3720,13 @@ static int httpd__chk_vhost(const Httpd_policy_opts *popts,
   
   ASSERT(pos);
 
-  if (!popts->use_host_err_chk)
+  if (popts->use_internal_host_chk)
+  {
+    if (!httpd__valid_hostname(lfn, pos, len))
+      return (FALSE);
+  }
+  
+  if (!popts->use_host_chk)
     return (TRUE);
   
   if (vstr_cmp_eq(lfn, pos, len, def_hname, 1, def_hname->len))
@@ -3701,6 +3771,8 @@ static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
     if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
     { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
     
+    dots = vstr_spn_cstr_chrs_fwd(data, h_h_pos, h_h_len, ".");
+    h_h_len -= dots; h_h_pos += dots;
     dots = vstr_spn_cstr_chrs_rev(data, h_h_pos, h_h_len, ".");
     h_h_len -= dots;
   }
@@ -3717,8 +3789,8 @@ static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
     
     if (!httpd__chk_vhost(req->policy, fname, 1, h_h_len))
     {
-      if (req->policy->use_host_err_400)
-        HTTPD_ERR_MSG_RET(req, 400, "Host not local", FALSE); /* rfc2616 5.2 */
+      if (req->policy->use_host_err_400) /* rfc2616 5.2 */
+        HTTPD_ERR_MSG_RET(req, 400, "Hostname not local", FALSE);
       else
       { /* what everything else does ... *sigh* */
         if (fname->conf->malloc_bad)
@@ -3932,7 +4004,7 @@ static int http_parse_req(struct Con *con)
     }
     
     if (!http_parse_host(con, req))
-      HTTPD_ERR_MSG_RET(req, 400, "Bad host", http_fin_err_req(con, req));
+      return (http_fin_err_req(con, req));
 
     if (0) { }
     else if (VEQ(data, op_pos, op_len, "GET"))
@@ -3968,7 +4040,7 @@ static int http_parse_req(struct Con *con)
       /* Speed hack: Don't even call make_path if it's "OPTIONS * ..."
        * and we don't need to check the Host header */
       if (req->policy->use_vhosts_name &&
-          req->policy->use_host_err_chk && req->policy->use_host_err_400 &&
+          req->policy->use_host_chk && req->policy->use_host_err_400 &&
           !VEQ(data, req->path_pos, req->path_len, "*") &&
           !http_req_make_path(con, req))
         return (http_fin_err_req(con, req));
