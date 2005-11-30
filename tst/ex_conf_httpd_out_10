@@ -1,0 +1,254 @@
+1. [Circular bracket list]
+  2. <Symbol> = org.and.httpd-conf-main-1.0
+  3. [Circular bracket list]
+    4. <Symbol> = org.and.daemon-conf-1.0
+    5. [Circular bracket list]
+      6. <Symbol> = listen
+      7. <Symbol> = addr
+      8. <Symbol> = 127.0.9.1
+    9. [Circular bracket list]
+      10. <Symbol> = cntl-file
+      11. <Symbol> = ex_httpd_cntl
+  12. [Circular bracket list]
+    13. <Symbol> = match-connection
+    14. [Square bracket list]
+      15. <Symbol> = policy-eq
+      16. <Symbol> = <default>
+      17. <Symbol> = server-ipv4-cidr-eq
+      18. <Symbol> = 127.0.9.1/24
+    19. <Symbol> = policy
+    20. <Symbol> = conf-httpd-tst-10.1
+    21. <Symbol> = tag
+    22. <Symbol> = ,tools
+  23. <Symbol> = policy
+  24. <Symbol> = conf-httpd-tst-10.1
+  25. <Symbol> = unspecified-hostname
+  26. <Symbol> = foo.example.com
+  27. <Symbol> = unspecified-hostname-append-port
+  28. <Symbol> = off
+  29. <Symbol> = MIME/types-filename-xtra
+  30. [Circular bracket list]
+    31. <Symbol> = =
+    32. <Symbol> = ENV
+    33. <Symbol> = _MIMEDIR
+    34. <Symbol> = /mime_types_extra.txt
+  35. <Symbol> = virtual-hosts
+  36. <Symbol> = true
+  37. <Symbol> = document-root
+  38. <Symbol> = ex_httpd_root
+  39. <Symbol> = request-configuration-directory
+  40. <Symbol> = ex_httpd_conf_root
+  41. <Symbol> = req-err-dir
+  42. <Symbol> = ex_httpd_err_conf_10_root
+43. [Circular bracket list]
+  44. <Symbol> = org.and.httpd-conf-main-1.0
+  45. <Symbol> = match-init
+  46. [Square bracket list]
+    47. <Symbol> = true
+  48. [Circular bracket list]
+    49. <Symbol> = match-request
+    50. <Quoted string (single, RAW)> = w3c validate
+    51. [Square bracket list]
+      52. <Symbol> = tag-eq
+      53. <Quoted string (single, RAW)> = ,tools
+      54. <Symbol> = path-end
+      55. <Symbol> = ,validate
+    56. <Symbol> = org.and.httpd-conf-req-1.0
+    57. <Symbol> = Location:
+    58. [Square bracket list]
+      59. <Symbol> = limit
+      60. <Symbol> = <path>-end
+      61. <Symbol> = ,validate
+    62. <Quoted string (single, RAW)> = 
+    63. [Circular bracket list]
+      64. <Symbol> = Location:
+      65. <Symbol> = =
+      66. <Symbol> = http://validator.w3.org/check?uri=http://
+      67. <Symbol> = <hostname>
+      68. <Symbol> = <path>
+    69. <Symbol> = return
+    70. <Symbol> = <permanent-redirect>
+  71. [Circular bracket list]
+    72. <Symbol> = match-request
+    73. <Quoted string (single, RAW)> = w3c cssvalidate
+    74. [Square bracket list]
+      75. <Symbol> = tag-eq
+      76. <Quoted string (single, RAW)> = ,tools
+      77. <Symbol> = path-end
+      78. <Symbol> = ,cssvalidate
+    79. <Symbol> = org.and.httpd-conf-req-1.0
+    80. <Symbol> = Location:
+    81. [Square bracket list]
+      82. [Circular bracket list]
+        83. <Symbol> = limit
+        84. <Symbol> = <path>-end
+        85. <Symbol> = ,cssvalidate
+      86. [Circular bracket list]
+        87. <Symbol> = make-absolute-url
+    88. <Quoted string (single, RAW)> = 
+    89. [Circular bracket list]
+      90. <Symbol> = Location:
+      91. [Circular bracket list]
+        92. <Symbol> = prepend
+        93. <Symbol> = http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=
+    94. <Symbol> = return
+    95. <Symbol> = 301
+  96. [Circular bracket list]
+    97. <Symbol> = match-request
+    98. <Quoted string (single, RAW)> = w3c spell
+    99. [Square bracket list]
+      100. <Symbol> = tag-eq
+      101. <Quoted string (single, RAW)> = ,tools
+      102. <Symbol> = path-end
+      103. <Symbol> = ,spell
+    104. <Symbol> = org.and.httpd-conf-req-1.0
+    105. <Symbol> = Location:
+    106. [Square bracket list]
+      107. <Symbol> = limit
+      108. <Symbol> = <path>-end
+      109. <Symbol> = ,spell
+      110. <Symbol> = make-absolute-url
+    111. <Quoted string (single, RAW)> = 
+    112. [Circular bracket list]
+      113. <Symbol> = Location:
+      114. [Circular bracket list]
+        115. <Symbol> = =
+        116. <Symbol> = http://www.w3.org/2002/01/spellchecker?suggest=on&uri=
+        117. <Symbol> = <Location:>
+    118. <Symbol> = return
+    119. <Symbol> = 302
+  120. [Circular bracket list]
+    121. <Symbol> = match-request
+    122. <Quoted string (single, RAW)> = w3c checklink
+    123. [Square bracket list]
+      124. <Symbol> = tag-eq
+      125. <Quoted string (single, RAW)> = ,tools
+      126. <Symbol> = path-end
+      127. <Symbol> = ,checklink
+    128. <Symbol> = org.and.httpd-conf-req-1.0
+    129. <Symbol> = Location:
+    130. [Square bracket list]
+      131. [Circular bracket list]
+        132. <Symbol> = limit
+        133. <Symbol> = <path>-end
+        134. <Symbol> = ,checklink
+      135. [Circular bracket list]
+        136. <Symbol> = make-absolute-url
+        137. <Symbol> = true
+    138. <Quoted string (single, RAW)> = 
+    139. [Circular bracket list]
+      140. <Symbol> = Location:
+      141. <Symbol> = =
+      142. <Symbol> = http://validator.w3.org/checklink?uri=
+      143. <Symbol> = <path>
+    144. <Symbol> = return
+    145. <Symbol> = <found>
+  146. [Circular bracket list]
+    147. <Symbol> = match-request
+    148. <Quoted string (single, RAW)> = w3c rchecklink
+    149. [Square bracket list]
+      150. <Symbol> = tag-eq
+      151. <Quoted string (single, RAW)> = ,tools
+      152. <Symbol> = path-end
+      153. <Symbol> = ,rchecklink
+    154. <Symbol> = org.and.httpd-conf-req-1.0
+    155. <Symbol> = Location:
+    156. [Square bracket list]
+      157. <Symbol> = limit
+      158. <Symbol> = <path>-end
+      159. <Symbol> = ,rchecklink
+      160. <Symbol> = make-absolute-url
+    161. <Quoted string (single, RAW)> = 
+    162. [Circular bracket list]
+      163. <Symbol> = Location:
+      164. <Symbol> = <<=
+      165. <Symbol> = http://validator.w3.org/checklink?recursive=on&uri=
+    166. <Symbol> = return
+    167. <Symbol> = 303
+  168. [Circular bracket list]
+    169. <Symbol> = match-request
+    170. <Quoted string (single, RAW)> = w3c text
+    171. [Square bracket list]
+      172. <Symbol> = tag-eq
+      173. <Quoted string (single, RAW)> = ,tools
+      174. <Symbol> = path-end
+      175. <Symbol> = ,text
+    176. <Symbol> = org.and.httpd-conf-req-1.0
+    177. <Symbol> = Location:
+    178. [Square bracket list]
+      179. <Symbol> = limit
+      180. <Symbol> = <path>-end
+      181. <Symbol> = ,text
+      182. <Symbol> = make-absolute-url
+    183. <Quoted string (single, RAW)> = 
+    184. [Circular bracket list]
+      185. <Symbol> = Location:
+      186. <Symbol> = <<=
+      187. <Symbol> = http://cgi.w3.org/cgi-bin/html2txt?url=
+    188. <Symbol> = return
+    189. <Symbol> = <other>
+  190. [Circular bracket list]
+    191. <Symbol> = match-request
+    192. <Quoted string (single, RAW)> = google links
+    193. [Square bracket list]
+      194. <Symbol> = tag-eq
+      195. <Quoted string (single, RAW)> = ,tools
+      196. <Symbol> = path-end
+      197. <Symbol> = ,links
+    198. <Symbol> = org.and.httpd-conf-req-1.0
+    199. <Symbol> = Location:
+    200. [Square bracket list]
+      201. <Symbol> = limit
+      202. <Symbol> = <path>-end
+      203. <Symbol> = ,links
+      204. <Symbol> = make-absolute-url
+    205. <Quoted string (single, RAW)> = 
+    206. [Circular bracket list]
+      207. <Symbol> = Location:
+      208. <Symbol> = <<=
+      209. <Symbol> = http://www.google.com/search?as_lq=
+    210. <Symbol> = return
+    211. <Symbol> = 307
+  212. [Circular bracket list]
+    213. <Symbol> = match-request
+    214. <Quoted string (single, RAW)> = google blog-links
+    215. [Square bracket list]
+      216. <Symbol> = tag-eq
+      217. <Quoted string (single, RAW)> = ,tools
+      218. <Symbol> = path-end
+      219. <Symbol> = ,bloglinks
+    220. <Symbol> = org.and.httpd-conf-req-1.0
+    221. <Symbol> = Location:
+    222. [Square bracket list]
+      223. <Symbol> = limit
+      224. <Symbol> = <path>-end
+      225. <Symbol> = ,bloglinks
+      226. <Symbol> = make-absolute-url
+    227. <Quoted string (single, RAW)> = 
+    228. [Circular bracket list]
+      229. <Symbol> = Location:
+      230. <Symbol> = <<=
+      231. <Symbol> = http://blogsearch.google.com/blogsearch?scoring=d&q=link:
+    232. <Symbol> = return
+    233. <Symbol> = <tmp-redirect>
+  234. <Symbol> = match-request
+  235. <Quoted string (single, RAW)> = ircache cacheability
+  236. [Square bracket list]
+    237. <Symbol> = tag-eq
+    238. <Quoted string (single, RAW)> = ,tools
+    239. <Symbol> = path-end
+    240. <Symbol> = ,cacheability
+  241. <Symbol> = org.and.httpd-conf-req-1.0
+  242. <Symbol> = Location:
+  243. [Square bracket list]
+    244. <Symbol> = limit
+    245. <Symbol> = <path>-end
+    246. <Symbol> = ,cacheability
+    247. <Symbol> = make-absolute-url
+  248. <Quoted string (single, RAW)> = 
+  249. [Circular bracket list]
+    250. <Symbol> = Location:
+    251. <Symbol> = <<=
+    252. <Symbol> = http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=
+  253. <Symbol> = return
+  254. <Symbol> = <temporary-redirect>

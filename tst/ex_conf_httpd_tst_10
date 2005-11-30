@@ -1,0 +1,111 @@
+#########################################################
+###                                                   ###
+### This is a configuration for httpd_conf_9 tests... ###
+###                                                   ###
+#########################################################
+
+(org.and.httpd-conf-main-1.0
+
+  (org.and.daemon-conf-1.0
+    (listen addr 127.0.9.1)
+
+    (cntl-file ex_httpd_cntl))
+
+  (match-connection [policy-eq <default>
+                     server-ipv4-cidr-eq 127.0.9.1/24]
+    policy conf-httpd-tst-10.1
+    tag    ,tools)
+
+   policy conf-httpd-tst-10.1
+
+     ; Required by the tests...
+     unspecified-hostname foo.example.com ; -- so we always match in tests
+     unspecified-hostname-append-port off
+     MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
+
+     virtual-hosts true
+     document-root ex_httpd_root
+     request-configuration-directory ex_httpd_conf_root
+     req-err-dir ex_httpd_err_conf_10_root)
+
+;; Taken from tools/_,tools.conf
+
+;;;; Inspired by the w3c tools page: http://www.w3.org/,tools ;;;;
+
+(org.and.httpd-conf-main-1.0
+   match-init [true] ; Turn this off to remove them all...
+
+  (match-request 'w3c validate'
+                 [tag-eq ',tools'
+                  path-end ,validate]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,validate] ''
+      (Location: = http://validator.w3.org/check?uri=http:// <hostname> <path>)
+       return <permanent-redirect>)
+
+  (match-request 'w3c cssvalidate'
+                 [tag-eq ',tools'
+                  path-end ,cssvalidate]
+     org.and.httpd-conf-req-1.0
+       Location: [(limit <path>-end ,cssvalidate) (make-absolute-url)] ''
+      (Location: (prepend
+       http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=))
+       return 301)
+
+  (match-request 'w3c spell'
+                 [tag-eq ',tools'
+                  path-end ,spell]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,spell make-absolute-url] ''
+      (Location: (= http://www.w3.org/2002/01/spellchecker?suggest=on&uri= 
+                   <Location:>))
+       return 302)
+
+  (match-request 'w3c checklink'
+                 [tag-eq ',tools'
+                  path-end ,checklink]
+     org.and.httpd-conf-req-1.0
+       Location: [(limit <path>-end ,checklink)(make-absolute-url true)] ''
+      (Location: = http://validator.w3.org/checklink?uri= <path>)
+       return <found>)
+
+  (match-request 'w3c rchecklink'
+                 [tag-eq ',tools'
+                  path-end ,rchecklink]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,rchecklink make-absolute-url] ''
+      (Location: <<= http://validator.w3.org/checklink?recursive=on&uri=)
+       return 303)
+
+  (match-request 'w3c text'
+                 [tag-eq ',tools'
+                  path-end ,text]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,text make-absolute-url] ''
+      (Location: <<= http://cgi.w3.org/cgi-bin/html2txt?url=)
+       return <other>)
+
+  (match-request 'google links'
+                 [tag-eq ',tools'
+                  path-end ,links]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,links make-absolute-url] ''
+      (Location: <<= http://www.google.com/search?as_lq=)
+       return 307)
+
+  (match-request 'google blog-links'
+                 [tag-eq ',tools'
+                  path-end ,bloglinks]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,bloglinks make-absolute-url] ''
+      (Location: <<= http://blogsearch.google.com/blogsearch?scoring=d&q=link:)
+       return <tmp-redirect>)
+
+   match-request 'ircache cacheability'
+                 [tag-eq ',tools'
+                  path-end ,cacheability]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,cacheability make-absolute-url] ''
+      (Location: <<=
+       http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=)
+       return <temporary-redirect>)
