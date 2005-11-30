@@ -1,6 +1,6 @@
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -21,7 +21,7 @@ Content-Length: 393
 </html>
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Connection: close
 Accept-Ranges: bytes

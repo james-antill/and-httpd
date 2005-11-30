@@ -1,6 +1,6 @@
-404 Not Found
+404 見つけられない
 
-The document requested was not found.
+要求された文書は見つけられなかった。
 
-Generated using the And-httpd Web Server.
+And-httpd Web サーバを使用して発生させる。
 

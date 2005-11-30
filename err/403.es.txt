@@ -1,6 +1,6 @@
-403 Forbidden
+403 Prohibido
 
-The request is forbidden.
+Se prohíbe la petición.
 
-Generated using the And-httpd Web Server.
+Generado usando el servidor del Web And-httpd.
 

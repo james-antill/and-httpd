@@ -1,8 +1,8 @@
-410 Gone
+410 Ido
 
-The requested resource is no longer available at the server and no
-forwarding address is known. This condition is expected to be
-considered permanent.
+El recurso solicitado está un disponible no más largo en el servidor
+y no se sabe ninguna dirección de expedición. Se espera que esta
+condición sea considerada permanente.
 
-Generated using the And-httpd Web Server.
+Generado usando el servidor del Web And-httpd.
 

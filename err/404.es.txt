@@ -1,6 +1,6 @@
-404 Not Found
+404 No encontrado
 
-The document requested was not found.
+El documento solicitado no fue encontrado.
 
-Generated using the And-httpd Web Server.
+Generado usando el servidor del Web And-httpd.
 

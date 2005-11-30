@@ -1537,7 +1537,7 @@ echo "${ECHO_T}${T_MD}Initial phase:${T_ME}" >&6
 
 
 
-VERSION=0.99.5
+VERSION=0.99.6
 PACKAGE=and-httpd
 
 am__api_version="1.9"
@@ -31832,7 +31832,7 @@ echo "$as_me:$LINENO: result: ${T_MD}Output Substitution:${T_ME}" >&5
 echo "${ECHO_T}${T_MD}Output Substitution:${T_ME}" >&6
 
 
-                                                                                                    ac_config_files="$ac_config_files Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/scons_and_httpd_helpers.py tools/and-httpd_gzip and-httpd.spec VERSION"
+                                                                                                              ac_config_files="$ac_config_files Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/and-httpd_gzip tools/make_index tools/scons_and_httpd_helpers.py and-httpd.spec VERSION"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -32528,8 +32528,9 @@ do
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "tools/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
   "tools/and-httpd" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd" ;;
-  "tools/scons_and_httpd_helpers.py" ) CONFIG_FILES="$CONFIG_FILES tools/scons_and_httpd_helpers.py" ;;
   "tools/and-httpd_gzip" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_gzip" ;;
+  "tools/make_index" ) CONFIG_FILES="$CONFIG_FILES tools/make_index" ;;
+  "tools/scons_and_httpd_helpers.py" ) CONFIG_FILES="$CONFIG_FILES tools/scons_and_httpd_helpers.py" ;;
   "and-httpd.spec" ) CONFIG_FILES="$CONFIG_FILES and-httpd.spec" ;;
   "VERSION" ) CONFIG_FILES="$CONFIG_FILES VERSION" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;

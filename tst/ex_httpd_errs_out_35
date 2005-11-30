@@ -1,1 +1,8 @@
-ex_httpd_errs_out_4
+HTTP/1.1 400 Bad Request
+Date:
+Server: and-httpd/0.99.6
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 327
+

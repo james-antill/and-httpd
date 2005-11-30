@@ -1,7 +1,7 @@
-503 Service Unavailable
+503 Assista Non disponibile
 
-The server is currently unable to handle the request due to a temporary
-overloading or maintenance of the server.
+L'assistente non può attualmente maneggiare la richiesta dovuto un
+sovraccarico o una manutenzione provvisorio dell'assistente.
 
-Generated using the And-httpd Web Server.
+Generato usando il web server And-httpd.
 

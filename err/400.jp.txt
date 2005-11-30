@@ -1,6 +1,6 @@
-400 Bad Request
+400 悪い要求
 
-The request could not be understood.
+要求は理解できなかった
 
-Generated using the And-httpd Web Server.
+And-httpd Web サーバを使用して発生させる。
 

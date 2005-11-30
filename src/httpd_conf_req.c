@@ -475,45 +475,43 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   {
     unsigned int code = 0;
     
-    if (conf_sc_token_parse_uint(conf, token, &code))
-    {
-      if (0) { }
-      else if (OPT_SERV_SYM_EQ("<perm>") ||
-               OPT_SERV_SYM_EQ("<perm-redirect>") ||
-               OPT_SERV_SYM_EQ("<permanent>") || /* sp is permanent */
-               OPT_SERV_SYM_EQ("<permenant>") || /* allow bad sp */
-               OPT_SERV_SYM_EQ("<permanent-redirect>") ||
-               OPT_SERV_SYM_EQ("<permenant-redirect>"))
-        code = 301;
-      else if (OPT_SERV_SYM_EQ("<found>"))
-        code = 302;
-      else if (OPT_SERV_SYM_EQ("<other>") || OPT_SERV_SYM_EQ("<see-other>"))
-        code = 303;
-      else if (OPT_SERV_SYM_EQ("<tmp>") || OPT_SERV_SYM_EQ("<tmp-redirect>") ||
-               OPT_SERV_SYM_EQ("<temp>") ||
-               OPT_SERV_SYM_EQ("<temp-redirect>") ||
-               OPT_SERV_SYM_EQ("<temporary>") ||
-               OPT_SERV_SYM_EQ("<temporary-redirect>"))
-        code = 307;
-      else if (OPT_SERV_SYM_EQ("<bad>") || OPT_SERV_SYM_EQ("<bad-request>"))
-        code = 400;
-      else if (OPT_SERV_SYM_EQ("<not-auth>") ||
-               OPT_SERV_SYM_EQ("<not-authenticated>"))
-        code = 403;
-      else if (OPT_SERV_SYM_EQ("<not-found>"))
-        code = 404;
-      else if (OPT_SERV_SYM_EQ("<not-acceptable>"))
-        code = 406;
-      else if (OPT_SERV_SYM_EQ("<gone>"))
-        code = 410;
-      else if (OPT_SERV_SYM_EQ("<error>") ||
-               OPT_SERV_SYM_EQ("<internal-server-error>"))
-        code = 500;
-      else if (OPT_SERV_SYM_EQ("<service-unavailable>"))
-        code = 503;
-      else
-        return (FALSE);
-    }
+    OPT_SERV_X_SYM_UINT_BEG(code);
+
+    else if (OPT_SERV_SYM_EQ("<perm>") ||
+             OPT_SERV_SYM_EQ("<perm-redirect>") ||
+             OPT_SERV_SYM_EQ("<permanent>") || /* sp is permanent */
+             OPT_SERV_SYM_EQ("<permenant>") || /* allow bad sp */
+             OPT_SERV_SYM_EQ("<permanent-redirect>") ||
+             OPT_SERV_SYM_EQ("<permenant-redirect>"))
+      code = 301;
+    else if (OPT_SERV_SYM_EQ("<found>"))
+      code = 302;
+    else if (OPT_SERV_SYM_EQ("<other>") || OPT_SERV_SYM_EQ("<see-other>"))
+      code = 303;
+    else if (OPT_SERV_SYM_EQ("<tmp>") || OPT_SERV_SYM_EQ("<tmp-redirect>") ||
+             OPT_SERV_SYM_EQ("<temp>") ||
+             OPT_SERV_SYM_EQ("<temp-redirect>") ||
+             OPT_SERV_SYM_EQ("<temporary>") ||
+             OPT_SERV_SYM_EQ("<temporary-redirect>"))
+      code = 307;
+    else if (OPT_SERV_SYM_EQ("<bad>") || OPT_SERV_SYM_EQ("<bad-request>"))
+      code = 400;
+    else if (OPT_SERV_SYM_EQ("<not-auth>") ||
+             OPT_SERV_SYM_EQ("<not-authenticated>"))
+      code = 403;
+    else if (OPT_SERV_SYM_EQ("<not-found>"))
+      code = 404;
+    else if (OPT_SERV_SYM_EQ("<not-acceptable>"))
+      code = 406;
+    else if (OPT_SERV_SYM_EQ("<gone>"))
+      code = 410;
+    else if (OPT_SERV_SYM_EQ("<error>") ||
+             OPT_SERV_SYM_EQ("<internal-server-error>"))
+      code = 500;
+    else if (OPT_SERV_SYM_EQ("<service-unavailable>"))
+      code = 503;
+
+    OPT_SERV_X_SYM_NUM_END();
     
     req->user_return_error_code = TRUE;
     ASSERT(!req->error_code);

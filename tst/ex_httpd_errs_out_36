@@ -1,6 +1,6 @@
 HTTP/1.1 400 Bad Request
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Connection: close
 Content-Type: text/html

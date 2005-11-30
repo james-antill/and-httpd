@@ -686,6 +686,54 @@ int conf_sc_token_parse_uint(const Conf_parse *conf, Conf_token *token,
   return (ern);
 }
 
+int conf_sc_token_parse_ulong(const Conf_parse *conf, Conf_token *token,
+                              unsigned long *val)
+{
+  unsigned int num = conf_token_list_num(token, token->depth_num);
+  int ern = CONF_SC_TYPE_RET_OK;
+  const Vstr_sect_node *pv = NULL;
+  unsigned int nflags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
+  size_t len = 0;
+  
+  ASSERT(val);
+
+  if (!num)
+    return (CONF_SC_TYPE_RET_ERR_NOT_EXIST);
+  conf_parse_token(conf, token);
+  if (!(pv = conf_token_value(token)))
+    return (CONF_SC_TYPE_RET_ERR_PARSE);
+
+  *val = vstr_parse_ulong(conf->data, pv->pos, pv->len, nflags, &len, NULL);
+  if (len != pv->len)
+    ern = CONF_SC_TYPE_RET_ERR_PARSE;
+  
+  return (ern);
+}
+
+int conf_sc_token_parse_uintmax(const Conf_parse *conf, Conf_token *token,
+                                uintmax_t *val)
+{
+  unsigned int num = conf_token_list_num(token, token->depth_num);
+  int ern = CONF_SC_TYPE_RET_OK;
+  const Vstr_sect_node *pv = NULL;
+  unsigned int nflags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
+  size_t len = 0;
+  
+  ASSERT(val);
+
+  if (!num)
+    return (CONF_SC_TYPE_RET_ERR_NOT_EXIST);
+  conf_parse_token(conf, token);
+  if (!(pv = conf_token_value(token)))
+    return (CONF_SC_TYPE_RET_ERR_PARSE);
+
+  *val = vstr_parse_uintmax(conf->data, pv->pos, pv->len, nflags, &len, NULL);
+  if (len != pv->len)
+    ern = CONF_SC_TYPE_RET_ERR_PARSE;
+  
+  return (ern);
+}
+
 int conf_sc_token_app_vstr(const Conf_parse *conf, Conf_token *token,
                            Vstr_base *s1,
                            const Vstr_base **a_s1, size_t *a_pos, size_t *a_len)

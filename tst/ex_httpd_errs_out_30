@@ -1,1 +1,21 @@
-ex_httpd_errs_out_2
+HTTP/1.1 501 Not Implemented
+Date:
+Server: and-httpd/0.99.6
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 337
+Allow: GET, HEAD, OPTIONS, TRACE
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>501 Not Implemented</title>
+  </head>
+  <body>
+    <h1>501 Not Implemented</h1>
+    <p>The request method is not implemented.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

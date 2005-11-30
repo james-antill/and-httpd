@@ -1,3 +1,9 @@
+0.99.6 - 2005-11-29
+ Bug fixes, added coverage, more strictness checks, translations for error
+pages, added local extra detailed messages on why errors are returned. Added
+all tools needed for scons builders: SSI, highlighting C and automatic
+directory generation.
+
 0.99.5 - 2005-10-25
  Bug fixes, added native conf.d support. Make syslog date generation native.
 Added w3c like ",tools". Seperate out index redirect into a conf.d file.

@@ -2,6 +2,7 @@
 import sys
 import os
 import glob
+import string
 
 def init_builders(bldr):
     global gzip_bld
@@ -26,8 +27,30 @@ gzip-r --zero --type=bzip2 --output $TARGET $SOURCE')
 
 # Vstr/and-httpd-tools specific...
 
-    # Can't use @"datadir"@ due to it containing ${prefix}
-    and_httpd_tools_path = "@prefix@/share/and-httpd-@VERSION@-tools"
+    conf_prefix = '@prefix@'
+
+    if 'Template' in dir(string):
+        t = string.Template('@exec_prefix@')
+        conf_exec_prefix = t.substitute(prefix=conf_prefix)
+        
+        t = string.Template('@datadir@')
+        conf_datadir = t.substitute(prefix=conf_prefix,
+                                    exec_prefix=conf_exec_prefix)
+        
+        t = string.Template('@libexecdir@')
+        conf_libexecdir = t.substitute(exec_prefix=conf_exec_prefix)
+        
+        t = string.Template('$datadir/$app:$libexecdir/$app')
+        and_httpd_tools_path = t.substitute(datadir=conf_datadir,
+                                            libexecdir=conf_libexecdir,
+                                            app="and-httpd-@VERSION@-tools")
+    else:
+        and_httpd_tools_path = ''
+        and_httpd_tools_path += conf_prefix
+        and_httpd_tools_path += '/share/and-httpd-@VERSION@-tools'
+        and_httpd_tools_path += ':'
+        and_httpd_tools_path += conf_prefix
+        and_httpd_tools_path += '/libexec/and-httpd-@VERSION@-tools'
 
     and_highlight_bld = bldr(action = '\
 and-highlight --css-file=http://www.and.org/f_c.css $HIGHARGS $SOURCE > $TARGET')

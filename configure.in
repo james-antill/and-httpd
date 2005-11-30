@@ -61,7 +61,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
-VERSION=0.99.5
+VERSION=0.99.6
 PACKAGE=and-httpd
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
@@ -1294,8 +1294,9 @@ AC_OUTPUT([Makefile
            src/Makefile
            tools/Makefile
            tools/and-httpd
-           tools/scons_and_httpd_helpers.py
            tools/and-httpd_gzip
+           tools/make_index
+           tools/scons_and_httpd_helpers.py
            and-httpd.spec
            VERSION
 ])

@@ -1,6 +1,6 @@
-400 Bad Request
+400 Richiesta Difettosa
 
-The request could not be understood.
+La richiesta non ha potuto essere capita.
 
-Generated using the And-httpd Web Server.
+Generato usando il web server And-httpd.
 

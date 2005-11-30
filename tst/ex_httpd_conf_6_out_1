@@ -1,19 +1,17 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Connection: Keep-Alive
-Accept-Ranges: bytes
 Content-Type: text/html
 Content-Length: 379
 Location: http://foo.example.com/index.html
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Connection: close
-Accept-Ranges: bytes
 Content-Type: text/html
 Content-Length: 379
 Location: http://foo.example.com/index.html

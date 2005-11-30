@@ -1,7 +1,7 @@
-503 Service Unavailable
+503 利用できないサービス
 
-The server is currently unable to handle the request due to a temporary
-overloading or maintenance of the server.
+サーバーはサーバーの一時的な積み過ぎるか、また�
+�維持のために要求を扱って現在ない。
 
-Generated using the And-httpd Web Server.
+And-httpd Web サーバを使用して発生させる。
 

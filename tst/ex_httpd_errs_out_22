@@ -1,9 +1,8 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Connection: close
-Accept-Ranges: bytes
 Content-Type: text/html
 Content-Length: 365
 Location: http://default/fifo

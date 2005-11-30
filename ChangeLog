@@ -1,3 +1,31 @@
+2005-11-29  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.6
+
+2005-11-29  James Antill  <james@and.org>
+
+	* src/evnt.c (evnt__free2): Add acpt_sa cleanup.
+	(evnt_make_acpt_ref): Don't update time.
+	(evnt_stats_add): Fix got accounting (was happening to put).
+
+	* src/evnt.h (struct Evnt): Add acpt_sa.
+
+	* err/400.jp.html: Add japanese error page translations.
+
+	* err/400.it.html: Add italian error page translations.
+
+	* err/400.es.html: Add spanish error page translations.
+
+	* src/opt_serv.c (OPT_SERV__RLIM_VAL): Use long's so 86_64 can do
+	the right thing.
+
+	* src/httpd.c (http__parse_req_all): Fix minor parsing bug when have
+	single blank line between requests on keep-alive.
+	(http_parse_req): Test for HEAD method early, so early errors don't
+	contain data.
+	(http_req_make_path): Make /./ and /../ 403 instead of 400 to be the
+	same as path NIL/path encoded.
+
 2005-11-27  James Antill  <james@and.org>
 
 	* scripts/tst-root-run.sh: Same as tst-run.sh, but as root.

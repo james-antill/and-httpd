@@ -40,6 +40,7 @@ host_triplet = @host@
 subdir = tools
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/and-httpd.in $(srcdir)/and-httpd_gzip.in \
+	$(srcdir)/make_index.in \
 	$(srcdir)/scons_and_httpd_helpers.py.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -47,8 +48,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/autoconf.h
-CONFIG_CLEAN_FILES = and-httpd scons_and_httpd_helpers.py \
-	and-httpd_gzip
+CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip make_index \
+	scons_and_httpd_helpers.py
 am__installdirs = "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" \
 	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" \
 	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"
@@ -261,9 +262,11 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 and-httpd: $(top_builddir)/config.status $(srcdir)/and-httpd.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-scons_and_httpd_helpers.py: $(top_builddir)/config.status $(srcdir)/scons_and_httpd_helpers.py.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 and-httpd_gzip: $(top_builddir)/config.status $(srcdir)/and-httpd_gzip.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+make_index: $(top_builddir)/config.status $(srcdir)/make_index.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+scons_and_httpd_helpers.py: $(top_builddir)/config.status $(srcdir)/scons_and_httpd_helpers.py.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-crondSCRIPTS: $(crond_SCRIPTS)
 	@$(NORMAL_INSTALL)

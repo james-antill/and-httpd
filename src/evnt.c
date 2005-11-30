@@ -473,7 +473,6 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   if (!(evnt->ind = evnt_poll_add(evnt, fd)))
     goto poll_add_fail;
 
-  EVNT__UPDATE_TV();
   EVNT__COPY_TV(&evnt->ctime);
   EVNT__COPY_TV(&evnt->mtime);
 
@@ -483,6 +482,7 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
     goto fcntl_fail;
 
   evnt->sa_ref = vstr_ref_add(ref);
+  evnt->acpt_sa_ref = NULL;
   
   evnt_fd__set_nonblock(fd, TRUE);
 
@@ -514,10 +514,11 @@ static void evnt__free1(struct Evnt *evnt)
   evnt_poll_del(evnt);
 }
 
-static void evnt__free2(Vstr_ref *sa, Timer_q_node *tm_o)
+static void evnt__free2(Vstr_ref *sa, Vstr_ref *acpt_sa, Timer_q_node *tm_o)
 { /* post callbacks, evnt no longer exists */
   vstr_ref_del(sa);
-  
+  vstr_ref_del(acpt_sa);
+
   if (tm_o)
   {
     timer_q_cntl_node(tm_o, TIMER_Q_CNTL_NODE_SET_DATA, NULL);
@@ -530,6 +531,7 @@ static void evnt__free(struct Evnt *evnt)
   if (evnt)
   {
     Vstr_ref *sa = evnt->sa_ref;
+    Vstr_ref *acpt_sa = evnt->acpt_sa_ref;
     Timer_q_node *tm_o  = evnt->tm_o;
   
     evnt__free1(evnt);
@@ -539,7 +541,7 @@ static void evnt__free(struct Evnt *evnt)
     ASSERT(evnt__num == evnt__debug_num_all());
 
     evnt->cbs->cb_func_free(evnt);
-    evnt__free2(sa, tm_o);
+    evnt__free2(sa, acpt_sa, tm_o);
   }
 }
 
@@ -558,7 +560,7 @@ static void evnt__uninit(struct Evnt *evnt)
           evnt->flag_q_send_recv + evnt->flag_q_none) == 0);
 
   evnt__free1(evnt);
-  evnt__free2(evnt->sa_ref, evnt->tm_o);
+  evnt__free2(evnt->sa_ref, evnt->acpt_sa_ref, evnt->tm_o);
 }
 
 static int evnt_fd__set_nodelay(int fd, int val)
@@ -599,6 +601,8 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
   
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
+
+  EVNT__UPDATE_TV();
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
@@ -654,6 +658,8 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
   if ((fd = socket(PF_LOCAL, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
   
+  EVNT__UPDATE_TV();
+
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
   if (!evnt_init(evnt, fd, ref))
@@ -740,6 +746,8 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
   
+  EVNT__UPDATE_TV();
+
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
   if (!evnt_init(evnt, fd, ref))
@@ -801,6 +809,8 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   if ((fd = socket(PF_LOCAL, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
   
+  EVNT__UPDATE_TV();
+
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
   if (!evnt_init(evnt, fd, ref))
@@ -840,10 +850,12 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
 int evnt_make_custom(struct Evnt *evnt, int fd, Vstr_ref *sa, int flags)
 {
   static Vstr_ref dummy_sa = {vstr_ref_cb_free_nothing, NULL, 1};
-  
+
   if (!sa)
     sa = &dummy_sa;
   
+  EVNT__UPDATE_TV();
+
   if (!evnt_init(evnt, fd, sa))
   {
     evnt__fd_close_noerrno(fd);
@@ -1397,7 +1409,10 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
           close(fd);
           goto next_accept;
         }
-      
+
+        if (!acpt_num) /* for the first one, update */
+          EVNT__COPY_TV(&scan->mtime);
+        
         if (!tmp->flag_q_closed)
         {
           ++ready; /* give a read event to this new event */
@@ -1578,6 +1593,7 @@ static void evnt__close_1(struct Evnt **root)
   while (scan)
   {
     struct Evnt *scan_next = scan->next;
+    Vstr_ref *acpt_sa = scan->acpt_sa_ref;
     Vstr_ref *sa = scan->sa_ref;
     Timer_q_node *tm_o  = scan->tm_o;
 
@@ -1587,7 +1603,7 @@ static void evnt__close_1(struct Evnt **root)
     evnt_poll_del(scan);
     
     --evnt__num;
-    evnt__free2(sa, tm_o);
+    evnt__free2(sa, acpt_sa, tm_o);
     scan->cbs->cb_func_free(scan);
     
     scan = scan_next;
@@ -1624,8 +1640,10 @@ void evnt_out_dbg3(const char *prefix)
 
 void evnt_stats_add(struct Evnt *dst, const struct Evnt *src)
 {
+  EVNT__COPY_TV(&dst->mtime);
+
   dst->acct.req_put += src->acct.req_put;
-  dst->acct.req_put += src->acct.req_got;
+  dst->acct.req_got += src->acct.req_got;
 
   dst->acct.bytes_r += src->acct.bytes_r;
   dst->acct.bytes_w += src->acct.bytes_w;

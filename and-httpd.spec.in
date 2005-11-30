@@ -93,9 +93,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %pre
 
-# Add the user id's
+# Add the user id's on install
+if [ $1 = 1 ]; then
 /usr/sbin/useradd -c "And-httpd" -u %{and_httpd_uid} \
         -s /sbin/nologin -r -d %{wwwdir} and-httpd 2> /dev/null || :
+fi
 
 %post
 
@@ -132,9 +134,13 @@ fi
 %files tools
 %defattr(-,root,root,-)
 %{_datadir}/and-httpd-@VERSION@-tools/*
+%{_libexecdir}/and-httpd-@VERSION@-tools/*
 
 
 %changelog
+* Wed Nov 30 2005 James Antill <james@and.org> - and-httpd-0.99.6
+- Only try adding the user on install
+
 * Sat Sep 10 2005 James Antill <james@and.org> - and-httpd-0.99-1
 - Initial build.
 

@@ -563,10 +563,9 @@ void http_app_def_hdrs(struct Con *con, struct Httpd_req_data *req,
   {
     case 200: /* OK */
       /* case 206: */ /* OK - partial -- needed? */
-    case 301: case 302: case 303: case 307: /* Redirects */
+    case 302: case 307: /* Tmp Redirects */
     case 304: /* Not modified */
     case 406: /* Not accept - a */
-      /* case 410: */ /* Gone - like 404 or 301 ? */
     case 412: /* Not accept - precondition */
     case 413: /* Too large */
     case 416: /* Bad range */
@@ -1644,8 +1643,7 @@ int httpd_sc_add_default_hostname(struct Con *con,
 {
   const Httpd_policy_opts *opts = req->policy;
   const Vstr_base *d_h = opts->default_hostname;
-  Acpt_data *acpt_data = con->acpt_sa_ref->ptr;
-  struct sockaddr_in *sinv4 = ACPT_SA_IN4(acpt_data);
+  struct sockaddr_in *sinv4 = EVNT_ACPT_SA_IN4(con->evnt);
   int ret = FALSE;
   
   ret = vstr_add_vstr(lfn, pos, d_h, 1, d_h->len, VSTR_TYPE_ADD_DEF);
@@ -3850,11 +3848,11 @@ static int http_req_make_path(struct Con *con, Httpd_req_data *req)
   /* web servers don't have relative paths, so /./ and /../ aren't "special" */
   if (vstr_srch_cstr_buf_fwd(fname, 1, fname->len, "/../") ||
       VSUFFIX(req->fname, 1, req->fname->len, "/.."))
-    HTTPD_ERR_MSG_RET(req, 400, "Path has /../", FALSE);
+    HTTPD_ERR_MSG_RET(req, 403, "Path has /../", FALSE);
   if (req->policy->chk_dot_dir &&
       (vstr_srch_cstr_buf_fwd(fname, 1, fname->len, "/./") ||
        VSUFFIX(req->fname, 1, req->fname->len, "/.")))
-    HTTPD_ERR_MSG_RET(req, 400, "Path has /./", FALSE);
+    HTTPD_ERR_MSG_RET(req, 403, "Path has /./", FALSE);
 
   ASSERT(fname->len);
   assert(VPREFIX(fname, 1, fname->len, "/") ||
@@ -3897,26 +3895,22 @@ static int http__parse_req_all(struct Con *con, struct Httpd_req_data *req,
                                const char *eol, int *ern)
 {
   Vstr_base *data = con->evnt->io_r;
+  size_t pos = 0;
   
   ASSERT(eol && ern);
   
   *ern = FALSE;
-  
-  if (!(req->len = vstr_srch_cstr_buf_fwd(data, 1, data->len, eol)))
+
+  /* should use vstr_del(data, 1, vstr_spn_cstr_buf_fwd(..., HTTP_EOL)); */
+  /* NOTE: eol might be HTTP_END_OF_REQUEST, so need to do this first *sigh* */
+  while (VPREFIX(data, 1, data->len, HTTP_EOL))
+    vstr_del(data, 1, CLEN(HTTP_EOL));
+
+  ASSERT(!req->len);
+  if (!(pos = vstr_srch_cstr_buf_fwd(data, 1, data->len, eol)))
       goto no_req;
-  
-  if (req->len == 1)
-  { /* should use vstr_del(data, 1, vstr_spn_cstr_buf_fwd(..., HTTP_EOL)); */
-    while (VPREFIX(data, 1, data->len, HTTP_EOL))
-      vstr_del(data, 1, CLEN(HTTP_EOL));
-    
-    if (!(req->len = vstr_srch_cstr_buf_fwd(data, 1, data->len, eol)))
-      goto no_req;
-    
-    ASSERT(req->len > 1);
-  }
-  
-  req->len += CLEN(eol) - 1; /* add rest of EOL */
+
+  req->len = pos + CLEN(eol) - 1; /* add rest of EOL */
 
   return (TRUE);
 
@@ -3971,6 +3965,7 @@ static int http_parse_req(struct Con *con)
       if (!con->parsed_method_ver_1_0)
       {
         con->parsed_method_ver_1_0 = TRUE;
+        req->len = 0;
         if (!http__parse_req_all(con, req, HTTP_END_OF_REQUEST, &ern_req_all))
           return (ern_req_all);
       }
@@ -3979,6 +3974,13 @@ static int http_parse_req(struct Con *con)
                " $<http-esc.vstr.sect:%p%p%u> $<http-esc.vstr.sect:%p%p%u>"
                " $<http-esc.vstr.sect:%p%p%u>\n", data, req->sects, 1U,
                data, req->sects, 2U, data, req->sects, 3U);
+
+      /* put this up here so errors don't get DATA */
+      op_pos        = VSTR_SECTS_NUM(req->sects, 1)->pos;
+      op_len        = VSTR_SECTS_NUM(req->sects, 1)->len;
+      if (VEQ(data, op_pos, op_len, "HEAD"))
+        req->head_op = TRUE;
+    
       http_req_split_hdrs(con, req);
     }
     evnt_got_pkt(con->evnt);
@@ -4021,7 +4023,8 @@ static int http_parse_req(struct Con *con)
       HTTPD_ERR_RET(req, 501, http_fin_err_req(con, req));      
     else if (VEQ(data, op_pos, op_len, "HEAD"))
     {
-      req->head_op = TRUE; /* not sure where this should go here */
+      ASSERT(req->head_op == TRUE); /* above, so errors are chopped */
+      req->head_op = TRUE;
       
       if (!VPREFIX(data, req->path_pos, req->path_len, "/"))
         HTTPD_ERR_MSG_RET(req, 400, "Bad path", http_fin_err_req(con, req));
@@ -4285,7 +4288,7 @@ int httpd_con_init(struct Con *con, struct Acpt_listener *acpt_listener)
 
   con->vary_star   = FALSE;
   con->keep_alive  = HTTP_NON_KEEP_ALIVE;
-  con->acpt_sa_ref = vstr_ref_add(acpt_listener->ref);
+  con->evnt->acpt_sa_ref = vstr_ref_add(acpt_listener->ref);
   con->use_mpbr    = FALSE;
   con->use_mmap    = FALSE;
 

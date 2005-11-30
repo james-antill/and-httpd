@@ -1,1 +1,20 @@
-ex_httpd_errs_out_38
+HTTP/1.1 411 Length Required
+Date:
+Server: and-httpd/0.99.6
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 373
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>411 Length Required</title>
+  </head>
+  <body>
+    <h1>411 Length Required</h1>
+    <p>The server refuses to accept the request without a defined Content-Length.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

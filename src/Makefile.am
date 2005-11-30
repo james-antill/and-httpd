@@ -59,6 +59,8 @@ and_cntl_DEPENDENCIES = $(CMDLINE_FILES_HDRS) mk.h
 and_cntl_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
 and_cntl_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
 
+
+# user apps.
 and_conf_SOURCES      = conf.c and-conf.c conf_inline.c
 and_conf_DEPENDENCIES = conf.h ex_utils.h mk.h
 and_conf_CFLAGS = $(GEN_CFLAGS)
@@ -67,6 +69,36 @@ and_conf_LDADD  = $(GEN_LDLIBS)
 and_sock_filter_DEPENDENCIES = ex_utils.h
 and_sock_filter_CFLAGS = $(GEN_CFLAGS)
 and_sock_filter_LDADD  = $(GEN_LDLIBS)
+
+
+# Tools
+and_dir_list_DEPENDENCIES = ex_utils.h
+and_dir_list_CFLAGS = $(GEN_CFLAGS)
+and_dir_list_LDADD  = $(GEN_LDLIBS)
+
+and_dir_filter_SOURCES      = opt.c bag.c and-dir_filter.c
+and_dir_filter_DEPENDENCIES = opt.h bag.h ex_utils.h
+and_dir_filter_CFLAGS = $(GEN_CFLAGS)
+and_dir_filter_LDADD  = $(GEN_LDLIBS)
+
+and_dir_sort_SOURCES      = opt.c bag.c and-dir_sort.c
+and_dir_sort_DEPENDENCIES = opt.h bag.h ex_utils.h
+and_dir_sort_CFLAGS = $(GEN_CFLAGS)
+and_dir_sort_LDADD  = $(GEN_LDLIBS)
+
+and_dir_list2html_DEPENDENCIES = ex_utils.h
+and_dir_list2html_CFLAGS = $(GEN_CFLAGS)
+and_dir_list2html_LDADD  = $(GEN_LDLIBS)
+
+and_highlight_DEPENDENCIES = ex_utils.h
+and_highlight_CFLAGS = $(GEN_CFLAGS)
+and_highlight_LDADD  = $(GEN_LDLIBS)
+
+and_ssi_SOURCES      = opt.c and-ssi.c
+and_ssi_DEPENDENCIES = opt.h ex_utils.h
+and_ssi_CFLAGS = $(GEN_CFLAGS)
+and_ssi_LDADD  = $(GEN_LDLIBS)
+
 
 
 if PERL_USR_BIN_AVAIL
@@ -84,3 +116,9 @@ httpdadmin_PROGRAMS = and-cntl and-httpd
 
 httpduserdir = $(bindir)
 httpduser_PROGRAMS = and-conf and-sock-filter
+
+httpdtooldir = $(libexecdir)/and-httpd-$(VERSION)-tools
+httpdtool_PROGRAMS = and-dir_list and-dir_filter and-dir_sort \
+                     and-dir_list2html \
+                     and-highlight \
+                     and-ssi

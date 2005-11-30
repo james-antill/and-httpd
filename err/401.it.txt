@@ -1,6 +1,6 @@
-401 Unauthorized
+401 Non autorizzato
 
-The request requires user authentication.
+La richiesta richiede l'autenticazione dell'utente.
 
-Generated using the And-httpd Web Server.
+Generato usando il web server And-httpd.
 

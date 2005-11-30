@@ -170,7 +170,7 @@ extern void opt_serv_sc_rlim_file_num(unsigned int);
 extern int  opt_serv_sc_acpt_end(const Opt_serv_policy_opts *,
                                  struct Evnt *, struct Evnt *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
-extern void opt_serv_sc_free_beg(struct Evnt *, struct Vstr_ref *)
+extern void opt_serv_sc_free_beg(struct Evnt *)
     COMPILE_ATTR_NONNULL_A();
 extern void opt_serv_sc_signals(void);
 extern void opt_serv_sc_check_children(void);
@@ -280,13 +280,24 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       (x) = opt__val;                                           \
     } while (FALSE)
 
+#define OPT_SERV_X_ULONG(x) do {                                \
+      unsigned long opt__val = 0;                               \
+                                                                \
+      if (conf_sc_token_parse_uint(conf, token, &opt__val))     \
+        return (FALSE);                                         \
+      (x) = opt__val;                                           \
+    } while (FALSE)
+
+#define OPT_SERV_X_UINTMAX(x) do {                              \
+      uintmax_t opt__val = 0;                                   \
+                                                                \
+      if (conf_sc_token_parse_umax(conf, token, &opt__val))     \
+        return (FALSE);                                         \
+      (x) = opt__val;                                           \
+    } while (FALSE)
+
 /* take either a number or one of a few symbols */
-#define OPT_SERV_X_SYM_UINT_BEG(x) do {                                 \
-      const Vstr_sect_node *pv = NULL;                                  \
-      unsigned int val = 0;                                             \
-      int ern = 0;                                                      \
-                                                                        \
-      ern = conf_sc_token_parse_uint(conf, token, &val);                \
+#define OPT_SERV_X_SYM__NUM_BEG(x)                                      \
       if ((ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                        \
           !(pv = conf_token_value(token)))                              \
         return (FALSE);                                                 \
@@ -296,8 +307,32 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       else                                                              \
       {                                                                 \
         if (0) do { } while (FALSE)
+    
+#define OPT_SERV_X_SYM_UINT_BEG(x) do {                                 \
+      const Vstr_sect_node *pv = NULL;                                  \
+      unsigned int val = 0;                                             \
+      int ern = 0;                                                      \
+                                                                        \
+      ern = conf_sc_token_parse_uint(conf, token, &val);                \
+      OPT_SERV_X_SYM__NUM_BEG(x)
 
-#define OPT_SERV_X_SYM_UINT_END(x)                                      \
+#define OPT_SERV_X_SYM_ULONG_BEG(x) do {                                \
+      const Vstr_sect_node *pv = NULL;                                  \
+      unsigned long val = 0;                                            \
+      int ern = 0;                                                      \
+                                                                        \
+      ern = conf_sc_token_parse_ulong(conf, token, &val);               \
+      OPT_SERV_X_SYM__NUM_BEG(x)
+
+#define OPT_SERV_X_SYM_UINTMAX_BEG(x) do {                              \
+      const Vstr_sect_node *pv = NULL;                                  \
+      uintmax_t val = 0;                                                \
+      int ern = 0;                                                      \
+                                                                        \
+      ern = conf_sc_token_parse_uintmax(conf, token, &val);             \
+      OPT_SERV_X_SYM__NUM_BEG(x)
+
+#define OPT_SERV_X_SYM_NUM_END()                                        \
         else return (FALSE);                                            \
       }                                                                 \
     } while (FALSE)

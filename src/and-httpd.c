@@ -275,7 +275,7 @@ static void serv_cb_func_free(struct Evnt *evnt)
   
   httpd_fin_fd_close(con);
 
-  opt_serv_sc_free_beg(evnt, con->acpt_sa_ref);
+  opt_serv_sc_free_beg(evnt);
 
   ASSERT(con->fs && !con->fs_num && !con->fs_off && (con->fs->fd == -1));
 

@@ -824,7 +824,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
         int use_host_err_400      = FALSE;
         int validation_done       = FALSE;
         
-        CONF_SC_MAKE_CLIST_BEG(checks_host, clist);
+        CONF_SC_MAKE_CLIST_BEG(checks_host_valid, clist);
         
         else if (OPT_SERV_SYM_EQ("off")  || OPT_SERV_SYM_EQ("false") ||
                  OPT_SERV_SYM_EQ("OFF")  || OPT_SERV_SYM_EQ("FALSE") ||

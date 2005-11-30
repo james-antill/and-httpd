@@ -1,6 +1,6 @@
-500 Internal Server Error
+500 Errore Interno Dell'Assistente
 
-The server encountered something unexpected.
+L'assistente ha incontrato qualche cosa di inatteso.
 
-Generated using the And-httpd Web Server.
+Generato usando il web server And-httpd.
 

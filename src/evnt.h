@@ -56,7 +56,8 @@ struct Evnt
  unsigned int ind; /* socket poll */
 
  Vstr_ref *sa_ref;
- 
+ Vstr_ref *acpt_sa_ref;
+
  Vstr_base *io_r;
  Vstr_base *io_w;
 
@@ -170,6 +171,13 @@ typedef struct Acpt_data
 # define ACPT_SA_IN6(x) evnt___chk_in6((x)->sa->ptr)
 # define ACPT_SA_UN(x)  evnt___chk_un((x)->sa->ptr)
 #endif
+
+# define EVNT_ACPT_EXISTS(x) (!!(x)->acpt_sa_ref)
+# define EVNT_ACPT_DATA(x)   ((Acpt_data *)((x)->acpt_sa_ref->ptr))
+# define EVNT_ACPT_SA(x)     ACPT_SA(EVNT_ACPT_DATA(x))
+# define EVNT_ACPT_SA_IN4(x) ACPT_SA_IN4(EVNT_ACPT_DATA(x))
+# define EVNT_ACPT_SA_IN6(x) ACPT_SA_IN6(EVNT_ACPT_DATA(x))
+# define EVNT_ACPT_SA_UN(x)  ACPT_SA_UN(EVNT_ACPT_DATA(x))
 
 typedef struct Acpt_listener
 {

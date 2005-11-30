@@ -227,9 +227,14 @@ static void cntl__scan_events(Vstr_base *out, const char *tag, struct Evnt *beg)
 
     cntl__ns_out_fmt(out, "EVNT %s", tag);
     cntl__ns_out_fmt(out, "from[$<sa:%p>]", EVNT_SA(ev));
+    if (EVNT_ACPT_EXISTS(ev))
+      cntl__ns_out_fmt(out, "acpt[$<sa:%p>]", EVNT_ACPT_SA(ev));
     cntl__ns_out_fmt(out, "ctime[%lu:%lu]",
                      (unsigned long)ev->ctime.tv_sec,
                      (unsigned long)ev->ctime.tv_usec);
+    cntl__ns_out_fmt(out, "mtime[%lu:%lu]",
+                     (unsigned long)ev->mtime.tv_sec,
+                     (unsigned long)ev->mtime.tv_usec);
     cntl__ns_out_fmt(out, "pid[%lu]", (unsigned long)getpid());
     cntl__ns_out_fmt(out, "req_got[%'u:%u]",
                      ev->acct.req_got, ev->acct.req_got);

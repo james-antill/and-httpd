@@ -53,17 +53,20 @@
 
 http://www.sans.org/top20/#u2
 
-        unit test ",tools" type redirects
-        do translations for error pages
-        tst zsync
         include a default start page?
-         /server-status/ - from and-cntl -e list
+         /server-status/ - from and-cntl -e list, or directly
+         ,tools explanation
+         conf / conf_tmpl (examples)
+         README for scons and tools etc.
 	man pages
+        tst zsync
 	static app.
          way to enable CONF_FULL_STATIC
          way to not include libcap, which doesn't have a static file
          way to use -Wl,-Bstatic?
         conf
+         stat() ... so right paren can be a generic:
+              if ! stat(fname): fname -= ')'; redirect;
          getgroups before setgroups?
          Allow req_conf to have matches (maybe (match-allow [] ...) ?)
           Match needed for different ETags for content neg.
@@ -97,7 +100,6 @@ http://www.sans.org/top20/#u2
 	  Support default
 	  Support per file. -- http://www.w3.org/TR/chips/
          Random extra headers
-	 406 error file per. request
          Have more match types, so we can change policy for early parts of
           request processing.
          Allow req_conf to change to a defined set of policies

@@ -1,1 +1,20 @@
-ex_httpd_errs_out_4
+HTTP/1.1 400 Bad Request
+Date:
+Server: and-httpd/0.99.6
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 327
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>400 Bad Request</title>
+  </head>
+  <body>
+    <h1>400 Bad Request</h1>
+    <p>The request could not be understood.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

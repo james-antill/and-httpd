@@ -298,13 +298,13 @@ int opt_serv_match_init(struct Opt_serv_opts *opts,
 #define OPT_SERV__RLIM_VAL(x, y) do {                                   \
       (y) = TRUE;                                                       \
                                                                         \
-      OPT_SERV_X_SYM_UINT_BEG(x);                                       \
+      OPT_SERV_X_SYM_ULONG_BEG(x);                                      \
       else if (OPT_SERV_SYM_EQ("<infinity>"))  (x) = RLIM_INFINITY;     \
       else if (OPT_SERV_SYM_EQ("<unlimited>")) (x) = RLIM_INFINITY;     \
       else if (OPT_SERV_SYM_EQ("<none>"))      (x) = 0;                 \
       else if (OPT_SERV_SYM_EQ("<zero>"))      (x) = 0;                 \
       else if (OPT_SERV_SYM_EQ("<default>"))   (y) = FALSE;             \
-      OPT_SERV_X_SYM_UINT_END(x);                                       \
+      OPT_SERV_X_SYM_NUM_END();                                         \
     } while (FALSE)
 
 
@@ -376,7 +376,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     {
       OPT_SERV_X_SYM_UINT_BEG(addr->q_listen_len);
       else if (OPT_SERV_SYM_EQ("<max>")) addr->q_listen_len = SOMAXCONN;
-      OPT_SERV_X_SYM_UINT_END(x);
+      OPT_SERV_X_SYM_NUM_END();
     }
     else if (OPT_SERV_SYM_EQ("filter"))
     {
@@ -816,12 +816,11 @@ int opt_serv_sc_acpt_end(const Opt_serv_policy_opts *popts,
   return (TRUE);
 }
 
-void opt_serv_sc_free_beg(struct Evnt *evnt, Vstr_ref *ref)
+void opt_serv_sc_free_beg(struct Evnt *evnt)
 {
-  Acpt_data *acpt_data = ref->ptr;
-
-  if (acpt_data->evnt)
+  if (EVNT_ACPT_EXISTS(evnt) && EVNT_ACPT_DATA(evnt)->evnt)
   {
+    Acpt_data *acpt_data = EVNT_ACPT_DATA(evnt);
     Acpt_listener *acpt_listener = (Acpt_listener *)acpt_data->evnt;
     unsigned int acpt_num = acpt_listener->ref->ref - 1;
     unsigned int acpt_max = acpt_listener->max_connections;
@@ -838,8 +837,6 @@ void opt_serv_sc_free_beg(struct Evnt *evnt, Vstr_ref *ref)
 
   if (evnt->flag_fully_acpt)
     evnt_vlg_stats_info(evnt, "FREE");
-
-  vstr_ref_del(ref);
 }
 
 #define OPT_SERV__SIG_OR_ERR(x)                 \

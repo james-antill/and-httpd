@@ -1,8 +1,9 @@
-406 Not Acceptable
+406 Non accettabile
 
-The resource identified by the request is only capable of generating
-response entities which have content characteristics not acceptable
-according to the accept headers sent in the request.
+La risorsa identificata dalla richiesta √® soltanto capace di
+generazione delle entit√  di risposta che hanno caratteristiche
+soddisfatte non accettabili secondo le intestazioni di accett
+introdotte la richiesta.
 
-Generated using the And-httpd Web Server.
+Generato usando il web server And-httpd.
 

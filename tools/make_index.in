@@ -6,10 +6,11 @@ use File::Temp qw/tempfile/;
 
 use FileHandle;
 
-my $prefix = "j";
+# Perl works like sh ... so we can do the right thing...
+my $prefix = "@prefix@";
+my $exec_prefix = "@exec_prefix@";
 
-if (-f "./ex_dir_list")
-  { $prefix = "./ex_"; }
+$prefix = "@libexecdir@/and-httpd-@VERSION@-tools/and-";
 
 my $dir_name = undef;
 

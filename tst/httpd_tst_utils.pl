@@ -255,60 +255,28 @@ sub all_none_tsts()
 	    {shutdown_w => 0, slow_write => 1});
   }
 
-sub all_conf_5_tsts()
+sub all_conf_x_tsts
   {
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_5");
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_5",
+    my $num = shift;
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num");
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num",
 	    {shutdown_w => 0});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_5",
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num",
 	    {                 slow_write => 1});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_5",
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num",
 	    {shutdown_w => 0, slow_write => 1});
   }
 
-sub all_conf_6_tsts()
+sub all_conf_x_x_tsts
   {
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_6");
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_6",
+    my $num = shift;
+    my $val = shift || 1;
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val");
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val",
 	    {shutdown_w => 0});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_6",
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val",
 	    {                 slow_write => 1});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_6",
-	    {shutdown_w => 0, slow_write => 1});
-  }
-
-sub all_conf_7_tsts()
-  {
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7");
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
-	    {shutdown_w => 0});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
-	    {                 slow_write => 1});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_7",
-	    {shutdown_w => 0, slow_write => 1});
-  }
-
-sub all_conf_8_tsts
-  {
-    my $num = shift || 1;
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num");
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
-	    {shutdown_w => 0});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
-	    {                 slow_write => 1});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_8.$num",
-	    {shutdown_w => 0, slow_write => 1});
-  }
-
-sub all_conf_9_tsts
-  {
-    my $num = shift || 1;
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num");
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
-	    {shutdown_w => 0});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
-	    {                 slow_write => 1});
-    sub_tst(\&httpd_file_tst, "ex_httpd_conf_9.$num",
+    sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val",
 	    {shutdown_w => 0, slow_write => 1});
   }
 
@@ -540,15 +508,17 @@ if (@ARGV)
 	elsif ($arg eq "none")
 	  { all_none_tsts(); $y = 1; }
 	elsif ($arg eq "conf_5")
-	  { all_conf_5_tsts(); $y = 1; }
+	  { all_conf_x_tsts(5); $y = 1; }
 	elsif ($arg eq "conf_6")
-	  { all_conf_6_tsts(); $y = 1; }
+	  { all_conf_x_tsts(6); $y = 1; }
 	elsif ($arg eq "conf_7")
-	  { all_conf_7_tsts(); $y = 1; }
+	  { all_conf_x_tsts(7); $y = 1; }
 	elsif ($arg eq "conf_8")
-	  { all_conf_8_tsts(shift); $y = 1; }
+	  { all_conf_x_x_tsts(8, shift); $y = 1; }
 	elsif ($arg eq "conf_9")
-	  { all_conf_9_tsts(shift); $y = 1; }
+	  { all_conf_x_x_tsts(9, shift); $y = 1; }
+	elsif ($arg eq "conf_10")
+	  { all_conf_x_tsts(10); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -615,35 +585,40 @@ sub conf_tsts
 	elsif ($_ == 5)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.4.1");
-	    all_conf_5_tsts();
+	    all_conf_x_tsts(5);
 	  }
 	elsif ($_ == 6)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.5.1");
-	    all_conf_6_tsts();
+	    all_conf_x_tsts(6);
 	  }
 	elsif ($_ == 7)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.6.1");
-	    all_conf_7_tsts();
+	    all_conf_x_tsts(7);
 	  }
 	elsif ($_ == 8)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.7.1");
-	    all_conf_8_tsts(1);
+	    all_conf_x_x_tsts(8, 1);
 	    daemon_status("and-httpd_cntl", "127.0.7.2");
-	    all_conf_8_tsts(2);
+	    all_conf_x_x_tsts(8, 2);
 	    daemon_status("and-httpd_cntl", "127.0.7.3");
-	    all_conf_8_tsts(3);
+	    all_conf_x_x_tsts(8, 3);
 	    daemon_status("and-httpd_cntl", "127.0.7.4");
-	    all_conf_8_tsts(4);
+	    all_conf_x_x_tsts(8, 4);
 	  }
 	elsif ($_ == 9)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.8.1");
-	    all_conf_9_tsts(1);
+	    all_conf_x_x_tsts(9, 1);
 	    daemon_status("and-httpd_cntl", "127.0.8.2");
-	    all_conf_9_tsts(2);
+	    all_conf_x_x_tsts(9, 2);
+	  }
+	elsif ($_ == 10)
+	  {
+	    daemon_status("and-httpd_cntl", "127.0.9.1");
+	    all_conf_x_tsts(10);
 	  }
 	else
 	  { failure("Bad conf number."); }

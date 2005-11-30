@@ -17,7 +17,7 @@
 # See if we can cast the automake spell. -*-Makefile-*-
 #
 
-SOURCES = $(and_cntl_SOURCES) $(and_conf_SOURCES) $(and_httpd_SOURCES) and-sock-filter.c
+SOURCES = $(and_cntl_SOURCES) $(and_conf_SOURCES) $(and_dir_filter_SOURCES) and-dir_list.c and-dir_list2html.c $(and_dir_sort_SOURCES) and-highlight.c $(and_httpd_SOURCES) and-sock-filter.c $(and_ssi_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -44,6 +44,9 @@ host_triplet = @host@
 @LIBCAP_AVAIL_TRUE@am__append_1 = -lcap
 httpdadmin_PROGRAMS = and-cntl$(EXEEXT) and-httpd$(EXEEXT)
 httpduser_PROGRAMS = and-conf$(EXEEXT) and-sock-filter$(EXEEXT)
+httpdtool_PROGRAMS = and-dir_list$(EXEEXT) and-dir_filter$(EXEEXT) \
+	and-dir_sort$(EXEEXT) and-dir_list2html$(EXEEXT) \
+	and-highlight$(EXEEXT) and-ssi$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/autoconf.h.in
@@ -55,10 +58,12 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = autoconf.h
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(httpdadmindir)" \
-	"$(DESTDIR)$(httpduserdir)"
+	"$(DESTDIR)$(httpdtooldir)" "$(DESTDIR)$(httpduserdir)"
 httpdadminPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+httpdtoolPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 httpduserPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(httpdadmin_PROGRAMS) $(httpduser_PROGRAMS)
+PROGRAMS = $(httpdadmin_PROGRAMS) $(httpdtool_PROGRAMS) \
+	$(httpduser_PROGRAMS)
 am__objects_1 = and_cntl-date.$(OBJEXT) and_cntl-evnt.$(OBJEXT) \
 	and_cntl-hexdump.$(OBJEXT) and_cntl-opt.$(OBJEXT) \
 	and_cntl-vlg.$(OBJEXT)
@@ -73,6 +78,20 @@ am__DEPENDENCIES_1 =
 am_and_conf_OBJECTS = and_conf-conf.$(OBJEXT) \
 	and_conf-and-conf.$(OBJEXT) and_conf-conf_inline.$(OBJEXT)
 and_conf_OBJECTS = $(am_and_conf_OBJECTS)
+am_and_dir_filter_OBJECTS = and_dir_filter-opt.$(OBJEXT) \
+	and_dir_filter-bag.$(OBJEXT) \
+	and_dir_filter-and-dir_filter.$(OBJEXT)
+and_dir_filter_OBJECTS = $(am_and_dir_filter_OBJECTS)
+and_dir_list_SOURCES = and-dir_list.c
+and_dir_list_OBJECTS = and_dir_list-and-dir_list.$(OBJEXT)
+and_dir_list2html_SOURCES = and-dir_list2html.c
+and_dir_list2html_OBJECTS =  \
+	and_dir_list2html-and-dir_list2html.$(OBJEXT)
+am_and_dir_sort_OBJECTS = and_dir_sort-opt.$(OBJEXT) \
+	and_dir_sort-bag.$(OBJEXT) and_dir_sort-and-dir_sort.$(OBJEXT)
+and_dir_sort_OBJECTS = $(am_and_dir_sort_OBJECTS)
+and_highlight_SOURCES = and-highlight.c
+and_highlight_OBJECTS = and_highlight-and-highlight.$(OBJEXT)
 am__objects_2 = and_httpd-bag.$(OBJEXT) and_httpd-conf.$(OBJEXT) \
 	and_httpd-cntl.$(OBJEXT) and_httpd-date.$(OBJEXT) \
 	and_httpd-evnt.$(OBJEXT) and_httpd-hexdump.$(OBJEXT) \
@@ -89,6 +108,8 @@ am_and_httpd_OBJECTS = and_httpd-mime_types.$(OBJEXT) \
 and_httpd_OBJECTS = $(am_and_httpd_OBJECTS)
 and_sock_filter_SOURCES = and-sock-filter.c
 and_sock_filter_OBJECTS = and_sock_filter-and-sock-filter.$(OBJEXT)
+am_and_ssi_OBJECTS = and_ssi-opt.$(OBJEXT) and_ssi-and-ssi.$(OBJEXT)
+and_ssi_OBJECTS = $(am_and_ssi_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
 depcomp =
 am__depfiles_maybe =
@@ -100,10 +121,14 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(and_cntl_SOURCES) $(and_conf_SOURCES) $(and_httpd_SOURCES) \
-	and-sock-filter.c
+SOURCES = $(and_cntl_SOURCES) $(and_conf_SOURCES) \
+	$(and_dir_filter_SOURCES) and-dir_list.c and-dir_list2html.c \
+	$(and_dir_sort_SOURCES) and-highlight.c $(and_httpd_SOURCES) \
+	and-sock-filter.c $(and_ssi_SOURCES)
 DIST_SOURCES = $(and_cntl_SOURCES) $(and_conf_SOURCES) \
-	$(and_httpd_SOURCES) and-sock-filter.c
+	$(and_dir_filter_SOURCES) and-dir_list.c and-dir_list2html.c \
+	$(and_dir_sort_SOURCES) and-highlight.c $(and_httpd_SOURCES) \
+	and-sock-filter.c $(and_ssi_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -289,6 +314,8 @@ and_cntl_SOURCES = $(CMDLINE_FILES_SRCS) and-cntl.c
 and_cntl_DEPENDENCIES = $(CMDLINE_FILES_HDRS) mk.h
 and_cntl_CFLAGS = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS)
 and_cntl_LDADD = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
+
+# user apps.
 and_conf_SOURCES = conf.c and-conf.c conf_inline.c
 and_conf_DEPENDENCIES = conf.h ex_utils.h mk.h
 and_conf_CFLAGS = $(GEN_CFLAGS)
@@ -296,6 +323,29 @@ and_conf_LDADD = $(GEN_LDLIBS)
 and_sock_filter_DEPENDENCIES = ex_utils.h
 and_sock_filter_CFLAGS = $(GEN_CFLAGS)
 and_sock_filter_LDADD = $(GEN_LDLIBS)
+
+# Tools
+and_dir_list_DEPENDENCIES = ex_utils.h
+and_dir_list_CFLAGS = $(GEN_CFLAGS)
+and_dir_list_LDADD = $(GEN_LDLIBS)
+and_dir_filter_SOURCES = opt.c bag.c and-dir_filter.c
+and_dir_filter_DEPENDENCIES = opt.h bag.h ex_utils.h
+and_dir_filter_CFLAGS = $(GEN_CFLAGS)
+and_dir_filter_LDADD = $(GEN_LDLIBS)
+and_dir_sort_SOURCES = opt.c bag.c and-dir_sort.c
+and_dir_sort_DEPENDENCIES = opt.h bag.h ex_utils.h
+and_dir_sort_CFLAGS = $(GEN_CFLAGS)
+and_dir_sort_LDADD = $(GEN_LDLIBS)
+and_dir_list2html_DEPENDENCIES = ex_utils.h
+and_dir_list2html_CFLAGS = $(GEN_CFLAGS)
+and_dir_list2html_LDADD = $(GEN_LDLIBS)
+and_highlight_DEPENDENCIES = ex_utils.h
+and_highlight_CFLAGS = $(GEN_CFLAGS)
+and_highlight_LDADD = $(GEN_LDLIBS)
+and_ssi_SOURCES = opt.c and-ssi.c
+and_ssi_DEPENDENCIES = opt.h ex_utils.h
+and_ssi_CFLAGS = $(GEN_CFLAGS)
+and_ssi_LDADD = $(GEN_LDLIBS)
 @PERL_USR_BIN_AVAIL_TRUE@TESTS_ENVIRONMENT = SRCDIR="$(srcdir)"
 @PERL_USR_BIN_AVAIL_TRUE@TESTS = ../tst/tst_sock_filter.pl ../tst/tst_conf.pl \
 @PERL_USR_BIN_AVAIL_TRUE@        ../tst/tst_httpd_cmd.pl ../tst/tst_httpd_conf.pl \
@@ -306,6 +356,7 @@ and_sock_filter_LDADD = $(GEN_LDLIBS)
 
 httpdadmindir = $(sbindir)
 httpduserdir = $(bindir)
+httpdtooldir = $(libexecdir)/and-httpd-$(VERSION)-tools
 all: autoconf.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -385,6 +436,34 @@ clean-httpdadminPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+install-httpdtoolPROGRAMS: $(httpdtool_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(httpdtooldir)" || $(mkdir_p) "$(DESTDIR)$(httpdtooldir)"
+	@list='$(httpdtool_PROGRAMS)'; for p in $$list; do \
+	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  if test -f $$p \
+	     || test -f $$p1 \
+	  ; then \
+	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(httpdtoolPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(httpdtooldir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(httpdtoolPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(httpdtooldir)/$$f" || exit 1; \
+	  else :; fi; \
+	done
+
+uninstall-httpdtoolPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(httpdtool_PROGRAMS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  echo " rm -f '$(DESTDIR)$(httpdtooldir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(httpdtooldir)/$$f"; \
+	done
+
+clean-httpdtoolPROGRAMS:
+	@list='$(httpdtool_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
 install-httpduserPROGRAMS: $(httpduser_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(httpduserdir)" || $(mkdir_p) "$(DESTDIR)$(httpduserdir)"
@@ -419,12 +498,30 @@ and-cntl$(EXEEXT): $(and_cntl_OBJECTS) $(and_cntl_DEPENDENCIES)
 and-conf$(EXEEXT): $(and_conf_OBJECTS) $(and_conf_DEPENDENCIES) 
 	@rm -f and-conf$(EXEEXT)
 	$(LINK) $(and_conf_LDFLAGS) $(and_conf_OBJECTS) $(and_conf_LDADD) $(LIBS)
+and-dir_filter$(EXEEXT): $(and_dir_filter_OBJECTS) $(and_dir_filter_DEPENDENCIES) 
+	@rm -f and-dir_filter$(EXEEXT)
+	$(LINK) $(and_dir_filter_LDFLAGS) $(and_dir_filter_OBJECTS) $(and_dir_filter_LDADD) $(LIBS)
+and-dir_list$(EXEEXT): $(and_dir_list_OBJECTS) $(and_dir_list_DEPENDENCIES) 
+	@rm -f and-dir_list$(EXEEXT)
+	$(LINK) $(and_dir_list_LDFLAGS) $(and_dir_list_OBJECTS) $(and_dir_list_LDADD) $(LIBS)
+and-dir_list2html$(EXEEXT): $(and_dir_list2html_OBJECTS) $(and_dir_list2html_DEPENDENCIES) 
+	@rm -f and-dir_list2html$(EXEEXT)
+	$(LINK) $(and_dir_list2html_LDFLAGS) $(and_dir_list2html_OBJECTS) $(and_dir_list2html_LDADD) $(LIBS)
+and-dir_sort$(EXEEXT): $(and_dir_sort_OBJECTS) $(and_dir_sort_DEPENDENCIES) 
+	@rm -f and-dir_sort$(EXEEXT)
+	$(LINK) $(and_dir_sort_LDFLAGS) $(and_dir_sort_OBJECTS) $(and_dir_sort_LDADD) $(LIBS)
+and-highlight$(EXEEXT): $(and_highlight_OBJECTS) $(and_highlight_DEPENDENCIES) 
+	@rm -f and-highlight$(EXEEXT)
+	$(LINK) $(and_highlight_LDFLAGS) $(and_highlight_OBJECTS) $(and_highlight_LDADD) $(LIBS)
 and-httpd$(EXEEXT): $(and_httpd_OBJECTS) $(and_httpd_DEPENDENCIES) 
 	@rm -f and-httpd$(EXEEXT)
 	$(LINK) $(and_httpd_LDFLAGS) $(and_httpd_OBJECTS) $(and_httpd_LDADD) $(LIBS)
 and-sock-filter$(EXEEXT): $(and_sock_filter_OBJECTS) $(and_sock_filter_DEPENDENCIES) 
 	@rm -f and-sock-filter$(EXEEXT)
 	$(LINK) $(and_sock_filter_LDFLAGS) $(and_sock_filter_OBJECTS) $(and_sock_filter_LDADD) $(LIBS)
+and-ssi$(EXEEXT): $(and_ssi_OBJECTS) $(and_ssi_DEPENDENCIES) 
+	@rm -f and-ssi$(EXEEXT)
+	$(LINK) $(and_ssi_LDFLAGS) $(and_ssi_OBJECTS) $(and_ssi_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -494,6 +591,60 @@ and_conf-conf_inline.o: conf_inline.c
 
 and_conf-conf_inline.obj: conf_inline.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_conf_CFLAGS) $(CFLAGS) -c -o and_conf-conf_inline.obj `if test -f 'conf_inline.c'; then $(CYGPATH_W) 'conf_inline.c'; else $(CYGPATH_W) '$(srcdir)/conf_inline.c'; fi`
+
+and_dir_filter-opt.o: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-opt.o `test -f 'opt.c' || echo '$(srcdir)/'`opt.c
+
+and_dir_filter-opt.obj: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-opt.obj `if test -f 'opt.c'; then $(CYGPATH_W) 'opt.c'; else $(CYGPATH_W) '$(srcdir)/opt.c'; fi`
+
+and_dir_filter-bag.o: bag.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-bag.o `test -f 'bag.c' || echo '$(srcdir)/'`bag.c
+
+and_dir_filter-bag.obj: bag.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-bag.obj `if test -f 'bag.c'; then $(CYGPATH_W) 'bag.c'; else $(CYGPATH_W) '$(srcdir)/bag.c'; fi`
+
+and_dir_filter-and-dir_filter.o: and-dir_filter.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-and-dir_filter.o `test -f 'and-dir_filter.c' || echo '$(srcdir)/'`and-dir_filter.c
+
+and_dir_filter-and-dir_filter.obj: and-dir_filter.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_filter_CFLAGS) $(CFLAGS) -c -o and_dir_filter-and-dir_filter.obj `if test -f 'and-dir_filter.c'; then $(CYGPATH_W) 'and-dir_filter.c'; else $(CYGPATH_W) '$(srcdir)/and-dir_filter.c'; fi`
+
+and_dir_list-and-dir_list.o: and-dir_list.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_list_CFLAGS) $(CFLAGS) -c -o and_dir_list-and-dir_list.o `test -f 'and-dir_list.c' || echo '$(srcdir)/'`and-dir_list.c
+
+and_dir_list-and-dir_list.obj: and-dir_list.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_list_CFLAGS) $(CFLAGS) -c -o and_dir_list-and-dir_list.obj `if test -f 'and-dir_list.c'; then $(CYGPATH_W) 'and-dir_list.c'; else $(CYGPATH_W) '$(srcdir)/and-dir_list.c'; fi`
+
+and_dir_list2html-and-dir_list2html.o: and-dir_list2html.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_list2html_CFLAGS) $(CFLAGS) -c -o and_dir_list2html-and-dir_list2html.o `test -f 'and-dir_list2html.c' || echo '$(srcdir)/'`and-dir_list2html.c
+
+and_dir_list2html-and-dir_list2html.obj: and-dir_list2html.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_list2html_CFLAGS) $(CFLAGS) -c -o and_dir_list2html-and-dir_list2html.obj `if test -f 'and-dir_list2html.c'; then $(CYGPATH_W) 'and-dir_list2html.c'; else $(CYGPATH_W) '$(srcdir)/and-dir_list2html.c'; fi`
+
+and_dir_sort-opt.o: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-opt.o `test -f 'opt.c' || echo '$(srcdir)/'`opt.c
+
+and_dir_sort-opt.obj: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-opt.obj `if test -f 'opt.c'; then $(CYGPATH_W) 'opt.c'; else $(CYGPATH_W) '$(srcdir)/opt.c'; fi`
+
+and_dir_sort-bag.o: bag.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-bag.o `test -f 'bag.c' || echo '$(srcdir)/'`bag.c
+
+and_dir_sort-bag.obj: bag.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-bag.obj `if test -f 'bag.c'; then $(CYGPATH_W) 'bag.c'; else $(CYGPATH_W) '$(srcdir)/bag.c'; fi`
+
+and_dir_sort-and-dir_sort.o: and-dir_sort.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-and-dir_sort.o `test -f 'and-dir_sort.c' || echo '$(srcdir)/'`and-dir_sort.c
+
+and_dir_sort-and-dir_sort.obj: and-dir_sort.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_dir_sort_CFLAGS) $(CFLAGS) -c -o and_dir_sort-and-dir_sort.obj `if test -f 'and-dir_sort.c'; then $(CYGPATH_W) 'and-dir_sort.c'; else $(CYGPATH_W) '$(srcdir)/and-dir_sort.c'; fi`
+
+and_highlight-and-highlight.o: and-highlight.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_highlight_CFLAGS) $(CFLAGS) -c -o and_highlight-and-highlight.o `test -f 'and-highlight.c' || echo '$(srcdir)/'`and-highlight.c
+
+and_highlight-and-highlight.obj: and-highlight.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_highlight_CFLAGS) $(CFLAGS) -c -o and_highlight-and-highlight.obj `if test -f 'and-highlight.c'; then $(CYGPATH_W) 'and-highlight.c'; else $(CYGPATH_W) '$(srcdir)/and-highlight.c'; fi`
 
 and_httpd-mime_types.o: mime_types.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-mime_types.o `test -f 'mime_types.c' || echo '$(srcdir)/'`mime_types.c
@@ -614,6 +765,18 @@ and_sock_filter-and-sock-filter.o: and-sock-filter.c
 
 and_sock_filter-and-sock-filter.obj: and-sock-filter.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_sock_filter_CFLAGS) $(CFLAGS) -c -o and_sock_filter-and-sock-filter.obj `if test -f 'and-sock-filter.c'; then $(CYGPATH_W) 'and-sock-filter.c'; else $(CYGPATH_W) '$(srcdir)/and-sock-filter.c'; fi`
+
+and_ssi-opt.o: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_ssi_CFLAGS) $(CFLAGS) -c -o and_ssi-opt.o `test -f 'opt.c' || echo '$(srcdir)/'`opt.c
+
+and_ssi-opt.obj: opt.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_ssi_CFLAGS) $(CFLAGS) -c -o and_ssi-opt.obj `if test -f 'opt.c'; then $(CYGPATH_W) 'opt.c'; else $(CYGPATH_W) '$(srcdir)/opt.c'; fi`
+
+and_ssi-and-ssi.o: and-ssi.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_ssi_CFLAGS) $(CFLAGS) -c -o and_ssi-and-ssi.o `test -f 'and-ssi.c' || echo '$(srcdir)/'`and-ssi.c
+
+and_ssi-and-ssi.obj: and-ssi.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_ssi_CFLAGS) $(CFLAGS) -c -o and_ssi-and-ssi.obj `if test -f 'and-ssi.c'; then $(CYGPATH_W) 'and-ssi.c'; else $(CYGPATH_W) '$(srcdir)/and-ssi.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -778,7 +941,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) autoconf.h
 installdirs:
-	for dir in "$(DESTDIR)$(httpdadmindir)" "$(DESTDIR)$(httpduserdir)"; do \
+	for dir in "$(DESTDIR)$(httpdadmindir)" "$(DESTDIR)$(httpdtooldir)" "$(DESTDIR)$(httpduserdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -808,7 +971,8 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-httpdadminPROGRAMS \
-	clean-httpduserPROGRAMS clean-libtool mostlyclean-am
+	clean-httpdtoolPROGRAMS clean-httpduserPROGRAMS clean-libtool \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -f Makefile
@@ -825,7 +989,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-httpdadminPROGRAMS install-httpduserPROGRAMS
+install-data-am: install-httpdadminPROGRAMS install-httpdtoolPROGRAMS \
+	install-httpduserPROGRAMS
 
 install-exec-am:
 
@@ -852,23 +1017,25 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-httpdadminPROGRAMS uninstall-httpduserPROGRAMS \
-	uninstall-info-am
+uninstall-am: uninstall-httpdadminPROGRAMS uninstall-httpdtoolPROGRAMS \
+	uninstall-httpduserPROGRAMS uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
-	clean-generic clean-httpdadminPROGRAMS clean-httpduserPROGRAMS \
-	clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-hdr distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-exec \
-	install-exec-am install-httpdadminPROGRAMS \
+	clean-generic clean-httpdadminPROGRAMS clean-httpdtoolPROGRAMS \
+	clean-httpduserPROGRAMS clean-libtool ctags distclean \
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-exec install-exec-am \
+	install-httpdadminPROGRAMS install-httpdtoolPROGRAMS \
 	install-httpduserPROGRAMS install-info install-info-am \
 	install-man install-strip installcheck installcheck-am \
 	installdirs maintainer-clean maintainer-clean-generic \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-httpdadminPROGRAMS \
-	uninstall-httpduserPROGRAMS uninstall-info-am
+	uninstall-httpdtoolPROGRAMS uninstall-httpduserPROGRAMS \
+	uninstall-info-am
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

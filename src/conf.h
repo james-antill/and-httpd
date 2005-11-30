@@ -211,6 +211,10 @@ extern unsigned int conf_token_list_num(const Conf_token *, unsigned int);
 extern int conf_sc_token_parse_toggle(const Conf_parse *, Conf_token *, int *);
 extern int conf_sc_token_parse_uint(const Conf_parse *, Conf_token *,
                                     unsigned int *);
+extern int conf_sc_token_parse_ulong(const Conf_parse *, Conf_token *,
+                                     unsigned long *);
+extern int conf_sc_token_parse_uintmax(const Conf_parse *, Conf_token *,
+                                       uintmax_t *);
 extern int conf_sc_token_parse_eq(const Conf_parse *, Conf_token *,
                                   const Vstr_base *, size_t, size_t, int *);
 extern int conf_sc_token_app_vstr(const Conf_parse *, Conf_token *,

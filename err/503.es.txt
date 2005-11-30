@@ -1,7 +1,7 @@
-503 Service Unavailable
+503 Mantenga Inasequible
 
-The server is currently unable to handle the request due to a temporary
-overloading or maintenance of the server.
+El servidor no puede actualmente manejar la petición debido a
+sobrecargar o a un mantenimiento temporal del servidor.
 
-Generated using the And-httpd Web Server.
+Generado usando el servidor del Web And-httpd.
 

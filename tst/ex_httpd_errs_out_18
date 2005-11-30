@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -18,7 +18,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -36,7 +36,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -54,7 +54,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -72,7 +72,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -90,7 +90,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -108,7 +108,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 416 Requested Range Not Satisfiable
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -130,7 +130,7 @@ Content-Range: bytes */165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -148,7 +148,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -166,7 +166,7 @@ Content-Length: 165
 </html>
 HTTP/1.1 416 Requested Range Not Satisfiable
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -188,7 +188,7 @@ Content-Range: bytes */165
 </html>
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.5
+Server: and-httpd/0.99.6
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Connection: close
 Vary: Accept-Encoding
