@@ -46,13 +46,28 @@ struct Evnt_cbs
  int          (*cb_func_shutdown_r)(struct Evnt *);
 };
 
+struct Evnt_limit
+{
+ unsigned long io_r_max; /* read/accept */
+ unsigned long io_r_cur;
+ struct timeval io_r_tm;
+
+ unsigned long io_w_max; /* write/sendfile/connect */
+ unsigned long io_w_cur;
+ struct timeval io_w_tm;
+};
+
+
 struct Evnt
 {
  struct Evnt *next;
  struct Evnt *prev;
 
  struct Evnt_cbs cbs[1];
- 
+
+ Vstr_ref **lims; /* array of references to struct Evnt_limit */
+ unsigned int lim_num;
+
  unsigned int ind; /* socket poll */
 
  Vstr_ref *sa_ref;
@@ -64,7 +79,9 @@ struct Evnt
  struct Evnt *s_next;
  struct Evnt *c_next;
  
- Timer_q_node *tm_o;
+ Timer_q_node *tm_o; /* timeout */
+ Timer_q_node *tm_l_r; /* limit read/recv */
+ Timer_q_node *tm_l_w; /* limit write/send */
 
  struct timeval ctime;
  struct timeval mtime;
@@ -101,7 +118,10 @@ struct Evnt
  unsigned int flag_insta_close : 1;
 
  unsigned int io_r_shutdown    : 1;
- unsigned int io_w_shutdown    : 1; /* 15 */
+ unsigned int io_w_shutdown    : 1;
+
+ unsigned int io_r_limited     : 1; /* 16 */
+ unsigned int io_w_limited     : 1; /* 17 */
 };
 
 #if 1 /* ! COMPILE_DEBUG */
@@ -208,6 +228,13 @@ extern void evnt_cb_func_free(struct Evnt *);
 extern void evnt_cb_func_F(struct Evnt *);
 extern int evnt_cb_func_shutdown_r(struct Evnt *);
 
+extern int evnt_limit_add(struct Evnt *, Vstr_ref *);
+extern int evnt_limit_dup(struct Evnt *, const struct Evnt_limit *);
+extern void evnt_limit_chg(struct Evnt *, unsigned int, Vstr_ref *);
+extern void evnt_limit_alt(struct Evnt *, unsigned int,
+                           const struct Evnt_limit *);
+extern void evnt_limit_free(struct Evnt *);
+
 extern int evnt_make_con_ipv4(struct Evnt *, const char *, short);
 extern int evnt_make_con_local(struct Evnt *, const char *);
 extern int evnt_make_bind_ipv4(struct Evnt *, const char *, short,unsigned int);
@@ -257,6 +284,7 @@ extern int evnt_child_block_beg(void);
 extern int evnt_child_block_end(void);
 
 extern int evnt_sc_timeout_via_mtime(struct Evnt *, unsigned long);
+
 extern void evnt_sc_main_loop(size_t);
 
 extern time_t evnt_sc_time(void);

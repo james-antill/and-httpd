@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -9,7 +9,7 @@ Content-Length: 165
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 395
@@ -17,7 +17,7 @@ Location: http://validator.w3.org/check?uri=http://default/
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 425
@@ -25,7 +25,7 @@ Location: http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=http:/
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -34,7 +34,7 @@ Location: http://www.w3.org/2002/01/spellchecker?suggest=on&uri=http://default/
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -43,7 +43,7 @@ Location: http://validator.w3.org/checklink?uri=http://default/
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 401
@@ -51,7 +51,7 @@ Location: http://validator.w3.org/checklink?recursive=on&uri=http://default/
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 389
@@ -59,7 +59,7 @@ Location: http://cgi.w3.org/cgi-bin/html2txt?url=http://default/
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -68,7 +68,7 @@ Location: http://www.google.com/search?as_lq=http://default/
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -77,7 +77,7 @@ Location: http://blogsearch.google.com/blogsearch?scoring=d&q=link:http://defaul
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -86,7 +86,7 @@ Location: http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=http:/
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 396
@@ -94,7 +94,7 @@ Location: http://validator.w3.org/check?uri=http://default/x
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 426
@@ -102,7 +102,7 @@ Location: http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=http:/
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -111,7 +111,7 @@ Location: http://www.w3.org/2002/01/spellchecker?suggest=on&uri=http://default/x
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -120,7 +120,7 @@ Location: http://validator.w3.org/checklink?uri=http://default/x
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 402
@@ -128,7 +128,7 @@ Location: http://validator.w3.org/checklink?recursive=on&uri=http://default/x
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 390
@@ -136,7 +136,7 @@ Location: http://cgi.w3.org/cgi-bin/html2txt?url=http://default/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -145,7 +145,7 @@ Location: http://www.google.com/search?as_lq=http://default/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -154,7 +154,7 @@ Location: http://blogsearch.google.com/blogsearch?scoring=d&q=link:http://defaul
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -163,7 +163,7 @@ Location: http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=http:/
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 401
@@ -171,7 +171,7 @@ Location: http://validator.w3.org/check?uri=http://default/abcd/x
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 431
@@ -179,7 +179,7 @@ Location: http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=http:/
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -188,7 +188,7 @@ Location: http://www.w3.org/2002/01/spellchecker?suggest=on&uri=http://default/a
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -197,7 +197,7 @@ Location: http://validator.w3.org/checklink?uri=http://default/abcd/x
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 407
@@ -205,7 +205,7 @@ Location: http://validator.w3.org/checklink?recursive=on&uri=http://default/abcd
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 395
@@ -213,7 +213,7 @@ Location: http://cgi.w3.org/cgi-bin/html2txt?url=http://default/abcd/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -222,7 +222,7 @@ Location: http://www.google.com/search?as_lq=http://default/abcd/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -231,7 +231,7 @@ Location: http://blogsearch.google.com/blogsearch?scoring=d&q=link:http://defaul
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -240,7 +240,7 @@ Location: http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=http:/
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 409
@@ -248,7 +248,7 @@ Location: http://validator.w3.org/check?uri=http://default/%61%62%63%64/x
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 439
@@ -256,7 +256,7 @@ Location: http://jigsaw.w3.org/css-validator/validator?usermedium=all&uri=http:/
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -265,7 +265,7 @@ Location: http://www.w3.org/2002/01/spellchecker?suggest=on&uri=http://default/%
 
 HTTP/1.1 302 Found
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -274,7 +274,7 @@ Location: http://validator.w3.org/checklink?uri=http://default/%61%62%63%64/x
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 415
@@ -282,7 +282,7 @@ Location: http://validator.w3.org/checklink?recursive=on&uri=http://default/%61%
 
 HTTP/1.1 303 See Other
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Content-Type: text/html
 Content-Length: 403
@@ -290,7 +290,7 @@ Location: http://cgi.w3.org/cgi-bin/html2txt?url=http://default/%61%62%63%64/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -299,7 +299,7 @@ Location: http://www.google.com/search?as_lq=http://default/%61%62%63%64/x
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -308,7 +308,7 @@ Location: http://blogsearch.google.com/blogsearch?scoring=d&q=link:http://defaul
 
 HTTP/1.1 307 Temporary Redirect
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Content-Type: text/html
@@ -317,7 +317,7 @@ Location: http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=http:/
 
 HTTP/1.1 400 Bad Request
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Connection: close
 Content-Type: text/html

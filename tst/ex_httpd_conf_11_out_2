@@ -1,0 +1,66 @@
+HTTP/1.1 503 Service Unavailable
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/html
+Content-Length: 420
+
+HTTP/1.1 503 Service Unavailable
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/html
+Content-Length: 420
+
+HTTP/1.1 410 Gone
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Vary: Accept,Accept-Charset,Accept-Encoding,Accept-Language,If-Match,If-Modified-Since,If-None-Match,If-Range,If-Unmodified-Since,Referer,User-Agent
+Content-Type: text/plain
+Content-Length: 159
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo norm</title>
+  </head>
+  <body>
+    <h1>Foo norm</h1>
+  </body>
+</html>
+HTTP/1.1 410 Gone
+Date:
+Last-Modified:
+Connection: Keep-Alive
+Vary: Accept,Accept-Charset,Accept-Encoding,Accept-Language,If-Match,If-Modified-Since,If-None-Match,If-Range,If-Unmodified-Since,Referer,User-Agent
+Content-Type: text/plain
+Content-Length: 159
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo norm</title>
+  </head>
+  <body>
+    <h1>Foo norm</h1>
+  </body>
+</html>
+HTTP/1.1 410 Gone
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Connection: close
+Vary: Accept,Accept-Charset,Accept-Encoding,Accept-Language,If-Match,If-Modified-Since,If-None-Match,If-Range,If-Unmodified-Since,Referer,User-Agent
+Content-Type: text/plain
+Content-Length: 159
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo norm</title>
+  </head>
+  <body>
+    <h1>Foo norm</h1>
+  </body>
+</html>

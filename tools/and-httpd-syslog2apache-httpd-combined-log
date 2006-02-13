@@ -126,20 +126,23 @@ EOL
     elsif (/^ERREQ \s
 	    from \[ (\d+.\d+.\d+.\d+) [@] \d+ \] \s # IP
 	    err  \[ (\d+) \s [^]]+ \]            \s # error code
-	    host \[ ".*?" \]                     \s # Host header
+	(?: sz   \[ [^:]+ : (\d+) \]             \s )? # Size - 0.99.7
+            host \[ ".*?" \]                     \s # Host header
 	    UA   \[ "(.*?)" \]                   \s # User-agent header
 	    ref  \[ "(.*?)" \]                   \s # Referer (sic) header
+	(?: meth \[ "(.*?)" \]                   \s )? # HTTP method
 	    ver  \[ "(HTTP[^]]+?)" \]               # HTTP version
 	    :                                    \s # MSG Seperator...
 	    (.+)                                    # URL path
 	    $/x)
       {
 	my $ip      = $1;
-	my $req     = 'GET ' . $6 . ' ' . $5;
+	my $meth    = $6 || 'GET';
+	my $req     = $meth . ' ' . $8 . ' ' . $7;
 	my $ret     = $2;
-	my $sz      = 0;
-	my $referer = $4 || '-';
-	my $ua      = $3 || '-';
+	my $sz      = $3;
+	my $referer = $5 || '-';
+	my $ua      = $4 || '-';
 
 	$cur_line = <<EOL;
 $ip - - [$day/$mon/$year:$tm $off] "$req" $ret $sz "$referer" "$ua"
@@ -161,11 +164,11 @@ __END__
 
 =head1 NAME
 
-and-httpd-syslog2apache-http-log.pl - Convert log file to apache combined format
+and-httpd-syslog2apache-http-log - Convert log file to apache combined format
 
 =head1 SYNOPSIS
 
-and-httpd-syslog2apache-http-log.pl [options] <and-httpd files...>
+and-httpd-syslog2apache-http-log [options] <and-httpd files...>
 
  Options:
   --help -?         brief help message

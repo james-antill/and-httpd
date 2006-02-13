@@ -9,6 +9,8 @@
 
 #include "mk.h"
 
+#include <stddef.h> /* offsetof */
+
 #include <sys/resource.h>
 #include <grp.h>
 #include <signal.h>
@@ -34,12 +36,125 @@
 
 static Vlg *vlg = NULL;
 
-int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
+
+/* only called the first time, so that it can easily be used from req conf */
+int opt_serv_sc_append_hostname(Vstr_base *s1, size_t pos)
+{
+  static char buf[256];
+  static size_t len = 0;
+
+  if (!len)
+  {
+    if (gethostname(buf, sizeof(buf)) == -1)
+      err(EXIT_FAILURE, "gethostname");
+  
+    buf[sizeof(buf) - 1] = 0;
+    len = strlen(buf);
+  }
+  
+  return (vstr_add_ptr(s1, pos, buf, len));
+}
+static int opt_serv__init_append_hostname(void)
+{
+  Vstr_base *tmp = vstr_make_base(NULL);
+
+  if (!tmp)
+    return (FALSE);
+
+  opt_serv_sc_append_hostname(tmp, 0); /* ignore error */
+  
+  vstr_free_base(tmp);
+
+  return (TRUE);
+}
+
+int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
+{
+  static size_t sz = PATH_MAX;
+  char *ptr = MK(sz);
+  int ret = FALSE;
+
+  if (ptr)
+  {
+    const size_t maxsz = 8 * PATH_MAX; /* FIXME: config. */
+    char *tmp = NULL;
+    
+    tmp = getcwd(ptr, sz);
+    while (!tmp && (errno == ERANGE) && (sz < maxsz))
+    {
+      sz += PATH_MAX;
+      if (!MV(ptr, tmp, sz))
+        break;
+      tmp = getcwd(ptr, sz);
+    }
+  
+    if (!tmp) 
+      ret = vstr_add_cstr_ptr(s1, pos, "/");
+    else
+      ret = vstr_add_cstr_buf(s1, pos, tmp);
+  }
+  
+  F(ptr);
+  
+  return (ret);
+}
+
+static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
+                                  Conf_parse *conf, Conf_token *token)
+{
+  const Vstr_sect_node *pv = NULL;
+  const char *env_name = NULL;
+  const char *env_data = NULL;
+  
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+  if (!(pv = conf_token_value(token)))
+    return (FALSE);
+  
+  if (!(env_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
+    return (FALSE);
+  
+  env_data = getenv(env_name);
+  if (!env_data) env_data = "";
+  
+  return (vstr_add_cstr_buf(s1, pos, env_data));
+}
+
+#ifdef CONF_FULL_STATIC
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
+#else
+static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
+                                      Conf_parse *conf, Conf_token *token)
+{
+  const Vstr_sect_node *pv = NULL;
+  const char *usr_name = NULL;
+  const char *usr_data = "";
+  struct passwd *pw = NULL;
+  
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+  if (!(pv = conf_token_value(token)))
+    return (FALSE);
+  if (!(usr_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
+    return (FALSE);
+  
+  if ((pw = getpwnam(usr_name)))
+    usr_data = pw->pw_dir;
+  
+  return (vstr_add_cstr_buf(s1, pos, usr_data));
+}
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) \
+    opt_serv_sc_append_homedir(w, x, y, z)
+#endif
+
+
+int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token,
+                    int *matches, int prev_match,
                     int (*tst_func)(Conf_parse *, Conf_token *,
-                                    int *, void *), void *data)
+                                    int *, int, void *), void *data)
 {
   if (0) { }
   
+  else if (OPT_SERV_SYM_EQ("else")  || OPT_SERV_SYM_EQ("ELSE"))
+    *matches = !prev_match;
   else if (OPT_SERV_SYM_EQ("true")  || OPT_SERV_SYM_EQ("TRUE"))
     *matches = TRUE;
   else if (OPT_SERV_SYM_EQ("false") || OPT_SERV_SYM_EQ("FALSE"))
@@ -49,7 +164,7 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
            OPT_SERV_SYM_EQ("!"))
   {
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (!(*tst_func)(conf, token, matches, data))
+    if (!(*tst_func)(conf, token, matches, prev_match, data))
       return (FALSE);
     *matches = !*matches;
   }
@@ -63,7 +178,7 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
       int or_matches = TRUE;
     
       CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
-      if (!(*tst_func)(conf, token, &or_matches, data))
+      if (!(*tst_func)(conf, token, &or_matches, prev_match, data))
         return (FALSE);
 
       if (or_matches)
@@ -84,7 +199,7 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
     while (conf_token_list_num(token, depth))
     {
       CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
-      if (!(*tst_func)(conf, token, matches, data))
+      if (!(*tst_func)(conf, token, matches, prev_match, data))
         return (FALSE);
 
       if (!*matches)
@@ -102,6 +217,13 @@ int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token, int *matches,
   return (TRUE);
 }
 
+#define OPT_SERV__IOLIM_VAL(x) do {                                     \
+                                                                        \
+      OPT_SERV_X_SYM_ULONG_BEG(x);                                      \
+      else if (OPT_SERV_SYM_EQ("<unlimited>")) (x) = 0;                 \
+      else if (OPT_SERV_SYM_EQ("<default>"))   (x) = 0;                 \
+      OPT_SERV_X_SYM_NUM_END();                                         \
+    } while (FALSE)
 
 static int opt_serv__conf_main_policy_d1(Opt_serv_policy_opts *opts,
                                          Conf_parse *conf, Conf_token *token,
@@ -128,21 +250,48 @@ static int opt_serv__conf_main_policy_d1(Opt_serv_policy_opts *opts,
   }
   else if (OPT_SERV_SYM_EQ("instant-close"))
     OPT_SERV_X_TOGGLE(opts->use_insta_close);
+  else if (OPT_SERV_SYM_EQ("lingering-close"))
+    OPT_SERV_X_NEG_TOGGLE(opts->use_insta_close);
   else if (OPT_SERV_SYM_EQ("limit"))
   {
     CONF_SC_MAKE_CLIST_BEG(limit, clist);
     
     else if (OPT_SERV_SYM_EQ("connections"))
       OPT_SERV_X_UINT(opts->max_connections);
-    else if (OPT_SERV_SYM_EQ("io-r/s") ||
-             OPT_SERV_SYM_EQ("io-read/s") ||
-             OPT_SERV_SYM_EQ("io-recv/s"))
-      OPT_SERV_X_UINT(dummy);
-    else if (OPT_SERV_SYM_EQ("io-s/s") ||
-             OPT_SERV_SYM_EQ("io-w/s") ||
-             OPT_SERV_SYM_EQ("io-write/s") ||
-             OPT_SERV_SYM_EQ("io-send/s"))
-      OPT_SERV_X_UINT(dummy);
+    else if (OPT_SERV_SYM_EQ("io"))
+    {
+      unsigned int clist_ioo = FALSE; /* io outer */
+      unsigned int clist_ioi = FALSE; /* io inner */
+      
+      CONF_SC_MAKE_CLIST_BEG(limit_ioo, clist_ioo);
+      
+      else if (OPT_SERV_SYM_EQ("policy-process/s") ||
+               OPT_SERV_SYM_EQ("policy-process-per-second"))
+      {
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(opts->io_limit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(opts->io_limit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();      
+      }
+      else if (OPT_SERV_SYM_EQ("policy-connection/s") ||
+               OPT_SERV_SYM_EQ("policy-connection-per-second"))
+      {
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(opts->io_nslimit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(opts->io_nslimit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();      
+      }
+      
+      CONF_SC_MAKE_CLIST_END();    
+    }
   
     CONF_SC_MAKE_CLIST_END();
   }
@@ -172,20 +321,21 @@ static int opt_serv__conf_main_policy(Opt_serv_opts *opts,
   return (TRUE);
 }
 
-static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
-                                       Conf_parse *conf, Conf_token *token,
-                                       int *matches);
+static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *,
+                                       Conf_parse *, Conf_token *,
+                                       int *, int);
 static int opt_serv__match_init_tst_op_d1(Conf_parse *conf, Conf_token *token,
-                                          int *matches, void *passed_data)
+                                          int *matches, int prev_match,
+                                          void *passed_data)
 {
   struct Opt_serv_opts *opts = passed_data;
 
-  return (opt_serv__match_init_tst_d1(opts, conf, token, matches));
+  return (opt_serv__match_init_tst_d1(opts, conf, token, matches, prev_match));
 }
 
 static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
                                        Conf_parse *conf, Conf_token *token,
-                                       int *matches)
+                                       int *matches, int prev_match)
 {
   int clist = FALSE;
   
@@ -195,32 +345,28 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
 
   if (0) {}
 
-  else if (OPT_SERV_SYM_EQ("version<=") ||
-           OPT_SERV_SYM_EQ("vers<="))
+  else if (OPT_SERV_SYM_EQ("version<=") || OPT_SERV_SYM_EQ("vers<="))
   {
-    OPT_SERV_X_VSTR(conf->tmp);
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) >= 0);
   }
-  else if (OPT_SERV_SYM_EQ("version>=") ||
-           OPT_SERV_SYM_EQ("vers>="))
+  else if (OPT_SERV_SYM_EQ("version>=") || OPT_SERV_SYM_EQ("vers>="))
   {
-    OPT_SERV_X_VSTR(conf->tmp);
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) <= 0);
   }
-  else if (OPT_SERV_SYM_EQ("version-eq") ||
-           OPT_SERV_SYM_EQ("vers=="))
+  else if (OPT_SERV_SYM_EQ("version-eq") || OPT_SERV_SYM_EQ("vers=="))
   {
-    OPT_SERV_X_VSTR(conf->tmp);
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
     *matches = (vstr_cmp_vers_buf(conf->tmp, 1, conf->tmp->len,
                                   opts->vers_cstr, opts->vers_len) == 0);
   }
 
-  else if (OPT_SERV_SYM_EQ("name-eq") ||
-           OPT_SERV_SYM_EQ("name=="))
+  else if (OPT_SERV_SYM_EQ("name-eq") || OPT_SERV_SYM_EQ("name=="))
   {
-    OPT_SERV_X_VSTR(conf->tmp);
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
     *matches = vstr_cmp_buf_eq(conf->tmp, 1, conf->tmp->len,
                                opts->name_cstr, opts->name_len);
   }
@@ -230,7 +376,7 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
   {
     size_t lpos = 0;
     
-    OPT_SERV_X_VSTR(conf->tmp);
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
 
     lpos = conf->tmp->len;
     if (!opt_serv_sc_append_hostname(conf->tmp, lpos))
@@ -264,34 +410,34 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
     *matches = COMPILE_DEBUG;
   
   else
-    return (opt_serv_sc_tst(conf, token, matches,
+    return (opt_serv_sc_tst(conf, token, matches, prev_match,
                             opt_serv__match_init_tst_op_d1, opts));
 
   return (TRUE);
 }
 
 int opt_serv_match_init(struct Opt_serv_opts *opts,
-                        Conf_parse *conf, Conf_token *token, int *matches)
+                        Conf_parse *conf, Conf_token *token)
 {
+  static int prev_match = TRUE;
+  int matches = TRUE;
   unsigned int depth = token->depth_num;
 
-  ASSERT(matches);
-  
-  *matches = TRUE;
-  
   CONF_SC_PARSE_SLIST_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
   ++depth;
   while (conf_token_list_num(token, depth))
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
 
-    if (!opt_serv__match_init_tst_d1(opts, conf, token, matches))
+    if (!opt_serv__match_init_tst_d1(opts, conf, token, &matches, prev_match))
       return (FALSE);
 
-    if (!*matches)
-      return (TRUE);
+    if (!matches)
+      conf_parse_end_token(conf, token, depth - 1);
   }
 
+  prev_match = matches;
+  
   return (TRUE);
 }
 
@@ -346,11 +492,11 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     CONF_SC_MAKE_CLIST_MID(depth, clist);
 
     else if (OPT_SERV_SYM_EQ("uid"))       OPT_SERV_X_UINT(opts->priv_uid);
-    else if (OPT_SERV_SYM_EQ("usrname"))   OPT_SERV_X_VSTR(opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("username"))  OPT_SERV_X_VSTR(opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("usrname"))   OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("username"))  OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
     else if (OPT_SERV_SYM_EQ("gid"))       OPT_SERV_X_UINT(opts->priv_gid);
-    else if (OPT_SERV_SYM_EQ("grpname"))   OPT_SERV_X_VSTR(opts->vpriv_gid);
-    else if (OPT_SERV_SYM_EQ("groupname")) OPT_SERV_X_VSTR(opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("grpname"))   OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("groupname")) OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
     else if (OPT_SERV_SYM_EQ("keep-CAP_FOWNER") ||
              OPT_SERV_SYM_EQ("keep-cap-fowner"))
       OPT_SERV_X_TOGGLE(opts->keep_cap_fowner);
@@ -371,7 +517,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     else if (OPT_SERV_SYM_EQ("port"))
       OPT_SERV_X_UINT(addr->tcp_port);
     else if (OPT_SERV_SYM_EQ("addr") || OPT_SERV_SYM_EQ("address"))
-      OPT_SERV_X_VSTR(addr->ipv4_address);
+      OPT_SERV_X_VSTR(opts, addr->ipv4_address);
     else if (OPT_SERV_SYM_EQ("queue-length"))
     {
       OPT_SERV_X_SYM_UINT_BEG(addr->q_listen_len);
@@ -462,6 +608,81 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     else if (OPT_SERV_SYM_EQ("spare-vstr-nodes-ref"))
       OPT_SERV_X_UINT(opts->max_spare_ref_nodes);
     
+    CONF_SC_MAKE_CLIST_END();
+  }
+  else if (OPT_SERV_SYM_EQ("limit"))
+  {
+    CONF_SC_MAKE_CLIST_BEG(limit, clist);
+    
+    else if (OPT_SERV_SYM_EQ("io"))
+    {
+      unsigned int clist_ioo = FALSE; /* io outer */
+      unsigned int clist_ioi = FALSE; /* io inner */
+      
+      CONF_SC_MAKE_CLIST_BEG(limit_ioo, clist_ioo);
+      
+      else if (OPT_SERV_SYM_EQ("process/s") ||
+               OPT_SERV_SYM_EQ("process-per-second"))
+      {
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(opts->io_limit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(opts->io_limit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();      
+      }
+      else if (OPT_SERV_SYM_EQ("policy-process/s") ||
+               OPT_SERV_SYM_EQ("policy-process-per-second"))
+      {
+        Opt_serv_policy_opts *popts = NULL;
+        
+        if (!(popts = opt_policy_find(opts, conf, token)))
+          return (FALSE);
+        
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(popts->io_limit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(popts->io_limit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();      
+      }
+      else if (OPT_SERV_SYM_EQ("policy-connection/s") ||
+               OPT_SERV_SYM_EQ("policy-connection-per-second"))
+      {
+        Opt_serv_policy_opts *popts = NULL;
+        
+        if (!(popts = opt_policy_find(opts, conf, token)))
+          return (FALSE);
+        
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(popts->io_nslimit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(popts->io_nslimit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();      
+      }
+      else if (OPT_SERV_SYM_EQ("connection/s") ||
+               OPT_SERV_SYM_EQ("connection-per-second"))
+      {
+        CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
+        
+        else if (OPT_SERV_SYM_EQ("read") || OPT_SERV_SYM_EQ("recv"))
+          OPT_SERV__IOLIM_VAL(opts->io_nslimit.io_r_max);
+        else if (OPT_SERV_SYM_EQ("write") || OPT_SERV_SYM_EQ("send"))
+          OPT_SERV__IOLIM_VAL(opts->io_nslimit.io_w_max);
+        
+        CONF_SC_MAKE_CLIST_END();
+      }
+      
+      CONF_SC_MAKE_CLIST_END();    
+    }
+  
     CONF_SC_MAKE_CLIST_END();
   }
   
@@ -593,7 +814,7 @@ int opt_serv_conf_parse_file(Vstr_base *out,
   return (FALSE);
 }
 
-void opt_serv_conf_free(struct Opt_serv_opts *opts)
+void opt_serv_conf_free_beg(struct Opt_serv_opts *opts)
 {
   Opt_serv_addr_opts *scan = NULL;
   
@@ -620,6 +841,32 @@ void opt_serv_conf_free(struct Opt_serv_opts *opts)
   }
 }
 
+void opt_serv_conf_free_end(struct Opt_serv_opts *opts)
+{
+  if (!opts)
+    return;
+
+  ASSERT( opts->ref_io_limit);
+  vstr_ref_del(opts->ref_io_limit);
+  ASSERT(!opts->ref_io_limit);
+}
+
+static void opt_serv__io_lim_ref_cb(struct Vstr_ref *ref)
+{
+  Opt_serv_opts *opts = NULL;
+  struct Evnt_limit *lim = NULL;
+
+  if (!ref)
+    return;
+  
+  lim = ref->ptr;
+  ASSERT(lim);
+  
+  /* ISO C magic, converts a ptr to io_limit into a pointer to opts */
+  opts = (Opt_serv_opts *)(((char *)lim) - offsetof(Opt_serv_opts, io_limit));
+  opts->ref_io_limit = NULL; /* more magic */
+}
+
 int opt_serv_conf_init(Opt_serv_opts *opts)
 {
   struct Opt_serv_policy_opts *popts = NULL;
@@ -629,6 +876,9 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
 
   if (!addr)
     goto mk_addr_fail;
+
+  if (!opt_serv__init_append_hostname())
+    goto mk_append_hostname_fail;
   
   if (!(popts = (*opts->make_policy)(opts)))
     goto mk_policy_fail;
@@ -646,6 +896,8 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
   opts->vpriv_gid        = vstr_make_base(NULL);
   addr->acpt_filter_file = vstr_make_base(NULL);
   addr->ipv4_address     = vstr_make_base(NULL);
+  opts->ref_io_limit     = vstr_ref_make_ptr(&opts->io_limit,
+                                             opt_serv__io_lim_ref_cb);
     
   if (!opts->pid_file         ||
       !opts->cntl_file        ||
@@ -654,6 +906,7 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
       !opts->vpriv_gid        ||
       !addr->acpt_filter_file ||
       !addr->ipv4_address     ||
+      !opts->ref_io_limit     ||
       FALSE)
     goto opts_init_fail;
 
@@ -668,13 +921,18 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
 
   opts->no_conf_listen = TRUE;
   
+  if (!opts->ref_io_limit) /* we can't have this succeed, while others fail */
+    goto opts_init_fail;
+  
   return (TRUE);
 
  opts_init_fail:
-  opt_serv_conf_free(opts);
+  opt_serv_conf_free_beg(opts);
+  opt_serv_conf_free_end(opts);
  policy_init_fail:
   vstr_ref_del(popts->ref);
  mk_policy_fail:
+ mk_append_hostname_fail:
   F(addr);
  mk_addr_fail:
   return (FALSE);
@@ -816,7 +1074,7 @@ int opt_serv_sc_acpt_end(const Opt_serv_policy_opts *popts,
   return (TRUE);
 }
 
-void opt_serv_sc_free_beg(struct Evnt *evnt)
+void opt_serv_sc_free_beg(struct Evnt *evnt, const char *info_rep)
 {
   if (EVNT_ACPT_EXISTS(evnt) && EVNT_ACPT_DATA(evnt)->evnt)
   {
@@ -836,7 +1094,7 @@ void opt_serv_sc_free_beg(struct Evnt *evnt)
   }
 
   if (evnt->flag_fully_acpt)
-    evnt_vlg_stats_info(evnt, "FREE");
+    evnt_vlg_stats_info(evnt, info_rep);
 }
 
 #define OPT_SERV__SIG_OR_ERR(x)                 \
@@ -952,98 +1210,11 @@ void opt_serv_sc_cntl_resources(const Opt_serv_opts *opts)
                  0, opts->max_spare_ref_nodes);
 }
 
-int opt_serv_sc_append_hostname(Vstr_base *s1, size_t pos)
-{
-  char buf[256];
-  
-  if (gethostname(buf, sizeof(buf)) == -1)
-    err(EXIT_FAILURE, "gethostname");
-  
-  buf[sizeof(buf) - 1] = 0;
-  return (vstr_add_cstr_buf(s1, pos, buf));
-}
-
-int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
-{
-  static size_t sz = PATH_MAX;
-  char *ptr = MK(sz);
-  int ret = FALSE;
-
-  if (ptr)
-  {
-    const size_t maxsz = 8 * PATH_MAX; /* FIXME: config. */
-    char *tmp = NULL;
-    
-    tmp = getcwd(ptr, sz);
-    while (!tmp && (errno == ERANGE) && (sz < maxsz))
-    {
-      sz += PATH_MAX;
-      if (!MV(ptr, tmp, sz))
-        break;
-      tmp = getcwd(ptr, sz);
-    }
-  
-    if (!tmp) 
-      ret = vstr_add_cstr_ptr(s1, pos, "/");
-    else
-      ret = vstr_add_cstr_buf(s1, pos, tmp);
-  }
-  
-  F(ptr);
-  
-  return (ret);
-}
-
-static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
-                                  Conf_parse *conf, Conf_token *token)
-{
-  const Vstr_sect_node *pv = NULL;
-  const char *env_name = NULL;
-  const char *env_data = NULL;
-  
-  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-  if (!(pv = conf_token_value(token)))
-    return (FALSE);
-  
-  if (!(env_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
-    return (FALSE);
-  
-  env_data = getenv(env_name);
-  if (!env_data) env_data = "";
-  
-  return (vstr_add_cstr_buf(s1, pos, env_data));
-}
-
-#ifdef CONF_FULL_STATIC
-# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
-#else
-static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
-                                      Conf_parse *conf, Conf_token *token)
-{
-  const Vstr_sect_node *pv = NULL;
-  const char *usr_name = NULL;
-  const char *usr_data = "";
-  struct passwd *pw = NULL;
-  
-  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-  if (!(pv = conf_token_value(token)))
-    return (FALSE);
-  if (!(usr_name = vstr_export_cstr_ptr(conf->data, pv->pos, pv->len)))
-    return (FALSE);
-  
-  if ((pw = getpwnam(usr_name)))
-    usr_data = pw->pw_dir;
-  
-  return (vstr_add_cstr_buf(s1, pos, usr_data));
-}
-# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) \
-    opt_serv_sc_append_homedir(w, x, y, z)
-#endif
-
 /* into conf->tmp */
-static int opt_serv__build_static_path(struct Opt_serv_opts *
-                                       COMPILE_ATTR_UNUSED(opts),
-                                       Conf_parse *conf, Conf_token *token)
+static int opt_serv__build_str(struct Opt_serv_opts *
+                               COMPILE_ATTR_UNUSED(opts),
+                               Conf_parse *conf, Conf_token *token,
+                               int doing_init)
 {
   unsigned int cur_depth = token->depth_num;
   int clist = FALSE;
@@ -1061,7 +1232,7 @@ static int opt_serv__build_static_path(struct Opt_serv_opts *
       if (!opt_serv_sc_append_env(conf->tmp, conf->tmp->len, conf, token))
         return (FALSE);
     }
-    else if (OPT_SERV_SYM_EQ("HOME"))
+    else if (doing_init && OPT_SERV_SYM_EQ("HOME"))
     {
       if (!OPT_SERV_SC_APPEND_HOMEDIR(conf->tmp, conf->tmp->len, conf, token))
         return (FALSE);
@@ -1089,45 +1260,74 @@ static int opt_serv__build_static_path(struct Opt_serv_opts *
   return (!conf->tmp->conf->malloc_bad);
 }
 
-int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
+static int opt_serv__sc_make_str(struct Opt_serv_opts *opts,
                                  Conf_parse *conf, Conf_token *token,
-                                 Vstr_base *s1)
+                                 Vstr_base *s1, size_t pos, size_t len,
+                                 int doing_init)
 {
   int clist = FALSE;
+
+  ASSERT(s1 != conf->tmp);
   
   CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
   CONF_SC_TOGGLE_CLIST_VAR(clist);
+
+  if (0) { }
   
-  if (OPT_SERV_SYM_EQ("assign") || OPT_SERV_SYM_EQ("="))
+  else if (OPT_SERV_SYM_EQ("assign") || OPT_SERV_SYM_EQ("="))
   {
-    if (!opt_serv__build_static_path(opts, conf, token))
+    if (!opt_serv__build_str(opts, conf, token, doing_init))
       return (FALSE);
     
-    return (vstr_sub_vstr(s1, 1, s1->len,
+    return (vstr_sub_vstr(s1, pos, len,
                           conf->tmp, 1, conf->tmp->len, VSTR_TYPE_SUB_BUF_REF));
   }
-  else if (OPT_SERV_SYM_EQ("append") || OPT_SERV_SYM_EQ("+="))
+  else if (OPT_SERV_SYM_EQ("append") || OPT_SERV_SYM_EQ("+=") ||
+           OPT_SERV_SYM_EQ(".=") || OPT_SERV_SYM_EQ(">>="))
   {
-    if (!opt_serv__build_static_path(opts, conf, token))
+    if (!opt_serv__build_str(opts, conf, token, doing_init))
       return (FALSE);
 
-    return (vstr_add_vstr(s1, s1->len,
+    return (vstr_add_vstr(s1, vstr_sc_poslast(pos, len),
+                          conf->tmp, 1, conf->tmp->len, VSTR_TYPE_ADD_BUF_REF));
+  }
+  else if (OPT_SERV_SYM_EQ("prepend") || OPT_SERV_SYM_EQ("<<="))
+  {
+    if (!opt_serv__build_str(opts, conf, token, doing_init))
+      return (FALSE);
+
+    return (vstr_add_vstr(s1, pos - 1,
                           conf->tmp, 1, conf->tmp->len, VSTR_TYPE_ADD_BUF_REF));
   }
   else if (!clist)
   {
     const Vstr_sect_node *pv = conf_token_value(token);
       
-    if (!pv || !vstr_sub_vstr(s1, 1, s1->len, conf->data, pv->pos, pv->len,
+    if (!pv || !vstr_sub_vstr(s1, pos, len, conf->data, pv->pos, pv->len,
                               VSTR_TYPE_SUB_BUF_REF))
       return (FALSE);
-    OPT_SERV_X__ESC_VSTR(s1, 1, pv->len);
+    OPT_SERV_X__ESC_VSTR(s1, pos, pv->len);
 
     return (TRUE);
   }
 
-  return (FALSE);
+  return (FALSE);  
 }
+
+int opt_serv_sc_make_str(struct Opt_serv_opts *opts,
+                         Conf_parse *conf, Conf_token *token,
+                         Vstr_base *s1, size_t pos, size_t len)
+{
+  return (opt_serv__sc_make_str(opts, conf, token, s1, pos, len, FALSE));
+}
+
+int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
+                                 Conf_parse *conf, Conf_token *token,
+                                 Vstr_base *s1)
+{
+  return (opt_serv__sc_make_str(opts, conf, token, s1, 1, s1->len, TRUE));
+}
+
 
 #ifndef CONF_FULL_STATIC
 void opt_serv_sc_resolve_uid(struct Opt_serv_opts *opts,

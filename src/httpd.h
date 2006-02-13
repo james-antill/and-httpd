@@ -56,6 +56,10 @@ struct Http_hdrs
     size_t            x ## _pos;                \
     size_t            x ## _len
 
+#define HTTP__XTRA_HDR_PARAMS(req, x)                            \
+    (req)-> x ## _vs1, (req)-> x ## _pos, (req)-> x ## _len
+
+
 typedef struct Httpd_req_data
 {
  const Httpd_policy_opts *policy;
@@ -139,6 +143,11 @@ typedef struct Httpd_req_data
  unsigned int vary_al   : 1;
  unsigned int vary_rf   : 1;
  unsigned int vary_ua   : 1;
+ unsigned int vary_ims  : 1;
+ unsigned int vary_ius  : 1;
+ unsigned int vary_ir   : 1;
+ unsigned int vary_im   : 1;
+ unsigned int vary_inm  : 1;
  
  unsigned int chked_encoded_path : 1;
  unsigned int chk_encoded_slash  : 1;

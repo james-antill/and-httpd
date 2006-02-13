@@ -61,8 +61,14 @@ extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 extern inline int opt_policy_copy(Opt_serv_policy_opts *dst,
                                   const Opt_serv_policy_opts *src)
 {
+  memcpy(&dst->io_limit,   &src->io_limit,   sizeof(struct Evnt_limit));
+  memcpy(&dst->io_nslimit, &src->io_nslimit, sizeof(struct Evnt_limit));
+  
   dst->idle_timeout    = src->idle_timeout;
+  dst->max_timeout     = src->max_timeout;
   dst->max_connections = src->max_connections;
+
+  dst->use_insta_close = src->use_insta_close;
 
   return (OPT_POLICY__TRUE);
 }

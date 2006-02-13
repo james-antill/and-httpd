@@ -1,0 +1,4 @@
+; Remove all extensions (everything after the first '.') and redirect
+(org.and.httpd-conf-req-1.0
+   Location: [limit <extensions>] ''
+   return <permanent-redirect>)

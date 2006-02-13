@@ -1,6 +1,6 @@
 HTTP/1.1 417 Expectation Failed
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Connection: close
 Accept-Ranges: bytes

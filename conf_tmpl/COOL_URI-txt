@@ -1,0 +1,4 @@
+; Add a .txt to the path, and use that file...
+(org.and.httpd-conf-req-1.0
+   Content-Type: text/plain
+   filename += .txt)

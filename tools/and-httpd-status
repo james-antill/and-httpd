@@ -1,0 +1,357 @@
+#! /usr/bin/perl -w
+
+use strict;
+
+use IO::Socket::UNIX;
+
+# Text::Netstring is broken, and has a crap interface
+
+sub netstr_en
+  {
+    my $ret = '';
+    for (@_)
+      {
+	$ret .= length($_) . ":$_,";
+      }
+    return $ret;
+  }
+sub netstr_de
+  {
+    my @ret = ();
+
+    my $resp = shift;
+# would normally use regexp ... but that's slow as crap.
+
+    while ($resp =~ m/^(\d+):/g)
+      {
+	substr $resp, 0, length($1) + 1, '';
+	my $data = substr $resp, 0, $1 + 1, '';
+	die "Bad netstr: $data" if ((substr $data, -1, 1, '') ne ',');
+
+	push @ret, $data;
+      }
+    return wantarray ? @ret : join " ", @ret;
+  }
+
+sub cmd
+  {
+    my $ns = netstr_en(@_);
+
+    return $ns;
+# Only fixed in >= 0.99.7
+#    return netstr_en($ns);
+  }
+
+sub send_cmd
+  {
+    my $sock = shift;
+    my $data = shift;
+    my $len = length($data);
+    my $off = 0;
+
+    while ($len > 0)
+      {
+	my $wret = $len;
+	$wret = $sock->syswrite($data, $len, $off);
+	if (!defined($wret))
+	  { die "write: $!"; }
+	if (defined($wret))
+	  {
+	    $len -= $wret; $off += $wret;
+	  }
+      }
+  }
+
+sub recv_cmd
+  {
+    my $sock = shift;
+    my $lim = 20_000;
+
+    my $num = 0;
+
+    while (1)
+      {
+	my $buf = '';
+	my $tmp = $sock->sysread($buf, 1); # Slow, but who cares
+	if (! defined ($tmp)) { die "read: $!" }
+
+	if ($buf eq ':')
+	  { last; }
+
+	if ($buf !~ /\d/)
+	  { die "read: Bad data from server." }
+	$num = ($num * 10) + $buf;
+
+	if ($num > $lim)
+	  { die "read: Too much data from server." }
+      }
+
+    # read all the data for the netstring (incl. the ,)...
+    my $data = '';
+    my $len = $num + 1;
+    my $off = 0;
+
+    while ($len > 0)
+      {
+	my $rret = $len;
+	$rret = $sock->sysread($data, $len, $off);
+	if (!defined($rret))
+	  { die "read: $!"; }
+	if (defined($rret))
+	  {
+	    $len -= $rret; $off += $rret;
+	  }
+      }
+
+    my $term = chop($data);
+
+    if ($term ne ',')
+      { die "read: Bad data from server." }
+
+    return $data;
+  }
+
+sub get_response
+  {
+    my $sock = shift;
+
+    my @vals = ();
+
+    while ((my $row = recv_cmd($sock)) ne '0:,')
+      {
+	my @cols = netstr_de($row);
+	push @vals, \@cols;
+      }
+
+    return \@vals;
+  }
+
+sub get_vars
+  {
+    my $re = shift;
+    my $list = shift;
+
+    for (@$list)
+      {
+	if (/$re/)
+	  {
+	    return ($1, $2, $3, $4);
+	  }
+      }
+
+    return ();
+}
+
+sub prnt_hdr_main
+  {
+    my $tm = '' . localtime;
+    print <<EOL;
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>And-HTTPD status report -- generated $tm</title>
+<style>
+
+  table.main { width: 100%; }
+
+ table.main  tr.rh       { background: #DDD; }
+ table.main  tr.rh:hover { background: #CCC; }
+
+ table.main  tr.r1       { background: #EEE; }
+ table.main  tr.r1:hover { background: #CCC; }
+
+ table.main  tr.r2       { background: #FFF; }
+ table.main  tr.r2:hover { background: #CCC; }
+
+
+  table.live { width: 100%; }
+
+ table.live  tr.rh       { background: #DDD; }
+ table.live  tr.rh:hover { background: #CCC; }
+
+ table.live  tr.r1       { background: #EEE; }
+ table.live  tr.r1:hover { background: #CCC; }
+
+ table.live  tr.r2       { background: #FFF; }
+ table.live  tr.r2:hover { background: #CCC; }
+
+
+</style>
+
+  </head>
+
+  <body>
+    <h1>And-HTTPD status report -- generated $tm</h1>
+
+<table class="main">
+
+<tr class="rh">
+ <th title="Address that is accepting connections">Addr</th>
+ <th title="Number of live connections, for this address">Live</th>
+ <th title="Time accept address was created">ctime</th>
+ <th title="Last time a connection was accepted or closed">mtime</th>
+ <th title="Amount of data received on the previous connections">recv</th>
+ <th title="Amount of data sent on the previous connections">sent</th>
+ <th title="Number of requests received from previous connections">Req</th>
+ <th title="Number of responses sent to previous connections">Res</th>
+</tr>
+
+EOL
+  }
+
+sub prnt_acpt
+  {
+    my $acpt   = shift;
+    my $totals = shift;
+    my $num    = shift || 1;
+    my $class  = shift || '';
+
+    my $row = (($num + 1) % 2) + 1;
+    printf("  <tr class=\"r$row$class\">" . ("<td>%s</td>" x 8) . "</tr>\n",
+	   "<a href=\"#acpt$num\">" . $acpt . '</a>',
+	   $totals->{$acpt}->{live} || 0,
+	   '' . localtime($totals->{$acpt}->{ctime}),
+	   '' . localtime($totals->{$acpt}->{mtime}),
+	   $totals->{$acpt}->{recvui}, $totals->{$acpt}->{sendui},
+	   $totals->{$acpt}->{gotui}, $totals->{$acpt}->{putui});
+
+#    printf("$acpt: %s\n", '' . localtime($totals->{$acpt}->{ctime}));
+#    printf("\tModified:\t%s\n", '' . localtime($totals->{$acpt}->{mtime}));
+#    printf("\tGot:\t\t%s\n", $totals->{$acpt}->{got});
+#    printf("\tPut:\t\t%s\n", $totals->{$acpt}->{put});
+#    printf("\tRecv:\t\t%s\n", $totals->{$acpt}->{recv});
+#    printf("\tSend:\t\t%s\n", $totals->{$acpt}->{send});
+#    printf("\tLive:\t\t%s\n", $totals->{$acpt}->{live} || 0);
+  }
+
+sub prnt_live
+  {
+    my $acpt   = shift;
+    my $totals = shift;
+    my $num    = shift || 1;
+    my $class  = shift || '';
+
+    print <<EOL;
+</table>
+
+
+<h2 id=\"acpt$num\"> Live connections for: $acpt</h2>
+<table class="live">
+<tr class="rh">
+ <th title="Address of the remote connection">Addr</th>
+ <th title="Time address was created">ctime</th>
+ <th title="Last time IO was done on the connection">mtime</th>
+ <th title="Amount of data received on the connections">recv</th>
+ <th title="Amount of data sent on the connections">sent</th>
+ <th title="Number of requests received from connection">Req</th>
+ <th title="Number of responses sent to connection">Res</th>
+</tr>
+
+
+EOL
+
+    my $row = 1;
+
+    for my $i (sort { $b->{send} <=> $a->{send} } @{$totals->{$acpt}->{data}})
+      {
+	$row = (($row + 1) % 2) + 1;
+
+	printf("    <tr class=\"r$row\">" . ("<td>%s</td>" x 7) . "</tr>\n",
+	       $i->{from},
+	       '' . localtime($i->{ctime}),  '' . localtime($i->{mtime}),
+	       $i->{recvui}, $i->{sendui}, $i->{gotui}, $i->{putui});
+      }
+  }
+
+sub prnt_tail
+  {
+    print <<EOL;
+</table>
+</body>
+</html>
+EOL
+  }
+
+my $cntl = shift || "/var/run/and-httpd.cntl";
+
+my $sock = IO::Socket::UNIX->new(Peer     => $cntl,
+				 Type     => SOCK_STREAM);
+
+if (!$sock)
+  { die "open($cntl): $!" }
+
+send_cmd($sock, cmd("LIST"));
+
+my $resp = get_response($sock);
+
+# use Data::Dumper;
+# print Data::Dumper->Dump($resp) . "\n";
+
+my $totals = {};
+
+
+for my $i (@$resp)
+  {
+    $_ = $i->[0];
+    if (m!^EVNT ACCEPT$!)
+      {
+	my ($from)          = get_vars(qr/^from\[(.*)\]$/,            $i);
+	my ($ctime)         = get_vars(qr/^ctime\[(.+):(.+)\]$/,      $i);
+	my ($mtime)         = get_vars(qr/^mtime\[(.+):(.+)\]$/,      $i);
+	my ($gotui, $got)   = get_vars(qr/^req_got\[([^:]+):(.+)\]$/, $i);
+	my ($putui, $put)   = get_vars(qr/^req_put\[([^:]+):(.+)\]$/, $i);
+	my ($recvui, $recv) = get_vars(qr/^recv\[([^:]+):(.+)\]$/,    $i);
+	my ($sendui, $send) = get_vars(qr/^send\[([^:]+):(.+)\]$/,    $i);
+
+	$totals->{$from}->{ctime}  = $ctime;
+	$totals->{$from}->{mtime}  = $mtime;
+	$totals->{$from}->{gotui}  = $gotui;
+	$totals->{$from}->{got}    = $got;
+	$totals->{$from}->{putui}  = $putui;
+	$totals->{$from}->{put}    = $put;
+	$totals->{$from}->{recvui} = $recvui;
+	$totals->{$from}->{recv}   = $recv;
+	$totals->{$from}->{sendui} = $sendui;
+	$totals->{$from}->{send}   = $send;
+      }
+    if (m!^EVNT (?:SEND/RECV|RECV|NONE|SEND_NOW)$!)
+      {
+	my @ret;
+	my ($acpt)          = get_vars(qr/^acpt\[(.*)\]$/,            $i);
+	my ($from)          = get_vars(qr/^from\[(.*)\]$/,            $i);
+	my ($ctime)         = get_vars(qr/^ctime\[(.+):(.+)\]$/,      $i);
+	my ($mtime)         = get_vars(qr/^mtime\[(.+):(.+)\]$/,      $i);
+	my ($gotui, $got)   = get_vars(qr/^req_got\[([^:]+):(.+)\]$/, $i);
+	my ($putui, $put)   = get_vars(qr/^req_put\[([^:]+):(.+)\]$/, $i);
+	my ($recvui, $recv) = get_vars(qr/^recv\[([^:]+):(.+)\]$/,    $i);
+	my ($sendui, $send) = get_vars(qr/^send\[([^:]+):(.+)\]$/,    $i);
+	
+	++$totals->{$acpt}->{live};
+	
+	if (! exists $totals->{$acpt}->{data})
+	  {          $totals->{$acpt}->{data} = []; }
+	push @{$totals->{$acpt}->{data}}, {acpt => $acpt, from => $from,
+					   ctime => $ctime, mtime => $mtime,
+					   gotui => $gotui, putui => $putui,
+					   got => $got, put => $put,
+					   recvui => $recvui, sendui => $sendui,
+					   recv => $recv, send => $send};
+      }
+  }
+
+$resp = undef; # mem usage
+
+prnt_hdr_main();
+
+my $num = 0;
+for my $acpt (keys %$totals)
+  {
+    prnt_acpt($acpt, $totals, ++$num);
+  }
+
+$num = 0;
+for my $acpt (keys %$totals)
+  {
+    prnt_live($acpt, $totals, ++$num);
+  }
+prnt_tail();

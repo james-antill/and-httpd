@@ -255,30 +255,51 @@ sub html_to_text($;$) {
   return $text;
 }
 
-my @errs  = qw(400 401 403 404 406 410 500 503); # More can/should be added
-                                                 # See httpd.c:httpd_fin_err_req
-my @langs = qw(en fr de es it jp);
-
-# Make sure we're in the right place...
-
-if (-f "configure.in" && -f "err/400.en.html")
-  {
-    chdir("err") || Carp::croak("Can't chdir(err)");
-  }
-
 sub htext
   {
     my $fw = shift;
     my $fr = shift;
 
     my $txt = html_to_text(read_file($fr));
-    write_file($fw, {atomic => 1}, $txt);
+    write_file($fw, {atomic => 1}, \$txt);
   }
 
-for my $i (@errs)
+if ((@ARGV == 1) && (@ARGV[0] == '--err-dir'))
   {
-    for my $j (@langs)
+    my @errs  = qw(400 401 403 404 406 410 500 503); # More can/should be added
+                                                 # See httpd.c:httpd_fin_err_req
+    my @langs = qw(en fr de es it jp);
+
+    # Make sure we're in the right place...
+    if (-f "configure.in" && -d "err/400.en.html")
       {
-	htext("$i.$j.txt", "$i.$j.html");
+	chdir("err") || Carp::croak("Can't chdir(err)");
       }
+
+    if (! -f "err/400.en.html")
+      {
+	Carp::croak("Not in err dir (400.en.html not found)");
+      }
+
+    for my $i (@errs)
+      {
+	for my $j (@langs)
+	  {
+	    htext("$i.$j.txt", "$i.$j.html");
+	  }
+      }
+
+    exit;
+  }
+
+for my $i (@ARGV)
+  {
+    my $out_fname = "$i.txt";
+
+    if ($i =~ /^(.*)[.]html$/)
+      { # chop .html off if it's there
+	$out_fname = "$1.txt";
+      }
+
+    htext($out_fname, $i);
   }

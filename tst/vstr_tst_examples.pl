@@ -372,11 +372,11 @@ sub daemon_connect_tcp
     my $try = shift || 1;
 
     my $beg = time;
-    my $sock = new IO::Socket::INET->new(PeerAddr => daemon_addr(),
-					 PeerPort => daemon_port(),
-					 Proto    => "tcp",
-					 Type     => SOCK_STREAM,
-					 Timeout  => $tst_tmout);
+    my $sock = IO::Socket::INET->new(PeerAddr => daemon_addr(),
+				     PeerPort => daemon_port(),
+				     Proto    => "tcp",
+				     Type     => SOCK_STREAM,
+				     Timeout  => $tst_tmout);
     my $end = time;
     $end -= $beg;
     printf("DBG($$): connect (%s:%s) took %us\n",

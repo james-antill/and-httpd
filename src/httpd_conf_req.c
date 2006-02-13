@@ -14,26 +14,20 @@
 #define EX_UTILS_RET_FAIL     1
 #include "ex_utils.h"
 
+#define HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(x) do {                   \
+      if (!httpd__conf_req_single_str(req, conf, token,                 \
+                                      &req-> x ## _vs1,                 \
+                                      &req-> x ## _pos,                 \
+                                      &req-> x ## _len))                \
+        return (FALSE);                                                 \
+    } while (FALSE)
+
 #define HTTPD_CONF_REQ__X_CONTENT_VSTR(x) do {                          \
-      if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL))) \
+      if (!httpd__conf_req_make_str(req, conf, token,                   \
+                                    &req-> x ## _vs1,                   \
+                                    &req-> x ## _pos,                   \
+                                    &req-> x ## _len))                  \
         return (FALSE);                                                 \
-                                                                        \
-      if (conf_sc_token_app_vstr(conf, token, req->xtra_content,        \
-                                 &req-> x ## _vs1,                      \
-                                 &req-> x ## _pos,                      \
-                                 &req-> x ## _len))                     \
-        return (FALSE);                                                 \
-                                                                        \
-      if ((token->type == CONF_TOKEN_TYPE_QUOTE_ESC_D) ||               \
-          (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_DDD) ||             \
-          (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_S) ||               \
-          (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_SSS) ||             \
-          FALSE)                                                        \
-        if (!req-> x ## _vs1 ||                                         \
-            !conf_sc_conv_unesc(req->xtra_content,                      \
-                                req-> x ## _pos,                        \
-                                req-> x ## _len, &req-> x ## _len))     \
-          return (FALSE);                                               \
     } while (FALSE)
 
 
@@ -57,8 +51,74 @@
 #define HTTPD_CONF_REQ__TYPE_BUILD_PATH_ASSIGN 1
 #define HTTPD_CONF_REQ__TYPE_BUILD_PATH_APPEND 2
 
+static int httpd__conf_req_single_str(Httpd_req_data *req,
+                                      Conf_parse *conf, Conf_token *token,
+                                      const Vstr_base **s1,
+                                      size_t *pos, size_t *len)
+{
+  Vstr_base *xs1 = req->xtra_content;
+  size_t xpos = 0;
+  
+  ASSERT(s1 && pos && len);
+  ASSERT((*s1 == xs1) || !*s1);
+  
+  if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
+    return (FALSE);
+  xs1 = req->xtra_content;
+  
+  xpos = xs1->len;
+  if (conf_sc_token_app_vstr(conf, token, xs1, s1, pos, len))
+    return (FALSE);
 
+  if ((token->type == CONF_TOKEN_TYPE_QUOTE_ESC_D) ||
+      (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_DDD) ||
+      (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_S) ||
+      (token->type == CONF_TOKEN_TYPE_QUOTE_ESC_SSS) ||
+      FALSE)
+    if (!*s1 || !conf_sc_conv_unesc(xs1, *pos, *len, len))
+      return (FALSE);
+  
+  return (TRUE);
+}
 
+/* if we aren't the last string in the XTRA_CONTENT, copy to the last bit
+ * Then pass the last bit to make_str */
+static int httpd__conf_req_make_str(Httpd_req_data *req,
+                                    Conf_parse *conf, Conf_token *token,
+                                    const Vstr_base **s1,
+                                    size_t *pos, size_t *len)
+{
+  Opt_serv_opts *opts = req->policy->s->beg;
+  Vstr_base *xs1 = req->xtra_content;
+  size_t xpos = 0;
+  
+  ASSERT(s1 && pos && len);
+  ASSERT((*s1 == xs1) || !*s1);
+  
+  if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
+    return (FALSE);
+  xs1 = req->xtra_content;
+  
+  xpos = xs1->len;
+  if (*s1 && (vstr_sc_poslast(*pos, *len) == xpos))
+    xpos = *pos; /* we are the last bit */
+  else if (*s1)
+  {
+    if (!vstr_add_vstr(xs1, xs1->len, *s1, *pos, *len, VSTR_TYPE_ADD_BUF_REF))
+      return (FALSE); /* we aren't, so copy */
+    xpos = xs1->len;
+  }
+  /* else not allocated at all ... so use pos == len + 1 and len == 0 */
+  
+  if (!opt_serv_sc_make_str(opts, conf, token, xs1, xpos + 1, xs1->len - xpos))
+    return (FALSE);
+  
+  *s1  = xs1;
+  *pos = xpos + 1;
+  *len = xs1->len - xpos;
+
+  return (TRUE);
+}
 
 
 static void httpd__conf_req_reset_expires(struct Httpd_req_data *req,
@@ -445,6 +505,7 @@ static int httpd__content_location_valid(Httpd_req_data *req,
     do { } while (FALSE)
 
 
+/* match with an 's' is it's > 1, otherwise without ... zero special cased */
 #define HTTPD__EXPIRES_CMP(x, y)                                        \
     (((num == 1) &&                                                     \
       vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y ">")) ||     \
@@ -471,6 +532,49 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                            httpd__conf_req_d1(con, req, file_timestamp,
                                               conf, token, clist));
   
+  else if (OPT_SERV_SYM_EQ("match-request"))
+  {
+    static unsigned int match_req_rec_depth = 0; /* no inf. recursion */
+    static int prev_match = TRUE;
+    unsigned int depth = token->depth_num;
+    int matches = TRUE;
+
+    if (match_req_rec_depth > 4) /* FIXME: conf */
+      return (FALSE);
+    
+    CONF_SC_PARSE_SLIST_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
+    ++depth;
+    while (conf_token_list_num(token, depth))
+    {
+      CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
+      
+      if (!httpd_match_request_tst_d1(con, req, conf, token, &matches,
+                                      prev_match))
+        return (FALSE);
+      
+      if (!matches)
+        conf_parse_end_token(conf, token, depth - 1);
+    }
+    --depth;
+
+    prev_match = matches;
+    
+    while (conf_token_list_num(token, depth))
+    {
+      int ret = FALSE;
+      
+      CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
+      CONF_SC_TOGGLE_CLIST_VAR(clist);
+
+      ++match_req_rec_depth;
+      ret = httpd__conf_req_d1(con, req, file_timestamp, conf, token, clist);
+      --match_req_rec_depth;
+      
+      if (!ret)
+        return (FALSE);
+    }
+  }
+  
   else if (OPT_SERV_SYM_EQ("return"))
   {
     unsigned int code = 0;
@@ -496,8 +600,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       code = 307;
     else if (OPT_SERV_SYM_EQ("<bad>") || OPT_SERV_SYM_EQ("<bad-request>"))
       code = 400;
-    else if (OPT_SERV_SYM_EQ("<not-auth>") ||
-             OPT_SERV_SYM_EQ("<not-authenticated>"))
+    else if (OPT_SERV_SYM_EQ("<forbidden>"))
       code = 403;
     else if (OPT_SERV_SYM_EQ("<not-found>"))
       code = 404;
@@ -586,24 +689,20 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   { 
     unsigned int num = 1;
     unsigned int tmp = 0;
-    unsigned int num_flags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
-    size_t num_len = 0;
+    Conf_token save = *token;
+    int ern = 0;
     
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(cache_control);
-
-    tmp = vstr_parse_uint(HTTP__CONTENT_PARAMS(req, cache_control),
-                          num_flags, &num_len, NULL);
-    if (req->cache_control_len != num_len) /* reset, as though we didn't try */
-      num_len = 0;
-    else
-    {
-      num = tmp;
+    if ((ern = conf_sc_token_parse_uint(conf, token, &tmp)))
+    { /* reset, as though we didn't try */
+      *token = save;
       HTTPD_CONF_REQ__X_CONTENT_VSTR(cache_control);
     }
+    else if (!(num = tmp))
+      return (FALSE);
+    else
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(cache_control);
     
-    if (!num_len && vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
-                                     "<expires-now>"))
-      httpd__conf_req_reset_cache_control(req, 0);
+    if (0) { /* nothing */ }
     else if (HTTPD__EXPIRES_CMP(cache_control, "expire-minute"))
       httpd__conf_req_reset_cache_control(req, (num * 60 *  1));
     else if (HTTPD__EXPIRES_CMP(cache_control, "expire-hour"))
@@ -612,13 +711,16 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       httpd__conf_req_reset_cache_control(req, (num * 60 * 60 * 24));
     else if (HTTPD__EXPIRES_CMP(cache_control, "expire-week"))
       httpd__conf_req_reset_cache_control(req, (num * 60 * 60 * 24 * 7));
-    else if (!num_len &&
-             vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+    else if (!ern) /* must be one of the above symbols */
+      return (FALSE);
+    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+                              "<expires-now>"))
+      httpd__conf_req_reset_cache_control(req, 0);
+    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
                               "<expires-never>"))
       httpd__conf_req_reset_cache_control(req, (60 * 60 * 24 * 365));
-    else if (num_len)
-      return (FALSE);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(cache_control);
+    else
+      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(cache_control);
   }
   else if (OPT_SERV_SYM_EQ("Content-Disposition:"))
   {
@@ -722,28 +824,22 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
   { /* note that rfc2616 says only go upto a year into the future */
     unsigned int num = 1;
     unsigned int tmp = 0;
-    unsigned int num_flags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
-    size_t num_len = 0;
+    Conf_token save = *token;
+    int ern = 0;
     
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(expires);
-
-    tmp = vstr_parse_uint(HTTP__CONTENT_PARAMS(req, expires),
-                          num_flags, &num_len, NULL);
-    if (req->expires_len != num_len) /* reset, as though we didn't try */
-      num_len = 0;
-    else
-    {
-      num = tmp;
+    if ((ern = conf_sc_token_parse_uint(conf, token, &tmp)))
+    { /* reset, as though we didn't try */
+      *token = save;
       HTTPD_CONF_REQ__X_CONTENT_VSTR(expires);
     }
+    else if (!(num = tmp))
+      return (FALSE);
+    else
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(expires);
     
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(expires);
-
     /* if we dynamically generate use current timestamp, else filetimestamp */
     req->expires_time = req->now;
-    if (!num_len &&
-        vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<now>"))
-      httpd__conf_req_reset_expires(req, 0);
+    if (0) { /* nothing */ }
     else if (HTTPD__EXPIRES_CMP(expires, "minute"))
       httpd__conf_req_reset_expires(req, (num * 60 *  1));
     else if (HTTPD__EXPIRES_CMP(expires, "hour"))
@@ -752,13 +848,17 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       httpd__conf_req_reset_expires(req, (num * 60 * 60 * 24));
     else if (HTTPD__EXPIRES_CMP(expires, "week"))
       httpd__conf_req_reset_expires(req, (num * 60 * 60 * 24 * 7));
-    else if (!num_len &&
-             vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<never>"))
-      httpd__conf_req_reset_expires(req, (60 * 60 * 24 * 365));
-    else if (num_len) /* must be one of the above symbols */
+    else if (!ern) /* must be one of the above symbols */
       return (FALSE);
+    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<now>"))
+      httpd__conf_req_reset_expires(req, 0);
+    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<never>"))
+      httpd__conf_req_reset_expires(req, (60 * 60 * 24 * 365));
     else
+    {
       req->expires_time = file_timestamp;
+      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(expires);
+    }
   }
   else if (OPT_SERV_SYM_EQ("Link:")) /* rfc2068 -- old, but still honored */
   {
@@ -806,6 +906,8 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     OPT_SERV_X_TOGGLE(req->vary_a);
   else if (OPT_SERV_SYM_EQ("Vary:_Accept-Charset"))
     OPT_SERV_X_TOGGLE(req->vary_ac);
+  else if (OPT_SERV_SYM_EQ("Vary:_Accept-Encoding")) /* doesn't help */
+    OPT_SERV_X_TOGGLE(req->vary_ae);
   else if (OPT_SERV_SYM_EQ("Vary:_Accept-Language"))
     OPT_SERV_X_TOGGLE(req->vary_al);
   else if (OPT_SERV_SYM_EQ("Vary:_Referer") ||
@@ -813,6 +915,16 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     OPT_SERV_X_TOGGLE(req->vary_rf);
   else if (OPT_SERV_SYM_EQ("Vary:_User-Agent"))
     OPT_SERV_X_TOGGLE(req->vary_ua);
+  else if (OPT_SERV_SYM_EQ("Vary:_If-Modified-Since"))
+    OPT_SERV_X_TOGGLE(req->vary_ims);
+  else if (OPT_SERV_SYM_EQ("Vary:_If-Unmodified-Since"))
+    OPT_SERV_X_TOGGLE(req->vary_ius);
+  else if (OPT_SERV_SYM_EQ("Vary:_If-Range"))
+    OPT_SERV_X_TOGGLE(req->vary_ir);
+  else if (OPT_SERV_SYM_EQ("Vary:_If-Match"))
+    OPT_SERV_X_TOGGLE(req->vary_im);
+  else if (OPT_SERV_SYM_EQ("Vary:_If-None-Match"))
+    OPT_SERV_X_TOGGLE(req->vary_inm);
   else if (OPT_SERV_SYM_EQ("content-lang-ext") ||
            OPT_SERV_SYM_EQ("content-language-ext") ||
            OPT_SERV_SYM_EQ("content-language-extension"))
@@ -839,14 +951,14 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       req->parse_accept = FALSE;
       *token = save;
       conf_parse_num_token(conf, token, qual_num);
-      HTTPD_CONF_REQ__X_CONTENT_VSTR(content_type);
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(content_type);
       HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_type);
-      HTTPD_CONF_REQ__X_CONTENT_VSTR(ext_vary_a);
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(ext_vary_a);
       conf_parse_num_token(conf, token, last);
     }
   }
-  else if (OPT_SERV_SYM_EQ("negotiate-charset"))
-    return (FALSE);
+  /*  else if (OPT_SERV_SYM_EQ("negotiate-charset"))
+      return (FALSE); */
   else if (OPT_SERV_SYM_EQ("content-lang-neg") ||
            OPT_SERV_SYM_EQ("content-lang-negotiate") ||
            OPT_SERV_SYM_EQ("content-language-negotiate") ||
@@ -867,9 +979,9 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       req->parse_accept_language = FALSE;
       *token = save;
       conf_parse_num_token(conf, token, qual_num);
-      HTTPD_CONF_REQ__X_CONTENT_VSTR(content_language);
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(content_language);
       HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_language);
-      HTTPD_CONF_REQ__X_CONTENT_VSTR(ext_vary_al);
+      HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(ext_vary_al);
       conf_parse_num_token(conf, token, last);
     }
   }

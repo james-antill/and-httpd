@@ -529,11 +529,15 @@ void vlg_init(void)
     goto malloc_err_vstr_conf;
 
   if (!vstr_cntl_conf(vlg__conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
+      !vstr_cntl_conf(vlg__conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP, "_") ||
+      !vstr_cntl_conf(vlg__conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP, "\3") ||
       !vstr_sc_fmt_add_all(vlg__conf) ||
       !vlg_sc_fmt_add_all(vlg__conf) ||
       FALSE)
     goto malloc_err_vstr_fmt_all;
   if (!vstr_cntl_conf(vlg__sig_conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
+      !vstr_cntl_conf(vlg__sig_conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP,"_")||
+      !vstr_cntl_conf(vlg__sig_conf,VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP,"\3")||
       !vstr_sc_fmt_add_all(vlg__sig_conf) ||
       !vlg_sc_fmt_add_all(vlg__sig_conf) ||
       FALSE)

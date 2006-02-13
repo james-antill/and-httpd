@@ -95,9 +95,10 @@ def init(bldr, Env):
 
 
 conf = {'GENERATE_INDEX_NAME' : "index.html",
-	'ROOT_DIR' : "html/",
-	'GENERATED_DIR' : "generated_html/",
-	'CONF_DIR' : "conf/",
+	'ROOT_DIR'            : "html/",
+	'GENERATED_DIR'       : "generated_html/",
+	'CONF_DIR'            : "conf/",
+	'CONF_TMPL_DIR'       : "conf_tmpl/",
 	}
 
 # Way to comment out a list...

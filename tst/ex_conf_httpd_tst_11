@@ -1,0 +1,99 @@
+#########################################################
+###                                                   ###
+### This is a configuration for httpd_conf_9 tests... ###
+###                                                   ###
+#########################################################
+
+(org.and.httpd-conf-main-1.0
+
+  (org.and.daemon-conf-1.0
+    (listen addr 127.0.10.1)
+
+     cntl-file ex_httpd_cntl)
+
+  (match-connection [policy-eq <default>
+                     server-ipv4-cidr-eq 127.0.10.1]
+    policy conf-httpd-tst-11.1-<default>)
+
+   policy conf-httpd-tst-11.1-<default>
+
+    (HTTP
+     advertise-range false
+     trace-op false
+
+     Server: foo/1.2.3)
+    (match-init [debug]
+     HTTP
+     Server: += ' (' Debug ')')
+     unspecified-hostname foo.example.com ; -- so we always match in tests
+     unspecified-hostname-append-port off
+     MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
+
+     virtual-hosts true
+; Test that it gets pulled in from <default>
+     document-root ''
+     request-configuration-directory ex_httpd_conf_root
+     req-err-dir ex_httpd_err_conf_11_root)
+
+;; Taken from tools/_io-limiting.conf
+
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-11.1-<limited> [inherit conf-httpd-tst-11.1-<default>]
+     HTTP
+     Server: '') ; Don't send Server: header...
+
+; Limit IO for annoying clients that don't accept compressed data
+; Optionally limit everyone else too.
+(org.and.httpd-conf-main-1.0
+   match-init [true] ; Turn this on to enable IO limiting
+
+  (policy conf-httpd-tst-11.1-<limited> tcp-cork false) ; Don't abuse them too much?
+
+  (org.and.daemon-conf-1.0
+   policy conf-httpd-tst-11.1-<limited> ; Allow a single connection to use 0.5K/s 
+     limit io       ; with 5K/s for everyone
+    (policy-process/s    write 100)
+     policy-connection/s write  50)
+
+  (match-request 'non-compression IO Limits'
+                 [policy-eq conf-httpd-tst-11.1-<default> protect-vary ! Accept-Encoding:]
+     policy            conf-httpd-tst-11.1-<limited>
+     connection-policy conf-httpd-tst-11.1-<limited>)
+  (match-init [true] ; Change if you want to never get back...
+   match-request     'compression IO Limits'
+                 [policy-eq conf-httpd-tst-11.1-<limited> protect-vary   Accept-Encoding:]
+     policy            conf-httpd-tst-11.1-<default>
+     connection-policy conf-httpd-tst-11.1-<default>)
+
+   match-init [true] ; Turn this on to limit everyone
+
+   org.and.daemon-conf-1.0 ; Make numbers high, so it doesn't interfere with
+     limit io              ; make check time ... too much.
+    (process/s    write 2_500_000)
+     connection/s write 1_000_000)
+
+
+;;; Other stuff....
+
+(org.and.httpd-conf-main-1.0
+  (match-request '503' [path-eq /virt/tst_11/r503]
+     policy 503)
+  (match-request '503' [path-eq /virt/tst_11/c503]
+     connection-policy 503)
+   match-request 'vary static all' [path-eq '/virt/tst_11/vary static all']
+     org.and.httpd-conf-req-1.0
+       (match-request  [hostname-eq alfkjadlfjaslkfj] sym-not-exist)
+        Vary:_Accept true
+        Vary:_Accept-Charset true
+        Vary:_Accept-Encoding true
+        Vary:_Accept-Language true
+        Vary:_Referrer true
+        Vary:_User-Agent true
+        Vary:_If-Modified-Since true
+        Vary:_If-Unmodified-Since true
+        Vary:_If-Range true
+        Vary:_If-Match true
+        Vary:_If-None-Match true
+        Content-Type: text/plain
+        filename [limit path] /index.html
+        return <gone>)

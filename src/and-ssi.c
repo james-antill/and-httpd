@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2002, 2003, 2004, 2005, 2006  James Antill
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *  email: james@and.org
+ */
 /* quick but useful static ssi processor.
 */
 #include "ex_utils.h"
@@ -39,6 +58,7 @@
 
 
 
+static Vstr_base *virtual_base = NULL;
 static char *timespec = NULL;
 static int use_size_abbrev = TRUE;
 
@@ -156,14 +176,23 @@ static size_t ex_ssi_attr_val(Vstr_base *s2, size_t *srch)
   return (ret);
 }
 
-static size_t ex_ssi_file_attr(Vstr_base *s2, size_t *srch)
+static size_t ex_ssi_file_attr(Vstr_base *s2, size_t *srch, int *virt)
 {
   size_t ret = 0;
   
   ex_ssi_skip_wsp(s2, srch);
   
   if (vstr_cmp_case_bod_cstr_eq(s2, 1, *srch, "file=\""))
+  {
+    *virt = FALSE;
     ex_ssi_skip_str(s2, srch, "file=\"");
+  }
+  else if (virtual_base &&
+           (vstr_cmp_case_bod_cstr_eq(s2, 1, *srch, "virtual=\"")))
+  {
+    *virt = TRUE;
+    ex_ssi_skip_str(s2, srch, "virtual=\"");
+  }
   else
     return (0);
 
@@ -277,6 +306,45 @@ static const char *ex_ssi_getpwuid_name(uid_t uid)
   return (pw->pw_name);
 }
 
+static int virt_open(Vstr_base *s1, size_t pos, size_t len)
+{
+  int fd = -1;
+  
+  ASSERT(virtual_base);
+
+  if (!vstr_add_vstr(virtual_base, virtual_base->len, s1, pos, len,
+                     VSTR_TYPE_ADD_DEF))
+    errno = ENOMEM, err(EXIT_FAILURE, "virtual open");
+
+  fd = io_open(vstr_export_cstr_ptr(virtual_base, 1, virtual_base->len));
+  
+  vstr_sc_reduce(virtual_base, 1, virtual_base->len, len);
+
+  return (fd);
+}
+
+static void vstat(Vstr_base *s1, size_t pos, size_t len, struct stat64 *sbuf)
+{
+  const char *ptr = vstr_export_cstr_ptr(s1, pos, len);
+  
+  if (!ptr || stat64(ptr, sbuf))
+    err(EXIT_FAILURE, "stat(%s)", ptr);
+}
+
+static void virt_stat(Vstr_base *s1, size_t pos, size_t len,
+                      struct stat64 *sbuf)
+{
+  ASSERT(virtual_base);
+
+  if (!vstr_add_vstr(virtual_base, virtual_base->len, s1, pos, len,
+                     VSTR_TYPE_ADD_DEF))
+    errno = ENOMEM, err(EXIT_FAILURE, "virtual stat");
+
+  vstat(virtual_base, 1, virtual_base->len, sbuf);
+  
+  vstr_sc_reduce(virtual_base, 1, virtual_base->len, len);
+}
+
 static int ex_ssi_process(Vstr_base *s1, Vstr_base *s2, time_t last_modified,
                           int last)
 {
@@ -316,18 +384,22 @@ static int ex_ssi_process(Vstr_base *s1, Vstr_base *s2, time_t last_modified,
     {
       int fd = -1;
       size_t tmp = 0;
-
+      int virt = FALSE;
+      
       ex_ssi_skip_str(s2, &srch, "<!--#include");
 
-      if (!(tmp = ex_ssi_file_attr(s2, &srch)))
+      if (!(tmp = ex_ssi_file_attr(s2, &srch, &virt)))
         EX_SSI_FAILED("include");
 
-      EX_SSI_OK("include", s2, 1, tmp, TRUE);
+      EX_SSI_OK(virt ? "virtual-include" : "include", s2, 1, tmp, TRUE);
 
       if (s1->conf->malloc_bad)
         errno = ENOMEM, err(EXIT_FAILURE, "add data");
 
-      fd = io_open(vstr_export_cstr_ptr(s2, 1, tmp));
+      if (virt)
+        fd = virt_open(s2, 1, tmp);
+      else
+        fd = io_open(vstr_export_cstr_ptr(s2, 1, tmp));
 
       ex_ssi_cat_read_fd_write_stdout(s1, fd);
 
@@ -457,44 +529,48 @@ static int ex_ssi_process(Vstr_base *s1, Vstr_base *s2, time_t last_modified,
     {
       size_t tmp = 0;
       struct stat64 sbuf[1];
-      
+      int virt = FALSE;
+
       ex_ssi_skip_str(s2, &srch, "<!--#fsize");
 
-      if (!(tmp = ex_ssi_file_attr(s2, &srch)))
+      if (!(tmp = ex_ssi_file_attr(s2, &srch, &virt)))
         EX_SSI_FAILED("fsize");
 
-      EX_SSI_OK("fsize", s2, 1, tmp, FALSE);
+      EX_SSI_OK(virt ? "virtual-fsize" : "fsize", s2, 1, tmp, FALSE);
 
       if (s1->conf->malloc_bad)
         errno = ENOMEM, err(EXIT_FAILURE, "add data");
 
-      if (stat64(vstr_export_cstr_ptr(s2, 1, tmp), sbuf))
-        err(EXIT_FAILURE, "stat(%s)", vstr_export_cstr_ptr(s2, 1, tmp));
+      if (virt)
+        virt_stat(s2, 1, tmp, sbuf);
+      else
+        vstat(s2, 1, tmp, sbuf);
 
       if (use_size_abbrev)
-        vstr_add_fmt(s1, s1->len, "${BKMG.ju:%ju}",
-                     (VSTR_AUTOCONF_uintmax_t)sbuf->st_size);
+        vstr_add_fmt(s1, s1->len, "${BKMG.ju:%ju}", (uintmax_t)sbuf->st_size);
       else
-        vstr_add_fmt(s1, s1->len, "%ju",
-                     (VSTR_AUTOCONF_uintmax_t)sbuf->st_size);
+        vstr_add_fmt(s1, s1->len, "%ju", (uintmax_t)sbuf->st_size);
     }
     else if (vstr_cmp_case_bod_cstr_eq(s2, 1, s2->len, "<!--#flastmod"))
     {
       size_t tmp = 0;
       struct stat64 sbuf[1];
+      int virt = FALSE;
       
       ex_ssi_skip_str(s2, &srch, "<!--#flastmod");
 
-      if (!(tmp = ex_ssi_file_attr(s2, &srch)))
+      if (!(tmp = ex_ssi_file_attr(s2, &srch, &virt)))
         EX_SSI_FAILED("flastmod");
 
-      EX_SSI_OK("flastmod", s2, 1, tmp, FALSE);
+      EX_SSI_OK(virt ? "virtual-flastmod" : "flastmod", s2, 1, tmp, FALSE);
 
       if (s1->conf->malloc_bad)
         errno = ENOMEM, err(EXIT_FAILURE, "add data");
 
-      if (stat64(vstr_export_cstr_ptr(s2, 1, tmp), sbuf))
-        err(EXIT_FAILURE, "stat(%s)", vstr_export_cstr_ptr(s2, 1, tmp));
+      if (virt)
+        virt_stat(s2, 1, tmp, sbuf);
+      else
+        vstat(s2, 1, tmp, sbuf);
         
       vstr_add_cstr_buf(s1, s1->len, ex_ssi_strftime(sbuf->st_mtime, TRUE));
     }
@@ -572,11 +648,11 @@ static void ex_ssi_fin(Vstr_base *s1, time_t timestamp, const char *fname)
 {
   free(timespec);
   timespec = NULL;
-
+  
   vstr_add_fmt(s1, s1->len,
                "<!-- SSI processing of %s -->\n"
                "<!--   done on %s -->\n"
-               "<!--   done by jssi -->\n",
+               "<!--   done by and-ssi -->\n",
                fname, ex_ssi_strftime(timestamp, FALSE));
 }
 
@@ -631,6 +707,7 @@ static void cl_cmd_line(int *passed_argc, char ***passed_argv)
    {"prefix-path", required_argument, NULL, 1},
    {"suffix-path", required_argument, NULL, 2},
    {"version", no_argument, NULL, 'V'},
+   {"virtual-directory", required_argument, NULL, 'D'},
    {NULL, 0, NULL, 0}
   };
   Vstr_base *out = vstr_make_base(NULL);
@@ -638,9 +715,9 @@ static void cl_cmd_line(int *passed_argc, char ***passed_argv)
   if (!out)
     errno = ENOMEM, err(EXIT_FAILURE, "command line");
   
-  program_name = opt_program_name(argv[0], "jssi");
+  program_name = opt_program_name(argv[0], "and-ssi");
   
-  while ((optchar = getopt_long(argc, argv, "hV", long_options, NULL)) != -1)
+  while ((optchar = getopt_long(argc, argv, "hDV", long_options, NULL)) != -1)
   {
     switch (optchar)
     {
@@ -661,6 +738,22 @@ Uses Vstr string library.\n\
         
         exit (EXIT_SUCCESS);
 
+      case 'D':
+        if (!virtual_base &&
+            (virtual_base = vstr_make_base(NULL)))
+          errno = ENOMEM, err(EXIT_FAILURE, "init");
+
+        if (!vstr_sub_cstr_ptr(virtual_base, 1, virtual_base->len, optarg))
+          errno = ENOMEM, err(EXIT_FAILURE, "init");
+        if (!virtual_base->len)
+          errx(EXIT_FAILURE, "Virtual directory needs to be non-zero");
+        if (vstr_export_chr(virtual_base, virtual_base->len) != '/')
+          vstr_add_cstr_ptr(virtual_base, virtual_base->len, "/");
+          
+        if (!virtual_base->conf->malloc_bad)
+          errno = ENOMEM, err(EXIT_FAILURE, "init");
+        break;
+        
       case 1:
         merge_path(optarg, getenv("PATH"), "prefix-path");
         break;
@@ -693,8 +786,11 @@ int main(int argc, char *argv[])
 
   cl_cmd_line(&argc, &argv);
   
-  vstr_sc_fmt_add_all(s1->conf);
-  vstr_cntl_conf(s1->conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$');
+  if (!vstr_cntl_conf(s1->conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
+      !vstr_cntl_conf(s1->conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP, "_") ||
+      !vstr_cntl_conf(s1->conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP, "\3") ||
+      !vstr_sc_fmt_add_all(s1->conf))
+    errno = ENOMEM, err(EXIT_FAILURE, "%s", __func__);
   
   if (count >= argc)
   {
@@ -740,6 +836,9 @@ int main(int argc, char *argv[])
     ++count;
   }
   closedir(beg_dir_obj);
+
+  vstr_free_base(virtual_base);
+  virtual_base = NULL;
 
   io_put_all(s1, STDOUT_FILENO);
 

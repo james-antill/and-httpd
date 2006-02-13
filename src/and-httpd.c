@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004, 2005  James Antill
+ *  Copyright (C) 2004, 2005, 2006  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -213,6 +213,8 @@ static void serv_init(void)
   
   /* no passing of conf to evnt */
   if (!vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
+      !vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP, "_") ||
+      !vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP, "\3") ||
       !vstr_sc_fmt_add_all(NULL) ||
       !vlg_sc_fmt_add_all(NULL) ||
       !VSTR_SC_FMT_ADD(NULL, http_fmt_add_vstr_add_vstr,
@@ -275,7 +277,7 @@ static void serv_cb_func_free(struct Evnt *evnt)
   
   httpd_fin_fd_close(con);
 
-  opt_serv_sc_free_beg(evnt);
+  opt_serv_sc_free_beg(evnt, "FREE");
 
   ASSERT(con->fs && !con->fs_num && !con->fs_off && (con->fs->fd == -1));
 
@@ -312,6 +314,18 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
   con->evnt->cbs->cb_func_send       = serv_cb_func_send;
   con->evnt->cbs->cb_func_free       = serv_cb_func_free;
 
+  if (!evnt_limit_dup(con->evnt, &httpd_opts->s->io_nslimit))
+    goto evnt_fail; /* redone on policy changes... */
+  
+  if (!evnt_limit_add(con->evnt,  httpd_opts->s->ref_io_limit))
+    goto evnt_fail; /* redone on policy changes... */
+  
+  if (!evnt_limit_dup(con->evnt, &httpd_opts->s->io_nslimit))
+    goto evnt_fail;
+  
+  if (!evnt_limit_add(con->evnt,  httpd_opts->s->ref_io_limit))
+    goto evnt_fail;
+  
   if (!httpd_con_init(con, acpt_listener))
     goto evnt_fail;
 
@@ -446,28 +460,33 @@ static void serv_canon_policies(void)
   
   while (scan)
   { /* check variables for things which will screw us too much */
-    Httpd_policy_opts *tmp = (Httpd_policy_opts *)scan;
+    Httpd_policy_opts *def_opt = (Httpd_policy_opts *)httpd_opts->s->def_policy;
+    Httpd_policy_opts *opt = (Httpd_policy_opts *)scan;
+    Vstr_base *def_doc_root = def_opt->document_root;
     Vstr_base *s1 = NULL;
     int ec = EXIT_FAILURE;
     
     ASSERT(scan->beg == httpd_opts->s);
     
-    s1 = tmp->document_root;
+    s1 = opt->document_root;
     if (!httpd_canon_dir_path(s1))
       VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
-  
-    s1 = tmp->req_conf_dir;
+    if (!s1->len && !vstr_add_vstr(s1, 0, def_doc_root, 1, def_doc_root->len,
+                                   VSTR_TYPE_ADD_BUF_REF))
+      VLG_ERRNOMEM((vlg, ec, "canon_dir_path(): %m\n"));
+    
+    s1 = opt->req_conf_dir;
     if (!httpd_canon_dir_path(s1))
       VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
 
-    s1 = tmp->req_err_dir;
+    s1 = opt->req_err_dir;
     if (!httpd_canon_dir_path(s1))
       VLG_ERRNOMEM((vlg, ec, "canon_dir_path($<vstr.all:%p>): %m\n", s1));
 
     if (!httpd_init_default_hostname(scan))
       VLG_ERRNOMEM((vlg, ec, "hostname(): %m\n"));
     
-    s1 = tmp->dir_filename;
+    s1 = opt->dir_filename;
     if (!httpd_valid_url_filename(s1, 1, s1->len) &&
         !vstr_sub_cstr_ptr(s1, 1, s1->len, HTTPD_CONF_DEF_DIR_FILENAME))
       VLG_ERRNOMEM((vlg, ec, "dir_filename(): %m\n"));
@@ -747,7 +766,7 @@ static void serv_cmd_line(int argc, char *argv[])
     }
   }
   
-  opt_serv_conf_free(httpd_opts->s);
+  opt_serv_conf_free_beg(httpd_opts->s);
   return;
 
  out_err_conf_msg:
@@ -786,6 +805,8 @@ int main(int argc, char *argv[])
   vlg_exit();
 
   httpd_conf_main_free(httpd_opts);
+  
+  timer_q_exit();
   
   vstr_exit();
 

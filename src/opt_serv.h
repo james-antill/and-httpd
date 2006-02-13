@@ -6,6 +6,7 @@
 #include "evnt.h"
 
 #define OPT_SERV_CONF_BUF_SZ (128 - sizeof(Vstr_node_buf))
+#define OPT_SERV_CONF_VSTR_PREALLOC_MAX 8 /* ~4 connections */
 #define OPT_SERV_CONF_MEM_PREALLOC_MAX (128 * 1024)
 
 #define OPT_SERV_CONF_USE_DAEMON FALSE
@@ -19,6 +20,7 @@
 #define OPT_SERV_CONF_DEF_PRIV_GID 60001
 #define OPT_SERV_CONF_DEF_NUM_PROCS 1
 #define OPT_SERV_CONF_DEF_IDLE_TIMEOUT (2 * 60)
+#define OPT_SERV_CONF_DEF_MAX_TIMEOUT 0 /* never */
 #define OPT_SERV_CONF_USE_INSTA_CLOSE FALSE
 #define OPT_SERV_CONF_DEF_Q_LISTEN_LEN 128
 #define OPT_SERV_CONF_DEF_MAX_CONNECTIONS 0
@@ -37,11 +39,19 @@ typedef struct Opt_serv_policy_opts
 
  Vstr_base *policy_name;
 
+ struct Evnt_limit io_limit;
+ Vstr_ref *ref_io_limit;
+ struct Evnt_limit io_nslimit;
+
  unsigned int idle_timeout;
+ unsigned int max_timeout;
+ 
  unsigned int max_connections;
  
  unsigned int use_insta_close : 1;
-} Opt_serv_policy_opts;
+} Opt_serv_policy_opts; /* NOTE: remember to copy changes to
+                         * opt_policy.c:opt_policy_init
+                         * opt_policy.h:opt_policy_copy */
 
 typedef struct Opt_serv_addr_opts
 {
@@ -94,6 +104,10 @@ typedef struct Opt_serv_opts
  unsigned int rlim_core_num;
  unsigned int rlim_file_num;
 
+ struct Evnt_limit io_limit;
+ Vstr_ref *ref_io_limit;
+ struct Evnt_limit io_nslimit;
+
  unsigned int max_spare_bases;
  
  unsigned int max_spare_buf_nodes;
@@ -128,7 +142,9 @@ typedef struct Opt_serv_opts
     OPT_SERV_CONF_DEF_RLIM_AS_NUM,                                      \
     OPT_SERV_CONF_DEF_RLIM_CORE_NUM,                                    \
     OPT_SERV_CONF_DEF_RLIM_FILE_NUM,                                    \
-    4,                                                                  \
+    {0, 0, {0,0}, 0, 0, {0,0}}, NULL,                                   \
+    {0, 0, {0,0}, 0, 0, {0,0}},                                         \
+    OPT_SERV_CONF_VSTR_PREALLOC_MAX,                                    \
     (OPT_SERV_CONF_MEM_PREALLOC_MAX / OPT_SERV_CONF_BUF_SZ),            \
     (OPT_SERV_CONF_MEM_PREALLOC_MAX / OPT_SERV_CONF_BUF_SZ),            \
     (OPT_SERV_CONF_MEM_PREALLOC_MAX / OPT_SERV_CONF_BUF_SZ),            \
@@ -137,7 +153,8 @@ typedef struct Opt_serv_opts
 #define OPT_SERV_CONF_DECL_OPTS(N, x, y)                \
     Opt_serv_opts N[1] = {{OPT_SERV_CONF_INIT_OPTS(x, y)}}
 
-extern void opt_serv_conf_free(Opt_serv_opts *);
+extern void opt_serv_conf_free_beg(Opt_serv_opts *);
+extern void opt_serv_conf_free_end(Opt_serv_opts *);
 extern int  opt_serv_conf_init(Opt_serv_opts *);
 
 extern Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *)
@@ -153,13 +170,13 @@ extern int opt_serv_conf_parse_file(Vstr_base *, Opt_serv_opts *, const char *)
 extern void opt_serv_logger(Vlg *)
     COMPILE_ATTR_NONNULL_A();
 
-extern int opt_serv_sc_tst(Conf_parse *, Conf_token *, int *,
+extern int opt_serv_sc_tst(Conf_parse *, Conf_token *, int *, int,
                            int (*tst_func)(Conf_parse *, Conf_token *,
-                                           int *, void *), void *)
+                                           int *, int, void *), void *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 
 extern int opt_serv_match_init(struct Opt_serv_opts *,
-                               Conf_parse *, Conf_token *, int *)
+                               Conf_parse *, Conf_token *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 
 extern void opt_serv_sc_drop_privs(Opt_serv_opts *)
@@ -170,7 +187,7 @@ extern void opt_serv_sc_rlim_file_num(unsigned int);
 extern int  opt_serv_sc_acpt_end(const Opt_serv_policy_opts *,
                                  struct Evnt *, struct Evnt *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
-extern void opt_serv_sc_free_beg(struct Evnt *)
+extern void opt_serv_sc_free_beg(struct Evnt *, const char *)
     COMPILE_ATTR_NONNULL_A();
 extern void opt_serv_sc_signals(void);
 extern void opt_serv_sc_check_children(void);
@@ -180,6 +197,11 @@ extern int opt_serv_sc_append_hostname(Vstr_base *, size_t)
     COMPILE_ATTR_NONNULL_A();
 extern int opt_serv_sc_append_cwd(Vstr_base *, size_t)
     COMPILE_ATTR_NONNULL_A();
+
+extern int opt_serv_sc_make_str(struct Opt_serv_opts *,
+                                Conf_parse *, Conf_token *,
+                                Vstr_base *, size_t, size_t)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
                                         Conf_parse *, Conf_token *,
                                         Vstr_base *)
@@ -219,6 +241,10 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
    {"max-connections", required_argument, NULL, 'M'},   \
    {"idle-timeout", required_argument, NULL, 't'},      \
    {"defer-accept", required_argument, NULL, 10},       \
+   {"io-r-limit-process", required_argument, NULL, 11}, \
+   {"io-w-limit-process", required_argument, NULL, 12}, \
+   {"io-r-limit-connection", required_argument, NULL, 13}, \
+   {"io-w-limit-connection", required_argument, NULL, 14}, \
    {"version", no_argument, NULL, 'V'}
 
 #define OPT_SERV_GETOPTS(opts)                                          \
@@ -247,8 +273,16 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
                         1, 255, "");                                break; \
     case 10: OPT_NUM_ARG(opts->addr_beg->defer_accept,                  \
                          "seconds to defer connections",                \
-                         0, 4906, " (1 hour 8 minutes)");           break
-
+                         0, 4906, " (1 hour 8 minutes)");           break; \
+    case 11: OPT_NUM_NR_ARG(opts->io_limit.io_w_max,                    \
+                            "process read limit");                  break; \
+    case 12: OPT_NUM_NR_ARG(opts->io_limit.io_w_max,                    \
+                            "process write limit");                 break; \
+    case 13: OPT_NUM_NR_ARG(opts->io_nslimit.io_w_max,                  \
+                            "connection read limit");               break; \
+    case 14: OPT_NUM_NR_ARG(opts->io_nslimit.io_w_max,                  \
+                            "connection write limit");              break
+    
 
 
 /* simple typer for EQ */
@@ -347,7 +381,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
           return (FALSE);                                               \
     } while (FALSE)
 
-#define OPT_SERV_X__VSTR(x, p, l) do {                                  \
+#define OPT_SERV_X__SINGLE_VSTR(x, p, l) do {                           \
       if (conf_sc_token_sub_vstr(conf, token, x, p, l))                 \
         return (FALSE);                                                 \
                                                                         \
@@ -356,7 +390,14 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       OPT_SERV_X__ESC_VSTR(x, p, token->u.node->len);                   \
     } while (FALSE)
 
-#define OPT_SERV_X_VSTR(x) OPT_SERV_X__VSTR(x, 1, (x)->len)
+#define OPT_SERV_X_SINGLE_VSTR(x) OPT_SERV_X__SINGLE_VSTR(x, 1, (x)->len)
+
+#define OPT_SERV_X__VSTR(o, x, p, l) do {                       \
+      if (!opt_serv_sc_make_str(o, conf, token, x, p, l))       \
+        return (FALSE);                                         \
+    } while (FALSE)
+
+#define OPT_SERV_X_VSTR(o, x) OPT_SERV_X__VSTR(o, x, 1, (x)->len)
 
 #define OPT_SERV_X_EQ(x) do {                                           \
       if (conf_sc_token_parse_eq(conf, token, (x), 1, (x)->len, matches)) \
@@ -365,20 +406,17 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 
 #define OPT_SERV_SC_MATCH_INIT(x, y) do {                               \
       unsigned int match_init__depth = token->depth_num;                \
-      int match_init__matches = TRUE;                                   \
                                                                         \
-      if (!opt_serv_match_init(x, conf, token, &match_init__matches))   \
+      if (!opt_serv_match_init(x, conf, token))                         \
         return (FALSE);                                                 \
-                                                                        \
-      if (!match_init__matches)                                         \
-        conf_parse_end_token(conf, token, match_init__depth);           \
                                                                         \
       while (conf_token_list_num(token, match_init__depth))             \
       {                                                                 \
         CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, match_init__depth, FALSE); \
         CONF_SC_TOGGLE_CLIST_VAR(clist);                                \
-        if (!(y))                                                       \
-          return (FALSE);                                               \
+        if (y) continue;                                                \
+                                                                        \
+        return (FALSE);                                                 \
       }                                                                 \
     } while (FALSE)
 

@@ -1,6 +1,6 @@
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -10,7 +10,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -19,7 +19,7 @@ Content-Length: 393
 
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -29,7 +29,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -39,7 +39,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -49,7 +49,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -59,7 +59,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -69,7 +69,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -79,7 +79,7 @@ ETag: W/"f.e.c/4"
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.6
+Server: and-httpd/0.99.7
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004, 2005  James Antill
+ *  Copyright (C) 2004, 2005, 2006  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -71,14 +71,6 @@
 #define VEQ(vstr, p, l, cstr)  vstr_cmp_cstr_eq(vstr, p, l, cstr)
 #define VIEQ(vstr, p, l, cstr) vstr_cmp_case_cstr_eq(vstr, p, l, cstr)
 
-#ifndef SWAP_TYPE
-#define SWAP_TYPE(x, y, type) do {              \
-      type internal_local_tmp = (x);            \
-      (x) = (y);                                \
-      (y) = internal_local_tmp;                 \
-    } while (FALSE)
-#endif
-
 #define HTTP__HDR_SET(req, h, p, l) do {               \
       (req)-> http_hdrs -> hdr_ ## h ->pos = (p);          \
       (req)-> http_hdrs -> hdr_ ## h ->len = (l);          \
@@ -93,10 +85,6 @@
       req-> x ## _pos = 0;                      \
       req-> x ## _len = 0;                      \
     } while (FALSE)
-
-#define HTTP__XTRA_HDR_PARAMS(req, x)                            \
-    (req)-> x ## _vs1, (req)-> x ## _pos, (req)-> x ## _len
-
 
 HTTPD_CONF_MAIN_DECL_OPTS(httpd_opts);
 
@@ -242,6 +230,11 @@ Httpd_req_data *http_req_make(struct Con *con)
   req->vary_al   = FALSE;
   req->vary_rf   = FALSE;
   req->vary_ua   = FALSE;
+  req->vary_ims  = FALSE;
+  req->vary_ius  = FALSE;
+  req->vary_ir   = FALSE;
+  req->vary_im   = FALSE;
+  req->vary_inm  = FALSE;
 
   req->direct_uri         = FALSE;
   req->direct_filename    = FALSE;
@@ -462,6 +455,8 @@ static void http_app_hdr_vstr(Vstr_base *out, const char *hdr,
                               const Vstr_base *s1, size_t vpos, size_t vlen,
                               unsigned int type)
 {
+  if (!vlen) return; /* don't allow "empty" headers, use a single space */
+  
   http__app_hdr_hdr(out, hdr);
   vstr_add_vstr(out, out->len, s1, vpos, vlen, type);
   http__app_hdr_eol(out);
@@ -470,6 +465,8 @@ static void http_app_hdr_vstr(Vstr_base *out, const char *hdr,
 static void http_app_hdr_vstr_def(Vstr_base *out, const char *hdr,
                                   const Vstr_base *s1, size_t vpos, size_t vlen)
 {
+  if (!vlen) return; /* don't allow "empty" headers, use a single space */
+  
   http__app_hdr_hdr(out, hdr);
   vstr_add_vstr(out, out->len, s1, vpos, vlen, VSTR_TYPE_ADD_DEF);
   http__app_hdr_eol(out);
@@ -478,6 +475,8 @@ static void http_app_hdr_vstr_def(Vstr_base *out, const char *hdr,
 static void http_app_hdr_conf_vstr(Vstr_base *out, const char *hdr,
                                    const Vstr_base *s1)
 {
+  if (!s1->len) return; /* don't allow "empty" headers, a single space */
+  
   http__app_hdr_hdr(out, hdr);
   vstr_add_vstr(out, out->len, s1, 1, s1->len, VSTR_TYPE_ADD_DEF);
   http__app_hdr_eol(out);
@@ -570,27 +569,34 @@ void http_app_def_hdrs(struct Con *con, struct Httpd_req_data *req,
     case 413: /* Too large */
     case 416: /* Bad range */
     case 417: /* Not accept - expect contained something */
-      if (use_range)
+      if (use_range && req->policy->use_adv_range)
         HTTP_APP_HDR_CONST_CSTR(out, "Accept-Ranges", "bytes");
   }
   
   if (req->vary_star)
     HTTP_APP_HDR_CONST_CSTR(out, "Vary", "*");
   else if (req->vary_a || req->vary_ac || req->vary_ae || req->vary_al ||
-           req->vary_rf || req->vary_ua)
+           req->vary_rf || req->vary_ua ||
+           req->vary_ims || req->vary_ius || req->vary_ir  ||
+           req->vary_im  || req->vary_inm)
   {
-    const char *varies_ptr[6];
-    size_t      varies_len[6];
+    const char *varies_ptr[11];
+    size_t      varies_len[11];
     unsigned int num = 0;
     
-    if (req->vary_ua) HTTP__VARY_ADD(num, "User-Agent");
-    if (req->vary_rf) HTTP__VARY_ADD(num, "Referer");
-    if (req->vary_al) HTTP__VARY_ADD(num, "Accept-Language");
-    if (req->vary_ae) HTTP__VARY_ADD(num, "Accept-Encoding");
-    if (req->vary_ac) HTTP__VARY_ADD(num, "Accept-Charset");
-    if (req->vary_a)  HTTP__VARY_ADD(num, "Accept");
+    if (req->vary_ua)  HTTP__VARY_ADD(num, "User-Agent");
+    if (req->vary_rf)  HTTP__VARY_ADD(num, "Referer");
+    if (req->vary_ius) HTTP__VARY_ADD(num, "If-Unmodified-Since");
+    if (req->vary_ir)  HTTP__VARY_ADD(num, "If-Range");
+    if (req->vary_inm) HTTP__VARY_ADD(num, "If-None-Match");
+    if (req->vary_ims) HTTP__VARY_ADD(num, "If-Modified-Since");
+    if (req->vary_im)  HTTP__VARY_ADD(num, "If-Match");
+    if (req->vary_al)  HTTP__VARY_ADD(num, "Accept-Language");
+    if (req->vary_ae)  HTTP__VARY_ADD(num, "Accept-Encoding");
+    if (req->vary_ac)  HTTP__VARY_ADD(num, "Accept-Charset");
+    if (req->vary_a)   HTTP__VARY_ADD(num, "Accept");
 
-    ASSERT(num && (num <= 5));
+    ASSERT(num && (num <= 11));
     
     http__app_hdr_hdr(out, "Vary");
     while (num-- > 1)
@@ -610,8 +616,8 @@ void http_app_def_hdrs(struct Con *con, struct Httpd_req_data *req,
     if (req->content_type_vs1 && req->content_type_len)
       http_app_hdr_vstr_def(con->mpbr_ct, "Content-Type",
                             HTTP__XTRA_HDR_PARAMS(req, content_type));
-    http_app_hdr_cstr(out, "Content-Type",
-                      "multipart/byteranges; boundary=SEP");
+    HTTP_APP_HDR_CONST_CSTR(out, "Content-Type",
+                            "multipart/byteranges; boundary=SEP");
   }
   else if (req->content_type_vs1 && req->content_type_len)
     http_app_hdr_vstr_def(out, "Content-Type",
@@ -639,7 +645,7 @@ static void http_app_end_hdrs(Vstr_base *out)
   http__app_hdr_eol(out);
 }
 
-static void http_vlg_def(struct Con *con, struct Httpd_req_data *req)
+static void http_vlg_def(struct Con *con, struct Httpd_req_data *req, int meth)
 {
   Vstr_base *data = con->evnt->io_r;
   Vstr_sect_node *h_h  = req->http_hdrs->hdr_host;
@@ -652,6 +658,10 @@ static void http_vlg_def(struct Con *con, struct Httpd_req_data *req)
            data, h_h->pos, h_h->len,    
            data, h_ua->pos, h_ua->len,
            data, h_r->pos, h_r->len);
+
+  if (meth && (req->sects->num >= 1))
+    vlg_info(vlg, " meth[\"$<http-esc.vstr.sect:%p%p%u>\"]",
+             data, req->sects, 1U);
 
   if (req->ver_0_9)
     vlg_info(vlg, " ver[\"HTTP/0.9]\"");
@@ -1348,7 +1358,7 @@ static void http__err_vlg_msg(struct Con *con, Httpd_req_data *req)
            CON_CEVNT_SA(con), req->error_code, req->error_line,
            *req->error_xmsg ? " | " : "", req->error_xmsg, tmp, tmp);
   if (req->sects->num >= 2)
-    http_vlg_def(con, req);
+    http_vlg_def(con, req, TRUE);
   else
     vlg_info(vlg, "%s", "\n");
 }
@@ -1430,8 +1440,6 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       if (!req->skip_document_root)
         http_prepend_doc_root(fname, req);
     }
-    else if (!req->policy->req_conf_dir)
-      http_app_err_file(con, req, fname, &vhost_prefix_len);
     else
     {
       int conf_ret = FALSE;
@@ -2713,6 +2721,10 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
   size_t op_pos = req->path_pos;
   size_t op_len = req->path_len;
   
+  /* HTTP/1.1 requires a host -- allow blank hostnames */
+  if (req->ver_1_1 && !req->http_hdrs->hdr_host->pos)
+    HTTPD_ERR_MSG_RET(req, 400, "Hostname is required in 1.1", FALSE);
+  
   /* check for absolute URIs */
   if (VIPREFIX(data, op_pos, op_len, "http://"))
   { /* ok, be forward compatible */
@@ -2736,10 +2748,6 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
     assert(VPREFIX(data, op_pos, op_len, "/"));
   }
 
-  /* HTTP/1.1 requires a host -- allow blank hostnames */
-  if (req->ver_1_1 && !req->http_hdrs->hdr_host->pos)
-    HTTPD_ERR_MSG_RET(req, 400, "Hostname is required in 1.1", FALSE);
-  
   if (req->http_hdrs->hdr_host->len)
   { /* check host looks valid ... header must exist, but can be empty */
     size_t pos = req->http_hdrs->hdr_host->pos;
@@ -3523,8 +3531,13 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
       HTTPD_ERR_MSG(req, 404, "open(ENXIO)");
     else if (errno == ELOOP) /* symlinks */
       HTTPD_ERR_MSG(req, 404, "open(ELOOP)");
+    else if (errno == EMFILE) /* can't create fd ... just close */
+      return (http_con_cleanup(con, req));
     else
+    {
+      vlg_warn(vlg, "open(%s): %m\n", fname_cstr);
       HTTPD_ERR_MSG(req, 500, "open()");
+    }
     
     return (http_fin_err_req(con, req));
   }
@@ -3571,7 +3584,7 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
   vlg_info(vlg, "REQ $<vstr.sect:%p%p%u> from[$<sa:%p>] ret[%03u %s]"
            " sz[${BKMG.ju:%ju}:%ju]", data, req->sects, 1U, CON_CEVNT_SA(con),
            http_ret_code, http_ret_line, resp_len, resp_len);
-  http_vlg_def(con, req);
+  http_vlg_def(con, req, FALSE);
   
   return (http_fin_fd_req(con, req));
   
@@ -3606,7 +3619,7 @@ int http_req_op_opts(struct Con *con, Httpd_req_data *req)
   
   vlg_info(vlg, "REQ %s from[$<sa:%p>] ret[%03u %s] sz[${BKMG.ju:%ju}:%ju]",
            "OPTIONS", CON_CEVNT_SA(con), 200, "OK", tmp, tmp);
-  http_vlg_def(con, req);
+  http_vlg_def(con, req, FALSE);
   
   return (http_fin_req(con, req));
   
@@ -3629,7 +3642,7 @@ int http_req_op_trace(struct Con *con, Httpd_req_data *req)
 
   vlg_info(vlg, "REQ %s from[$<sa:%p>] ret[%03u %s] sz[${BKMG.ju:%ju}:%ju]",
            "TRACE", CON_CEVNT_SA(con), 200, "OK", tmp, tmp);
-  http_vlg_def(con, req);
+  http_vlg_def(con, req, FALSE);
       
   return (http_fin_req(con, req));
 }
@@ -3647,7 +3660,7 @@ int http_req_op_trace(struct Con *con, Httpd_req_data *req)
 
 static int httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len)
 {
-  const char *const cstr = HTTPD__VALID_CSTR_CHRS_HOSTNAME;
+  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_HOSTNAME;
   size_t tmp = 0;
   
    /* this is also checked via /./ path checking */
@@ -3658,9 +3671,10 @@ static int httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len)
     return (FALSE); /* example..com */
 
   /* canonical host affects these too */
-  if (VPREFIX(s1, pos, len, ".")) return (FALSE); /* .example.com. */
+  if (VPREFIX(s1, pos, len, ".")) return (FALSE); /* .example.com  */
   if (VSUFFIX(s1, pos, len, ".")) return (FALSE); /*  example.com. */
-
+  /* FIXME: can't easily do suffix dots due to port numbers */
+  
   tmp = vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr);
   if (tmp == len)
     return (TRUE);
@@ -3678,7 +3692,7 @@ static int httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len)
 
 int httpd_valid_url_filename(Vstr_base *s1, size_t pos, size_t len)
 {
-  const char *const cstr = HTTPD__VALID_CSTR_CHRS_URL_FILENAME;
+  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_URL_FILENAME;
   return (vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr) == len);
 }
 
@@ -3766,11 +3780,13 @@ static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
   {
     size_t dots = 0;
     
-    if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
-    { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
-    
     dots = vstr_spn_cstr_chrs_fwd(data, h_h_pos, h_h_len, ".");
     h_h_len -= dots; h_h_pos += dots;
+    
+    if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
+    { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
+
+    /* FIXME: can't easily do suffix dots due to port numbers */
     dots = vstr_spn_cstr_chrs_rev(data, h_h_pos, h_h_len, ".");
     h_h_len -= dots;
   }
@@ -3883,8 +3899,11 @@ static int httpd_serv__parse_no_req(struct Con *con, struct Httpd_req_data *req)
 {
   if (req->policy->max_header_sz &&
       (con->evnt->io_r->len > req->policy->max_header_sz))
+  {
+    evnt_got_pkt(con->evnt);
     HTTPD_ERR_MSG_RET(req, 400, "Too big", http_fin_err_req(con, req));
-
+  }
+  
   http_req_free(req);
   
   return (http_parse_wait_io_r(con));
@@ -3947,9 +3966,15 @@ static int http_parse_req(struct Con *con)
   con->keep_alive = HTTP_NON_KEEP_ALIVE;
   http_req_split_method(con, req);
   if (req->sects->malloc_bad)
+  {
+    evnt_got_pkt(con->evnt);
     VLG_WARNNOMEM_RET(http_fin_errmem_req(con, req), (vlg, "split: %m\n"));
+  }
   else if (req->sects->num < 2)
+  {
+    evnt_got_pkt(con->evnt);
     HTTPD_ERR_MSG_RET(req, 400, "No arguments", http_fin_err_req(con, req));
+  }
   else
   {
     size_t op_pos = 0;

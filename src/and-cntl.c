@@ -49,6 +49,21 @@ struct con
  struct Evnt ev[1];
 };
 
+
+
+#define CLEN COMPILE_STRLEN
+
+/* is the cstr a prefix of the vstr */
+#define VPREFIX(vstr, p, l, cstr)                                       \
+    (((l) >= CLEN(cstr)) &&                                             \
+     vstr_cmp_buf_eq(vstr, p, CLEN(cstr), cstr, CLEN(cstr)))
+
+/* is the cstr a prefix of the vstr, no case */
+#define VIPREFIX(vstr, p, l, cstr)                                      \
+    (((l) >= CLEN(cstr)) &&                                             \
+     vstr_cmp_case_buf_eq(vstr, p, CLEN(cstr), cstr, CLEN(cstr)))
+
+
 static int io_r_fd = STDIN_FILENO;
 unsigned int io_ind_r = 0; /* socket poll */
 static Vstr_base *io_r = NULL;
@@ -67,6 +82,7 @@ static unsigned int server_timeout = (2 * 60); /* 2 minutes */
 static const char *server_filename = NULL;
 
 static Vlg *vlg = NULL;
+
 
 static void ui_out(void)
 {
@@ -146,13 +162,41 @@ static int cl_recv(struct Evnt *evnt)
 }
 
 #define UI_CMD(x)                                                       \
-    else if (vstr_cmp_case_cstr_eq(io_r, 1, len, x "\n")) do            \
+    else if (vstr_cmp_case_cstr_eq(io_r, 1, len, x "\n"))               \
     {                                                                   \
       size_t ns1 = 0;                                                   \
       Vstr_base *out = con->io_w;                                       \
                                                                         \
       if (!(ns1 = vstr_add_netstr_beg(out, out->len)) ||                \
           !vstr_add_cstr_ptr(out, out->len, x) ||                       \
+          !vstr_add_netstr_end(out, ns1, out->len) ||                   \
+          !evnt_send_add(con, FALSE, 0))                                \
+      {                                                                 \
+        evnt_close(con);                                                \
+        return;                                                         \
+      }                                                                 \
+      evnt_put_pkt(con);                                                \
+    }                                                                   \
+    else if (VIPREFIX(io_r, 1, len, x " ")) do                          \
+    {                                                                   \
+      size_t ns1 = 0;                                                   \
+      size_t ns2 = 0;                                                   \
+      size_t cmd_pos = 1;                                               \
+      size_t cmd_len = len;                                             \
+      size_t tmp = 0;                                                   \
+      Vstr_base *out = con->io_w;                                       \
+                                                                        \
+      cmd_len -= CLEN(x); cmd_pos += CLEN(x);                           \
+      tmp = vstr_spn_cstr_chrs_fwd(io_r, cmd_pos, cmd_len, " ");        \
+      cmd_len -= tmp; cmd_pos += tmp;                                   \
+                                                                        \
+      if (!(ns1 = vstr_add_netstr_beg(out, out->len)) ||                \
+          !(ns2 = vstr_add_netstr_beg(out, out->len)) ||                \
+          !vstr_add_cstr_ptr(out, out->len, x) ||                       \
+          !vstr_add_netstr_end(out, ns2, out->len) ||                   \
+          !(ns2 = vstr_add_netstr_beg(out, out->len)) ||                \
+          !vstr_add_vstr(out, out->len, io_r, cmd_pos, cmd_len, 0) ||   \
+          !vstr_add_netstr_end(out, ns2, out->len) ||                   \
           !vstr_add_netstr_end(out, ns1, out->len) ||                   \
           !evnt_send_add(con, FALSE, 0))                                \
       {                                                                 \
@@ -509,11 +553,12 @@ static void cl_timer_con(int type, void *data)
 }
 
 static void cl_init(void)
-{
-  cl_timeout_base       = timer_q_add_base(cl_timer_cli,
-                                           TIMER_Q_FLAG_BASE_DEFAULT);
-  cl_timer_connect_base = timer_q_add_base(cl_timer_con,
-                                           TIMER_Q_FLAG_BASE_DEFAULT);
+{ /* FIXME: timer_q-1.0.7 move when empty still has bugs */
+  int flags = TIMER_Q_FLAG_BASE_DEFAULT & ~TIMER_Q_FLAG_BASE_MOVE_WHEN_EMPTY;
+    
+  cl_timeout_base       = timer_q_add_base(cl_timer_cli, flags);
+  cl_timer_connect_base = timer_q_add_base(cl_timer_con, flags);
+
   if (!cl_timeout_base)
     errno = ENOMEM, err(EXIT_FAILURE, "%s", __func__);
   if (!cl_timer_connect_base)
@@ -591,8 +636,11 @@ int main(int argc, char *argv[])
   if (!vstr_init())
     errno = ENOMEM, err(EXIT_FAILURE, "%s", __func__);
 
-  vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$');
-  vstr_sc_fmt_add_all(NULL);
+  if (!vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
+      !vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP, "_") ||
+      !vstr_cntl_conf(NULL, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP, "\3") ||
+      !vstr_sc_fmt_add_all(NULL))
+    errno = ENOMEM, err(EXIT_FAILURE, "%s", __func__);
   
   if (!(io_r = vstr_make_base(NULL))) /* used in cmd line */
     errno = ENOMEM, err(EXIT_FAILURE, "%s", __func__);

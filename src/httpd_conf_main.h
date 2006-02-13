@@ -32,9 +32,11 @@
 #define HTTPD_CONF_USE_VHOSTS_NAME FALSE
 #define HTTPD_CONF_USE_RANGE TRUE
 #define HTTPD_CONF_USE_RANGE_1_0 TRUE
+#define HTTPD_CONF_USE_ADV_RANGE TRUE
 #define HTTPD_CONF_USE_PUBLIC_ONLY FALSE
 #define HTTPD_CONF_USE_ENC_CONTENT_REPLACEMENT TRUE
 #define HTTPD_CONF_DEF_DIR_FILENAME "index.html"
+/* default charset ? -- default lanugage ? */
 #define HTTPD_CONF_MIME_TYPE_DEF_CT "" /* "application/octet-stream" */
 #define HTTPD_CONF_MIME_TYPE_MAIN "/etc/mime.types"
 #define HTTPD_CONF_MIME_TYPE_XTRA ""
@@ -68,7 +70,7 @@
 #define HTTPD_CONF_MAX_AC_NODES           8
 #define HTTPD_CONF_MAX_AE_NODES          32
 #define HTTPD_CONF_MAX_AL_NODES          16
-#define HTTPD_CONF_MAX_CONNECTION_NODES  64
+#define HTTPD_CONF_MAX_CONNECTION_NODES  64 /* not sure */
 #define HTTPD_CONF_MAX_ETAG_NODES        16
 #define HTTPD_CONF_MAX_RANGE_NODES        1 /* zsync needs more */
 #define HTTPD_CONF_REQ_CONF_MAXSZ (16 * 1024)
@@ -101,7 +103,8 @@ typedef struct Httpd_policy_opts
  unsigned int use_vhosts_name : 1;
  unsigned int use_range : 1;
  unsigned int use_range_1_0 : 1;
- unsigned int use_public_only : 1; /* 8th bitfield */
+ unsigned int use_adv_range : 1; /* 8th bitfield */
+ unsigned int use_public_only : 1;
  unsigned int use_enc_content_replacement : 1;
 
  unsigned int use_err_406 : 1;
@@ -109,17 +112,17 @@ typedef struct Httpd_policy_opts
  unsigned int use_host_err_400 : 1;
  unsigned int use_internal_host_chk : 1;
  unsigned int use_host_chk : 1;
- unsigned int use_hdrs_no_x2 : 1;
- unsigned int use_hdrs_non_spc : 1; /* 16th bitfield */
+ unsigned int use_hdrs_no_x2 : 1; /* 16th bitfield */
+ unsigned int use_hdrs_non_spc : 1;
  unsigned int use_hdrs_err_411 : 1;
 
  unsigned int use_trace_op : 1;
  unsigned int remove_url_frag : 1;
  unsigned int remove_url_query : 1;
  unsigned int use_secure_dirs : 1;
- unsigned int use_friendly_dirs : 1;
+ unsigned int use_friendly_dirs : 1; /* 24th bitfield */
 
- unsigned int use_posix_fadvise : 1; /* 24th bitfield */
+ unsigned int use_posix_fadvise : 1;
  unsigned int use_tcp_cork : 1;
  
  unsigned int use_req_conf : 1;
@@ -129,11 +132,11 @@ typedef struct Httpd_policy_opts
  unsigned int chk_dot_dir : 1;
  
  unsigned int chk_encoded_slash : 1;
- unsigned int chk_encoded_dot   : 1;
+ unsigned int chk_encoded_dot   : 1; /* 32nd bitfield */
 
- unsigned int add_def_port : 1; /* 32nd bitfield */
+ unsigned int add_def_port : 1;
 
- unsigned int use_noatime : 1; /* 33rd bitfield */
+ unsigned int use_noatime : 1; /* 34th bitfield */
 
  unsigned int max_header_sz;
 
@@ -190,6 +193,10 @@ typedef struct Httpd_opts
 
 extern int  httpd_conf_main_init(Httpd_opts *);
 extern void httpd_conf_main_free(Httpd_opts *);
+
+extern int httpd_match_request_tst_d1(struct Con *, struct Httpd_req_data *,
+                                      Conf_parse *, Conf_token *,
+                                      int *, int);
 
 extern int httpd_policy_connection(struct Con *,
                                    Conf_parse *, const Conf_token *);

@@ -1,0 +1,128 @@
+org.and.httpd-conf-main-1.0
+. org.and.daemon-conf-1.0
+. match-init
+./ org.and.daemon-conf-1.0/match-init
+. policy
+.. match-init
+../ org.and.daemon-conf-1.0/match-init
+.. directory-filename
+.. document-root | doc-root
+.. unspecified-hostname
+.. MIME/types-default-type
+.. MIME/types-filename-main
+.. MIME/types-filename-extra
+.. request-configuration-directory | req-conf-dir
+.. request-error-directory | req-err-dir
+.. secure-directory-filename
+.. redirect-filename-directory
+.. mmap
+.. sendfile
+.. virtual-hosts | virtual-hosts-name | vhosts-name | vhosts
+.. public-only
+.. posix-fadvise
+.. update-atime
+.. tcp-cork
+.. allow-request-configuration
+.. allow-header-splitting
+.. allow-header-NIL
+.. unspecified-hostname-append-port
+.. limit
+... request-configuration-size | request-configuration-sz | req-conf-size | req-conf-sz
+... nodes
+.... Accept:
+.... Accept-Language:
+.. HTTP | http
+... authorization | auth
+... strictness
+.... headers | hdrs
+..... allow-double | allow-dbl | allow-*2
+..... allow-missing-length
+..... allow-spaces
+.... hostname | host
+..... canonize | make-canonical
+..... validation
+.... allow-dot-directory | allow-dot-dir | allow-.-dir
+.... allow-encoded-slash | allow-enc-/
+.... allow-encoded-dot | allow-enc-.
+.... error-406-not-acceptable | error-not-acceptable | error-406
+.... URL | url
+..... remove-fragment
+..... remove-query
+... encoded-content-replacement
+... keep-alive
+... keep-alive-1.0
+... range
+... range-1.0
+... trace-operation | trace-op
+... limit
+.... header-sz | header-size
+.... requests
+.... nodes
+..... Accept:
+..... Accept-Charset:
+..... Accept-Encoding:
+..... Accept-Language:
+..... Connection:
+..... ETag:
+..... Range:
+... Server:
+. match-connection
+.[ policy-eq | policy==
+.[ tag-eq
+.[ client-ipv4-cidr-eq
+.[ server-ipv4-cidr-eq
+.[ server-ipv4-port-eq
+.. <close>
+.. <stop>
+.. policy
+.. tag
+.. Vary:_*
+. match-request
+.[ connection-policy-eq | connection-policy==
+.[ policy-eq | policy==
+.[ connection-tag-eq
+.[ tag-eq
+.[ client-ipv4-cidr-eq
+.[ server-ipv4-cidr-eq
+.[ server-ipv4-port-eq
+.[ hostname-eq
+.[ user-agent-eq | UA-eq
+.[ user-agent-search-eq | user-agent-srch-eq | UA-srch-eq
+.[ referrer-eq | referer-eq
+.[ referrer-beg
+.[ referrer-search-eq | referrer-srch-eq
+.[ http-0.9-eq
+.[ http-1.0-eq
+.[ http-1.1-eq
+.[ method-eq
+.[ tm-dow-eq
+.[ content-language-eq | content-lang-eq
+.[ content-language-extension-eq | content-lang-ext-eq
+.[ content-type-eq
+.[ content-type-extension-eq | content-type-ext-eq
+.[ path-beg
+.[ path-end
+.[ path-eq
+.[ basename-beg
+.[ basename-end
+.[ basename-eq
+.[ extension-beg
+.[ extension-end
+.[ extension-eq
+.[ extensions-beg
+.[ extensions-end
+.[ extensions-eq
+.[ basename-without-extension-beg
+.[ basename-without-extension-end
+.[ basename-without-extension-eq
+.[ basename-without-extensions-beg
+.[ basename-without-extensions-end
+.[ basename-without-extensions-eq
+.. <close>
+.. <stop>
+.. connection-policy
+.. policy
+.. connection-tag
+.. tag
+.. org.and.httpd-conf-req-1.0
+

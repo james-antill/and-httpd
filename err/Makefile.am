@@ -1,5 +1,5 @@
 
-errdir = $(localstatedir)/www/err/example.com
+errdir = $(localstatedir)/www/err
 err_DATA = 400 401 403 404 406 410 500 503 \
            \
            400.en.html 400.en.bin 400.en.txt \

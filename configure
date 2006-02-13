@@ -464,7 +464,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CFLAGS CPPFLAGS LDFLAGS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CCAS CCASFLAGS build build_cpu build_vendor build_os host host_cpu host_vendor host_os EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LIBTOOL_DEPS TRUE_PATH GZIP_PATH BZIP2_PATH SENDMAIL_PATH MAKE_PATH ETAGS_PATH SED_PATH PERL_PATH PERL_USR_BIN_AVAIL_TRUE PERL_USR_BIN_AVAIL_FALSE TAR_PATH CHMOD_PATH PKG_CONFIG VSTR_AVAIL_TRUE VSTR_AVAIL_FALSE VSTR_CFLAGS VSTR_LDLIBS VSTR_DBG_AVAIL_TRUE VSTR_DBG_AVAIL_FALSE VSTR_DBG_CFLAGS VSTR_DBG_LDLIBS TIMER_Q_AVAIL_TRUE TIMER_Q_AVAIL_FALSE TIMER_Q_CFLAGS TIMER_Q_LDLIBS SOCKET_POLL_AVAIL_TRUE SOCKET_POLL_AVAIL_FALSE SOCKET_POLL_CFLAGS SOCKET_POLL_LDLIBS NDEBUG_TRUE NDEBUG_FALSE WARNS DBG_VSTR_TRUE DBG_VSTR_FALSE LIBCAP_AVAIL_TRUE LIBCAP_AVAIL_FALSE ALLOCA MALLINFO_AVAIL_TRUE MALLINFO_AVAIL_FALSE HAVE_LINKER_MAIN_RELOCATE_TRUE HAVE_LINKER_MAIN_RELOCATE_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CFLAGS CPPFLAGS LDFLAGS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CCAS CCASFLAGS build build_cpu build_vendor build_os host host_cpu host_vendor host_os EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LIBTOOL_DEPS TRUE_PATH GZIP_PATH BZIP2_PATH SENDMAIL_PATH MAKE_PATH ETAGS_PATH SED_PATH PERL_PATH PERL_USR_BIN_AVAIL_TRUE PERL_USR_BIN_AVAIL_FALSE TAR_PATH CHMOD_PATH PKG_CONFIG VSTR_AVAIL_TRUE VSTR_AVAIL_FALSE VSTR_CFLAGS VSTR_LDLIBS VSTR_DBG_AVAIL_TRUE VSTR_DBG_AVAIL_FALSE VSTR_DBG_CFLAGS VSTR_DBG_LDLIBS TIMER_Q_AVAIL_TRUE TIMER_Q_AVAIL_FALSE TIMER_Q_CFLAGS TIMER_Q_LDLIBS TIMER_Q_DBG_AVAIL_TRUE TIMER_Q_DBG_AVAIL_FALSE TIMER_Q_DBG_CFLAGS TIMER_Q_DBG_LDLIBS SOCKET_POLL_AVAIL_TRUE SOCKET_POLL_AVAIL_FALSE SOCKET_POLL_CFLAGS SOCKET_POLL_LDLIBS NDEBUG_TRUE NDEBUG_FALSE WARNS DBG_VSTR_TRUE DBG_VSTR_FALSE DBG_TIMER_Q_TRUE DBG_TIMER_Q_FALSE LIBCAP_AVAIL_TRUE LIBCAP_AVAIL_FALSE ALLOCA MALLINFO_AVAIL_TRUE MALLINFO_AVAIL_FALSE HAVE_LINKER_MAIN_RELOCATE_TRUE HAVE_LINKER_MAIN_RELOCATE_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1037,6 +1037,7 @@ Optional Features:
   --enable-ansi           turn on ansi stuff (assumes gcc/gdb) [default=no]
   --enable-tst-noopt      turn on no optomizations (assumes gcc/gdb) [default=no]
   --enable-debug-vstr     turn on debugging for Vstr [default=no]
+  --enable-debug-timer_q     turn on debugging for Timer_q [default=no]
   --enable-tst-noinline   turn off use of inline [default=no]
 
 Optional Packages:
@@ -1537,7 +1538,7 @@ echo "${ECHO_T}${T_MD}Initial phase:${T_ME}" >&6
 
 
 
-VERSION=0.99.6
+VERSION=0.99.7
 PACKAGE=and-httpd
 
 am__api_version="1.9"
@@ -4700,7 +4701,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4703 "configure"' > conftest.$ac_ext
+  echo '#line 4704 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6279,7 +6280,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:6282:" \
+echo "$as_me:6283:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -7377,11 +7378,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7380: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7381: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7384: \$? = $ac_status" >&5
+   echo "$as_me:7385: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7639,11 +7640,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7642: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7643: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7646: \$? = $ac_status" >&5
+   echo "$as_me:7647: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7701,11 +7702,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7704: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7705: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7708: \$? = $ac_status" >&5
+   echo "$as_me:7709: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9086,7 +9087,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 9089 "configure"' > conftest.$ac_ext
+    echo '#line 9090 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9957,7 +9958,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9960 "configure"
+#line 9961 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10055,7 +10056,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10058 "configure"
+#line 10059 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12303,11 +12304,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12306: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12307: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12310: \$? = $ac_status" >&5
+   echo "$as_me:12311: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12365,11 +12366,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12368: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12369: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12372: \$? = $ac_status" >&5
+   echo "$as_me:12373: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12880,7 +12881,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 12883 "configure"' > conftest.$ac_ext
+    echo '#line 12884 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -13751,7 +13752,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 13754 "configure"
+#line 13755 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13849,7 +13850,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 13852 "configure"
+#line 13853 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14734,11 +14735,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14737: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14738: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14741: \$? = $ac_status" >&5
+   echo "$as_me:14742: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14796,11 +14797,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14799: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14800: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14803: \$? = $ac_status" >&5
+   echo "$as_me:14804: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16161,7 +16162,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 16164 "configure"' > conftest.$ac_ext
+    echo '#line 16165 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -16934,11 +16935,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16937: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16938: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16941: \$? = $ac_status" >&5
+   echo "$as_me:16942: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17196,11 +17197,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17199: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17200: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17203: \$? = $ac_status" >&5
+   echo "$as_me:17204: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17258,11 +17259,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17261: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17262: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17265: \$? = $ac_status" >&5
+   echo "$as_me:17266: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18643,7 +18644,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*|s390x*|powerpc64*)
-    echo '#line 18646 "configure"' > conftest.$ac_ext
+    echo '#line 18647 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -19514,7 +19515,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 19517 "configure"
+#line 19518 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -19612,7 +19613,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 19615 "configure"
+#line 19616 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -21220,7 +21221,7 @@ fi
 
 fi
 
-if $PKG_CONFIG --exists timer_q ; then
+if $PKG_CONFIG  --atleast-version=1.0.7 timer_q ; then
 
 
 if true; then
@@ -21244,6 +21245,34 @@ if false; then
 else
   TIMER_Q_AVAIL_TRUE='#'
   TIMER_Q_AVAIL_FALSE=
+fi
+
+fi
+
+if $PKG_CONFIG --atleast-version=1.0.7 timer_q-debug ; then
+
+
+if true; then
+  TIMER_Q_DBG_AVAIL_TRUE=
+  TIMER_Q_DBG_AVAIL_FALSE='#'
+else
+  TIMER_Q_DBG_AVAIL_TRUE='#'
+  TIMER_Q_DBG_AVAIL_FALSE=
+fi
+
+  TIMER_Q_DBG_CFLAGS="`$PKG_CONFIG --cflags timer_q-debug`"
+  TIMER_Q_DBG_LDLIBS="`$PKG_CONFIG --libs   timer_q-debug`"
+
+
+else
+
+
+if false; then
+  TIMER_Q_DBG_AVAIL_TRUE=
+  TIMER_Q_DBG_AVAIL_FALSE='#'
+else
+  TIMER_Q_DBG_AVAIL_TRUE='#'
+  TIMER_Q_DBG_AVAIL_FALSE=
 fi
 
 fi
@@ -21342,6 +21371,33 @@ else
 fi
 
 fi;
+
+# Check whether --enable-debug-timer_q or --disable-debug-timer_q was given.
+if test "${enable_debug_timer_q+set}" = set; then
+  enableval="$enable_debug_timer_q"
+
+
+if true; then
+  DBG_TIMER_Q_TRUE=
+  DBG_TIMER_Q_FALSE='#'
+else
+  DBG_TIMER_Q_TRUE='#'
+  DBG_TIMER_Q_FALSE=
+fi
+
+else
+
+
+if false; then
+  DBG_TIMER_Q_TRUE=
+  DBG_TIMER_Q_FALSE='#'
+else
+  DBG_TIMER_Q_TRUE='#'
+  DBG_TIMER_Q_FALSE=
+fi
+
+fi;
+
 
 # Check whether --enable-tst-noinline or --disable-tst-noinline was given.
 if test "${enable_tst_noinline+set}" = set; then
@@ -31832,7 +31888,7 @@ echo "$as_me:$LINENO: result: ${T_MD}Output Substitution:${T_ME}" >&5
 echo "${ECHO_T}${T_MD}Output Substitution:${T_ME}" >&6
 
 
-                                                                                                              ac_config_files="$ac_config_files Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/and-httpd_gzip tools/make_index tools/scons_and_httpd_helpers.py and-httpd.spec VERSION"
+                                                                                                                                  ac_config_files="$ac_config_files Makefile conf_tmpl/Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/and-httpd_gzip tools/and-httpd_status tools/make_index tools/scons_and_httpd_helpers.py and-httpd.spec VERSION"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -32001,6 +32057,20 @@ echo "$as_me: error: conditional \"TIMER_Q_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${TIMER_Q_DBG_AVAIL_TRUE}" && test -z "${TIMER_Q_DBG_AVAIL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${TIMER_Q_DBG_AVAIL_TRUE}" && test -z "${TIMER_Q_DBG_AVAIL_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${SOCKET_POLL_AVAIL_TRUE}" && test -z "${SOCKET_POLL_AVAIL_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"SOCKET_POLL_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -32040,6 +32110,20 @@ if test -z "${DBG_VSTR_TRUE}" && test -z "${DBG_VSTR_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"DBG_VSTR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"DBG_VSTR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${DBG_TIMER_Q_TRUE}" && test -z "${DBG_TIMER_Q_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"DBG_TIMER_Q\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"DBG_TIMER_Q\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${DBG_TIMER_Q_TRUE}" && test -z "${DBG_TIMER_Q_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"DBG_TIMER_Q\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"DBG_TIMER_Q\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -32523,12 +32607,14 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "conf_tmpl/Makefile" ) CONFIG_FILES="$CONFIG_FILES conf_tmpl/Makefile" ;;
   "Documentation/Makefile" ) CONFIG_FILES="$CONFIG_FILES Documentation/Makefile" ;;
   "err/Makefile" ) CONFIG_FILES="$CONFIG_FILES err/Makefile" ;;
   "src/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
   "tools/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
   "tools/and-httpd" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd" ;;
   "tools/and-httpd_gzip" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_gzip" ;;
+  "tools/and-httpd_status" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_status" ;;
   "tools/make_index" ) CONFIG_FILES="$CONFIG_FILES tools/make_index" ;;
   "tools/scons_and_httpd_helpers.py" ) CONFIG_FILES="$CONFIG_FILES tools/scons_and_httpd_helpers.py" ;;
   "and-httpd.spec" ) CONFIG_FILES="$CONFIG_FILES and-httpd.spec" ;;
@@ -32713,6 +32799,10 @@ s,@TIMER_Q_AVAIL_TRUE@,$TIMER_Q_AVAIL_TRUE,;t t
 s,@TIMER_Q_AVAIL_FALSE@,$TIMER_Q_AVAIL_FALSE,;t t
 s,@TIMER_Q_CFLAGS@,$TIMER_Q_CFLAGS,;t t
 s,@TIMER_Q_LDLIBS@,$TIMER_Q_LDLIBS,;t t
+s,@TIMER_Q_DBG_AVAIL_TRUE@,$TIMER_Q_DBG_AVAIL_TRUE,;t t
+s,@TIMER_Q_DBG_AVAIL_FALSE@,$TIMER_Q_DBG_AVAIL_FALSE,;t t
+s,@TIMER_Q_DBG_CFLAGS@,$TIMER_Q_DBG_CFLAGS,;t t
+s,@TIMER_Q_DBG_LDLIBS@,$TIMER_Q_DBG_LDLIBS,;t t
 s,@SOCKET_POLL_AVAIL_TRUE@,$SOCKET_POLL_AVAIL_TRUE,;t t
 s,@SOCKET_POLL_AVAIL_FALSE@,$SOCKET_POLL_AVAIL_FALSE,;t t
 s,@SOCKET_POLL_CFLAGS@,$SOCKET_POLL_CFLAGS,;t t
@@ -32722,6 +32812,8 @@ s,@NDEBUG_FALSE@,$NDEBUG_FALSE,;t t
 s,@WARNS@,$WARNS,;t t
 s,@DBG_VSTR_TRUE@,$DBG_VSTR_TRUE,;t t
 s,@DBG_VSTR_FALSE@,$DBG_VSTR_FALSE,;t t
+s,@DBG_TIMER_Q_TRUE@,$DBG_TIMER_Q_TRUE,;t t
+s,@DBG_TIMER_Q_FALSE@,$DBG_TIMER_Q_FALSE,;t t
 s,@LIBCAP_AVAIL_TRUE@,$LIBCAP_AVAIL_TRUE,;t t
 s,@LIBCAP_AVAIL_FALSE@,$LIBCAP_AVAIL_FALSE,;t t
 s,@ALLOCA@,$ALLOCA,;t t

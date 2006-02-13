@@ -1,0 +1,66 @@
+org.and.daemon-conf-1.0
+. match-init
+.[ version<= | vers<=
+.[ version>= | vers>=
+.[ version-eq | vers==
+.[ name-eq | name==
+.[ hostname-eq | hostname==
+.[ uid-eq | uid==
+.[ euid-eq | euid==
+.[ debug
+.[ else | ELSE
+.[ true | TRUE
+.[ false | FALSE
+.[ not | NOT | !
+.[ or | OR | ||
+.[ and | AND | &&
+./ org.and.daemon-conf-1.0
+. policy
+.. match-init
+./ org.and.daemon-conf-1.0/match-init
+.. timeout
+... idle
+... total
+.. instant-close
+.. lingering-close
+.. limit
+... connections
+... io
+.... policy-connection-per-second | policy-connection/s
+..... read | recv
+..... write | send
+.... policy-process-per-second | policy-process/s
+..... read | recv
+..... write | send
+. chroot
+. control-file | cntl-file
+. daemonize | daemonise
+. drop-privs
+. dumpable
+. listen
+. parent-death-signal
+. pid-file
+. processes | procs
+. resource-limits | rlimit
+.. address-space | AS
+.. core | CORE
+.. file-descriptor-number | fd-num | NOFILE
+. cache-limits
+.. spare-vstr-bases
+.. spare-vstr-nodes-buf
+.. spare-vstr-nodes-ptr
+.. spare-vstr-nodes-ref
+. limit
+.. io
+... connection-per-second | connection/s
+.... read | recv
+.... write | send
+... process-per-second | process/s
+.... read | recv
+.... write | send
+... policy-connection-per-second | policy-connection/s
+.... read | recv
+.... write | send
+... policy-process-per-second | policy-process/s
+.... read | recv
+.... write | send

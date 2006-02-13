@@ -18,19 +18,21 @@
 
 static int httpd__policy_connection_tst_d1(struct Con *,
                                            Conf_parse *, Conf_token *,
-                                           int *);
+                                           int *, int);
 
 static int httpd__policy_connection_tst_op_d1(Conf_parse *conf,
                                               Conf_token *token,
-                                              int *matches, void *con)
+                                              int *matches, int prev_match,
+                                              void *con)
 {
-  return (httpd__policy_connection_tst_d1(con, conf, token, matches));
+  return (httpd__policy_connection_tst_d1(con, conf, token,
+                                          matches, prev_match));
 }
 
 
 static int httpd__policy_connection_tst_d1(struct Con *con,
                                            Conf_parse *conf, Conf_token *token,
-                                           int *matches)
+                                           int *matches, int prev_match)
 {
   int clist = FALSE;
   
@@ -103,7 +105,7 @@ static int httpd__policy_connection_tst_d1(struct Con *con,
   }
   
   else
-    return (opt_serv_sc_tst(conf, token, matches,
+    return (opt_serv_sc_tst(conf, token, matches, prev_match,
                             httpd__policy_connection_tst_op_d1, con));
 
   return (TRUE);
@@ -174,11 +176,13 @@ static int httpd__policy_connection_d1(struct Con *con,
   {
     const Httpd_policy_opts *policy = NULL;
 
-    policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_CON_POLICY);
+    if (!(policy = httpd__policy_build(con, conf, token,
+                                       HTTPD_POLICY_CON_POLICY)))
+      return (FALSE);
     httpd_policy_change_con(con, policy);
   }
   else if (OPT_SERV_SYM_EQ("tag"))
-    OPT_SERV_X_VSTR(con->tag);
+    OPT_SERV_X_VSTR(con->policy->s->beg, con->tag);
   else if (OPT_SERV_SYM_EQ("Vary:_*"))
     OPT_SERV_X_TOGGLE(con->vary_star);
   
@@ -192,6 +196,7 @@ static int httpd__policy_connection_d0(struct Con *con,
                                        Conf_parse *conf, Conf_token *token,
                                        int *stop)
 {
+  static int prev_match = TRUE;
   unsigned int depth = token->depth_num;
   int matches = TRUE;
 
@@ -202,13 +207,19 @@ static int httpd__policy_connection_d0(struct Con *con,
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
 
-    if (!httpd__policy_connection_tst_d1(con, conf, token, &matches))
+    if (!httpd__policy_connection_tst_d1(con, conf, token,
+                                         &matches, prev_match))
       return (FALSE);
 
     if (!matches)
+    {
+      prev_match = FALSE;
       return (TRUE);
+    }
   }
   --depth;
+
+  prev_match = TRUE;
   
   while (conf_token_list_num(token, depth))
   {
@@ -327,23 +338,21 @@ struct Httpd__policy_req_tst_data
  Httpd_req_data *req;
 };
 
-static int httpd__policy_request_tst_d1(struct Con *, Httpd_req_data *,
-                                        Conf_parse *, Conf_token *, int *);
-
-static int httpd__policy_request_tst_op_d1(Conf_parse *conf, Conf_token *token,
-                                           int *matches, void *passed_data)
+static int httpd__match_request_tst_op_d1(Conf_parse *conf, Conf_token *token,
+                                          int *matches, int prev_match,
+                                          void *passed_data)
 {
   struct Httpd__policy_req_tst_data *data = passed_data;
   struct Con *con = data->con;
   Httpd_req_data *req = data->req;
 
-  return (httpd__policy_request_tst_d1(con, req, conf, token, matches));
+  return (httpd_match_request_tst_d1(con, req, conf, token,
+                                     matches, prev_match));
 }
 
-static int httpd__policy_request_tst_d1(struct Con *con,
-                                        Httpd_req_data *req,
-                                        Conf_parse *conf, Conf_token *token,
-                                        int *matches)
+int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
+                               Conf_parse *conf, Conf_token *token,
+                               int *matches, int prev_match)
 {
   Vstr_base *http_data = con->evnt->io_r;
   int clist = FALSE;
@@ -438,6 +447,106 @@ static int httpd__policy_request_tst_d1(struct Con *con,
     return (httpd_policy_ipv4_make(con, req, conf, token,
                                    HTTPD_POLICY_SERVER_IPV4_CIDR_EQ,
                                    CON_SEVNT_SA(con), matches));
+  else if (OPT_SERV_SYM_EQ("server-ipv4-port-eq") ||
+           OPT_SERV_SYM_EQ("server-ipv4-port=="))
+  {
+    struct sockaddr *sa   = CON_SEVNT_SA(con);
+    unsigned int tst_port = 0;
+
+    OPT_SERV_X_UINT(tst_port);
+
+    if (sa->sa_family != AF_INET)
+      *matches = FALSE;
+    else
+    {
+      struct sockaddr_in *sin = CON_SEVNT_SA_IN4(con);
+      *matches = tst_port == ntohs(sin->sin_port);
+    }
+  }
+  else if (OPT_SERV_SYM_EQ("protect-vary") || OPT_SERV_SYM_EQ("save-vary"))
+  {
+    unsigned int depth = token->depth_num;
+    int con_vary_star = con->vary_star;
+    int req_vary_star = req->vary_star;
+    int req_vary_a    = req->vary_a;
+    int req_vary_ac   = req->vary_ac;
+    int req_vary_ae   = req->vary_ae;
+    int req_vary_al   = req->vary_al;
+    int req_vary_rf   = req->vary_rf;
+    int req_vary_ua   = req->vary_ua;
+    int req_vary_ims  = req->vary_ims;
+    int req_vary_ius  = req->vary_ius;
+    int req_vary_ir   = req->vary_ir;
+    int req_vary_im   = req->vary_im;
+    int req_vary_inm  = req->vary_inm;
+
+    ASSERT(*matches);
+    while (*matches && conf_token_list_num(token, depth))
+    {
+      CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
+      
+      if (!httpd_match_request_tst_d1(con, req, conf, token,
+                                      matches, prev_match))
+        return (FALSE);
+    }
+    
+    con->vary_star = con_vary_star;
+    req->vary_star = req_vary_star;
+    req->vary_a    = req_vary_a;
+    req->vary_ac   = req_vary_ac;
+    req->vary_ae   = req_vary_ae;
+    req->vary_al   = req_vary_al;
+    req->vary_rf   = req_vary_rf;
+    req->vary_ua   = req_vary_ua;
+    req->vary_ims  = req_vary_ims;
+    req->vary_ius  = req_vary_ius;
+    req->vary_ir   = req_vary_ir;
+    req->vary_im   = req_vary_im;
+    req->vary_inm  = req_vary_inm;
+  }
+  else if (OPT_SERV_SYM_EQ("Accept-Encoding:"))
+  { /* in theory could call http_parse_accept_encoding() and make sure
+     * they are allowing gzip ... but non-zero len is probably fine for now */
+    Vstr_sect_node *h_ae = req->http_hdrs->multi->hdr_accept_encoding;
+
+    req->vary_ae = TRUE;
+    *matches = !!h_ae->len;
+  }
+  else if (OPT_SERV_SYM_EQ("If-Modified-Since:"))
+  {
+    Vstr_sect_node *h_ims = req->http_hdrs->hdr_if_modified_since;
+
+    req->vary_ims = TRUE;
+    *matches = !!h_ims->len;
+  }
+  else if (OPT_SERV_SYM_EQ("If-Unmodified-Since:"))
+  {
+    Vstr_sect_node *h_ius = req->http_hdrs->hdr_if_unmodified_since;
+
+    req->vary_ius = TRUE;
+    *matches = !!h_ius->len;
+  }
+  else if (OPT_SERV_SYM_EQ("If-Range:"))
+  {
+    Vstr_sect_node *h_ir = req->http_hdrs->hdr_if_range;
+
+    req->vary_ir = TRUE;
+    *matches = !!h_ir->len;
+  }
+  else if (OPT_SERV_SYM_EQ("If-Match:"))
+  {
+    Vstr_sect_node *h_im = req->http_hdrs->multi->hdr_if_match;
+
+    req->vary_im = TRUE;
+    *matches = !!h_im->len;
+  }
+  else if (OPT_SERV_SYM_EQ("If-None-Match:"))
+  {
+    Vstr_sect_node *h_inm = req->http_hdrs->multi->hdr_if_none_match;
+
+    req->vary_inm = TRUE;
+    *matches = !!h_inm->len;
+  }
   else if (OPT_SERV_SYM_EQ("hostname-eq") || OPT_SERV_SYM_EQ("hostname=="))
   { /* doesn't do escaping because DNS is ASCII */
     Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
@@ -535,6 +644,45 @@ static int httpd__policy_request_tst_d1(struct Con *con,
     OPT_SERV_X_UINT(tmp);
     *matches = tmp == tm->tm_wday;
   }
+  else if (OPT_SERV_SYM_EQ("content-lang-eq") ||
+           OPT_SERV_SYM_EQ("content-language-eq") ||
+           OPT_SERV_SYM_EQ("content-lang==") ||
+           OPT_SERV_SYM_EQ("content-language=="))
+  {
+    req->vary_al = TRUE;
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    *matches = conf_token_cmp_val_eq(conf, token,
+                                     HTTP__XTRA_HDR_PARAMS(req,
+                                                           content_language));
+  }
+  else if (OPT_SERV_SYM_EQ("content-lang-ext-eq") ||
+           OPT_SERV_SYM_EQ("content-language-extension-eq") ||
+           OPT_SERV_SYM_EQ("content-lang-ext==") ||
+           OPT_SERV_SYM_EQ("content-language-extension=="))
+  {
+    req->vary_al = TRUE;
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    *matches = conf_token_cmp_val_eq(conf, token,
+                                     HTTP__XTRA_HDR_PARAMS(req, ext_vary_al));
+  }
+  else if (OPT_SERV_SYM_EQ("content-type-eq") ||
+           OPT_SERV_SYM_EQ("content-type=="))
+  {
+    req->vary_a = TRUE;
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    *matches = conf_token_cmp_val_eq(conf, token,
+                                     HTTP__XTRA_HDR_PARAMS(req, content_type));
+  }
+  else if (OPT_SERV_SYM_EQ("content-type-ext-eq") ||
+           OPT_SERV_SYM_EQ("content-type-extension-eq") ||
+           OPT_SERV_SYM_EQ("content-type-ext==") ||
+           OPT_SERV_SYM_EQ("content-type-extension=="))
+  {
+    req->vary_a = TRUE;
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    *matches = conf_token_cmp_val_eq(conf, token,
+                                     HTTP__XTRA_HDR_PARAMS(req, ext_vary_a));
+  }
   else
   { /* spend time doing path/name/extn/bnwe */
     Vstr_ref *ref = NULL;
@@ -589,8 +737,8 @@ static int httpd__policy_request_tst_d1(struct Con *con,
 
       data->con = con;
       data->req = req;
-      return (opt_serv_sc_tst(conf, token, matches,
-                              httpd__policy_request_tst_op_d1, data));
+      return (opt_serv_sc_tst(conf, token, matches, prev_match,
+                              httpd__match_request_tst_op_d1, data));
     }
     
     if (!httpd_policy_path_make(con, req, conf, token, type, &ref))
@@ -655,25 +803,29 @@ static int httpd__policy_request_d1(struct Con *con, struct Httpd_req_data *req,
   {
     const Httpd_policy_opts *policy = NULL;
 
-    policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_CON_POLICY);
+    if (!(policy = httpd__policy_build(con, conf, token,
+                                       HTTPD_POLICY_CON_POLICY)))
+      return (FALSE);
     httpd_policy_change_con(con, policy);
   }
   else if (OPT_SERV_SYM_EQ("policy"))
   {
     const Httpd_policy_opts *policy = NULL;
 
-    policy = httpd__policy_build(con, conf, token, HTTPD_POLICY_REQ_POLICY);
+    if (!(policy = httpd__policy_build(con, conf, token,
+                                       HTTPD_POLICY_REQ_POLICY)))
+      return (FALSE);
     httpd_policy_change_req(con, req, policy);
   }
   else if (OPT_SERV_SYM_EQ("connection-tag"))
-    OPT_SERV_X_VSTR(con->tag);
+    OPT_SERV_X_VSTR(req->policy->s->beg, con->tag);
   else if (OPT_SERV_SYM_EQ("tag"))
-    OPT_SERV_X_VSTR(req->tag);
+    OPT_SERV_X_VSTR(req->policy->s->beg, req->tag);
   else if (OPT_SERV_SYM_EQ("org.and.httpd-conf-req-1.0") ||
            OPT_SERV_SYM_EQ("org.and.jhttpd-conf-req-1.0"))
   {
     Httpd_opts *opts = (Httpd_opts *)con->policy->s->beg;
-    return (httpd_conf_req_d0(con, req, /* server beg time is "close engouh" */
+    return (httpd_conf_req_d0(con, req, /* server beg time is "close enough" */
                               opts->beg_time, conf, token));
   }
   else
@@ -686,6 +838,7 @@ static int httpd__policy_request_d0(struct Con *con, struct Httpd_req_data *req,
                                     Conf_parse *conf, Conf_token *token,
                                     int *stop)
 {
+  static int prev_match = TRUE;
   unsigned int depth = token->depth_num;
   int matches = TRUE;
 
@@ -696,14 +849,20 @@ static int httpd__policy_request_d0(struct Con *con, struct Httpd_req_data *req,
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
 
-    if (!httpd__policy_request_tst_d1(con, req, conf, token, &matches))
+    if (!httpd_match_request_tst_d1(con, req, conf, token,
+                                    &matches, prev_match))
       return (FALSE);
 
     if (!matches)
+    {
+      prev_match = FALSE;
       return (TRUE);
+    }
   }
   --depth;
-  
+
+  prev_match = TRUE;
+
   while (conf_token_list_num(token, depth))
   {
     CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
@@ -763,7 +922,7 @@ int httpd_policy_request(struct Con *con, struct Httpd_req_data *req,
 }
 
 static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
-                                           const Conf_parse *conf,
+                                           Conf_parse *conf,
                                            Conf_token *token)
 {
   int clist = FALSE;
@@ -785,8 +944,10 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     if (!OPT_SERV_SYM_EQ("basic-encoded")) return (FALSE);
     CONF_SC_MAKE_CLIST_MID(depth, clist);
 
-    else if (OPT_SERV_SYM_EQ("realm")) OPT_SERV_X_VSTR(opts->auth_realm);
-    else if (OPT_SERV_SYM_EQ("token")) OPT_SERV_X_VSTR(opts->auth_token);
+    else if (OPT_SERV_SYM_EQ("realm"))
+      OPT_SERV_X_VSTR(opts->s->beg, opts->auth_realm);
+    else if (OPT_SERV_SYM_EQ("token"))
+      OPT_SERV_X_VSTR(opts->s->beg, opts->auth_token);
     
     CONF_SC_MAKE_CLIST_END();
   }
@@ -907,11 +1068,13 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     OPT_SERV_X_TOGGLE(opts->use_range);
   else if (OPT_SERV_SYM_EQ("range-1.0"))
     OPT_SERV_X_TOGGLE(opts->use_range_1_0);
+  else if (OPT_SERV_SYM_EQ("advertise-range"))
+    OPT_SERV_X_TOGGLE(opts->use_adv_range);
   else if (OPT_SERV_SYM_EQ("trace-op") || OPT_SERV_SYM_EQ("trace-operation"))
     OPT_SERV_X_TOGGLE(opts->use_trace_op);
-  else if (OPT_SERV_SYM_EQ("url-remove-fragment"))
+  else if (OPT_SERV_SYM_EQ("url-remove-fragment")) /* compat */
     OPT_SERV_X_TOGGLE(opts->remove_url_frag);
-  else if (OPT_SERV_SYM_EQ("url-remove-query"))
+  else if (OPT_SERV_SYM_EQ("url-remove-query")) /* compat */
     OPT_SERV_X_TOGGLE(opts->remove_url_query);
   
   else if (OPT_SERV_SYM_EQ("limit"))
@@ -937,7 +1100,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
         OPT_SERV_X_UINT(opts->max_AL_nodes);
       
       else if (OPT_SERV_SYM_EQ("Connection:"))
-        OPT_SERV_X_UINT(opts->max_etag_nodes);
+        OPT_SERV_X_UINT(opts->max_connection_nodes);
       else if (OPT_SERV_SYM_EQ("ETag:"))
         OPT_SERV_X_UINT(opts->max_etag_nodes);      
       else if (OPT_SERV_SYM_EQ("Range:"))
@@ -956,7 +1119,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     CONF_SC_MAKE_CLIST_END();
   }
   else if (OPT_SERV_SYM_EQ("Server:") || OPT_SERV_SYM_EQ("server-name"))
-    OPT_SERV_X_VSTR(opts->server_name);
+    OPT_SERV_X_VSTR(opts->s->beg, opts->server_name);
   
   CONF_SC_MAKE_CLIST_END();
   
@@ -982,9 +1145,9 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
     return (opt_serv_sc_make_static_path(opts->s->beg, conf, token,
                                          opts->document_root));
   else if (OPT_SERV_SYM_EQ("unspecified-hostname"))
-    OPT_SERV_X_VSTR(opts->default_hostname);
+    OPT_SERV_X_VSTR(opts->s->beg, opts->default_hostname);
   else if (OPT_SERV_SYM_EQ("MIME/types-default-type"))
-    OPT_SERV_X_VSTR(opts->mime_types_def_ct);
+    OPT_SERV_X_VSTR(opts->s->beg, opts->mime_types_def_ct);
   else if (OPT_SERV_SYM_EQ("MIME/types-filename-main"))
     return (opt_serv_sc_make_static_path(opts->s->beg, conf, token,
                                          opts->mime_types_main));
@@ -1001,7 +1164,7 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
     return (opt_serv_sc_make_static_path(opts->s->beg, conf, token,
                                          opts->req_err_dir));
   else if (OPT_SERV_SYM_EQ("server-name")) /* compat. */
-    OPT_SERV_X_VSTR(opts->server_name);
+    OPT_SERV_X_VSTR(opts->s->beg, opts->server_name);
 
   else if (OPT_SERV_SYM_EQ("secure-directory-filename"))
     OPT_SERV_X_TOGGLE(opts->use_secure_dirs);
@@ -1231,7 +1394,7 @@ static int httpd__match_make(Conf_parse *conf, Conf_token *token,
       goto skip_position;
     else if (OPT_SERV_SYM_EQ("after")  && beg->num)
     {
-      OPT_SERV_X_VSTR(conf->tmp);
+      OPT_SERV_X_SINGLE_VSTR(conf->tmp);
       token_srch_tmp = *beg;
       add_beg = &token_srch_tmp;
       if (!httpd__match_find(conf, &add_beg))
@@ -1239,7 +1402,7 @@ static int httpd__match_make(Conf_parse *conf, Conf_token *token,
     }
     else if (OPT_SERV_SYM_EQ("before") && beg->num)
     {
-      OPT_SERV_X_VSTR(conf->tmp);
+      OPT_SERV_X_SINGLE_VSTR(conf->tmp);
       token_srch_tmp = *beg;
       add_beg = &token_srch_tmp;
       if (!httpd__match_find_before(conf, &add_beg))
@@ -1546,7 +1709,8 @@ void httpd_conf_main_free(Httpd_opts *opts)
   conf_parse_free(opts->conf); opts->conf = NULL;
   date_free(opts->date); opts->date = NULL;
   
-  opt_serv_conf_free(opts->s);
+  opt_serv_conf_free_beg(opts->s);
+  opt_serv_conf_free_end(opts->s);
 }
 
 int httpd_conf_main_init(Httpd_opts *httpd_opts)
@@ -1569,7 +1733,7 @@ int httpd_conf_main_init(Httpd_opts *httpd_opts)
   
   if (opts->s->policy_name->conf->malloc_bad)
     goto httpd_init_fail;
-  
+
   return (TRUE);
 
  httpd_init_fail:

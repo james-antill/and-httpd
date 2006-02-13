@@ -61,7 +61,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
-VERSION=0.99.6
+VERSION=0.99.7
 PACKAGE=and-httpd
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
@@ -162,7 +162,7 @@ else
   AM_CONDITIONAL(VSTR_DBG_AVAIL, false)
 fi
 
-if $PKG_CONFIG --exists timer_q ; then
+if $PKG_CONFIG  --atleast-version=1.0.7 timer_q ; then
   AM_CONDITIONAL(TIMER_Q_AVAIL, true)
   TIMER_Q_CFLAGS="`$PKG_CONFIG --cflags timer_q`"
   TIMER_Q_LDLIBS="`$PKG_CONFIG --libs   timer_q`"
@@ -170,6 +170,16 @@ if $PKG_CONFIG --exists timer_q ; then
   AC_SUBST(TIMER_Q_LDLIBS)
 else
   AM_CONDITIONAL(TIMER_Q_AVAIL, false)
+fi
+
+if $PKG_CONFIG --atleast-version=1.0.7 timer_q-debug ; then
+  AM_CONDITIONAL(TIMER_Q_DBG_AVAIL, true)
+  TIMER_Q_DBG_CFLAGS="`$PKG_CONFIG --cflags timer_q-debug`"
+  TIMER_Q_DBG_LDLIBS="`$PKG_CONFIG --libs   timer_q-debug`"
+  AC_SUBST(TIMER_Q_DBG_CFLAGS)
+  AC_SUBST(TIMER_Q_DBG_LDLIBS)
+else
+  AM_CONDITIONAL(TIMER_Q_DBG_AVAIL, false)
 fi
 
 if $PKG_CONFIG --exists socket_poll ; then
@@ -189,6 +199,9 @@ AC_ARG_ENABLE(tst-noopt, [  --enable-tst-noopt      turn on no optomizations (as
 AC_SUBST(WARNS)
 
 AC_ARG_ENABLE(debug-vstr, [  --enable-debug-vstr     turn on debugging for Vstr [[default=no]]],[ AM_CONDITIONAL(DBG_VSTR, true) ],[ AM_CONDITIONAL(DBG_VSTR, false) ])
+
+AC_ARG_ENABLE(debug-timer_q, [  --enable-debug-timer_q     turn on debugging for Timer_q [[default=no]]],[ AM_CONDITIONAL(DBG_TIMER_Q, true) ],[ AM_CONDITIONAL(DBG_TIMER_Q, false) ])
+
 
 AC_ARG_ENABLE(tst-noinline, [  --enable-tst-noinline   turn off use of inline [[default=no]]], local_cv_have_tst_noinline=true,local_cv_have_tst_noinline=false)
 
@@ -1289,12 +1302,14 @@ esac
 TWOCAN_CONF_MSG(Output Substitution)
 
 AC_OUTPUT([Makefile
+           conf_tmpl/Makefile
            Documentation/Makefile
            err/Makefile
            src/Makefile
            tools/Makefile
            tools/and-httpd
            tools/and-httpd_gzip
+           tools/and-httpd_status
            tools/make_index
            tools/scons_and_httpd_helpers.py
            and-httpd.spec

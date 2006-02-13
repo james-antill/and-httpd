@@ -260,6 +260,7 @@ static void ex_dir_filter_cmd_line(int *passed_argc, char **passed_argv[])
 
   program_name = opt_program_name(argv[0], "jdir_filter");
 
+  /* bad is big enough to add all arguments */
   if (!(filters = bag_make(argc, bag_cb_free_nothing, bag_cb_free_nothing)))
     errno = ENOMEM, err(EXIT_FAILURE, "init");
   

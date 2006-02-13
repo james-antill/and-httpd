@@ -5,6 +5,8 @@
 %define dbg_opt %{?dbg}%{!?dbg:0}
 # Use the Vstr debug libraries?
 %define dbg_vstr_opt %{?dbg_vstr}%{!?dbg_vstr:0}
+# Use the Timer_q debug libraries?
+%define dbg_timer_q_opt %{?dbg_timer_q}%{!?dbg_timer_q:0}
 
 %if %{dbg_opt}
 %define dbg_arg_main --enable-debug
@@ -16,6 +18,12 @@
 %define dbg_arg_vstr --enable-debug-vstr
 %else
 %define dbg_arg_vstr %nil
+%endif
+
+%if %{dbg_timer_q_opt}
+%define dbg_arg_timer_q --enable-debug-timer_q
+%else
+%define dbg_arg_timer_q %nil
 %endif
 
 %define makeopts %{?jnum:-j %jnum}%{!?jnum:%nil}
@@ -77,7 +85,7 @@ function build()
 %endif
 }
 
-./configure %{dbg_arg_main} %{dbg_arg_vstr} \
+./configure %{dbg_arg_main} %{dbg_arg_vstr} %{dbg_arg_timer_q} \
   --prefix=%{_prefix} --mandir=%{_mandir} --localstatedir=%{statedir} \
   --datadir=%{_datadir} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir}
 
@@ -123,9 +131,13 @@ fi
 %{_sysconfdir}/init.d/and-httpd
 %{_sysconfdir}/cron.hourly/and-httpd_gzip
 %config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
-%config %{_sysconfdir}/and-httpd/conf.d/_*.conf
+%config(noreplace) %{_sysconfdir}/and-httpd/conf.d/_*.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
 %{wwwdir}/err/example.com/*
+%{wwwdir}/conf/*
+%{wwwdir}/conf_tmpl/*
+%{wwwdir}/html
+%{wwwdir}/generated_html
 %doc
 %{_datadir}/doc/and-httpd-@VERSION@
 %{_mandir}/man8/and-httpd*

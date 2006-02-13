@@ -5,6 +5,7 @@
 
 #include <sys/types.h>
 #include <dirent.h>
+#include <limits.h>
 
 static void app_netstr_cstr(Vstr_base *s1, const char *val)
 {
@@ -14,7 +15,7 @@ static void app_netstr_cstr(Vstr_base *s1, const char *val)
 }
 static void app_netstr_uintmax(Vstr_base *s1, VSTR_AUTOCONF_uintmax_t val)
 {
-  char buf[sizeof(val) * 8];
+  char buf[sizeof(val) * CHAR_BIT];
   size_t nb = vstr_add_netstr_beg(s1, s1->len);
   size_t len = vstr_sc_conv_num10_uintmax(buf, sizeof(buf), val);
   vstr_add_buf(s1, s1->len, buf, len);

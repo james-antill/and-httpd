@@ -439,7 +439,8 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   opts->use_vhosts_name    = HTTPD_CONF_USE_VHOSTS_NAME;
   opts->use_range          = HTTPD_CONF_USE_RANGE;
   opts->use_range_1_0      = HTTPD_CONF_USE_RANGE_1_0;
-  opts->use_public_only    = HTTPD_CONF_USE_PUBLIC_ONLY; /* 8th bitfield */
+  opts->use_adv_range      = HTTPD_CONF_USE_ADV_RANGE;
+  opts->use_public_only    = HTTPD_CONF_USE_PUBLIC_ONLY;
   opts->use_enc_content_replacement = HTTPD_CONF_USE_ENC_CONTENT_REPLACEMENT;
 
   opts->use_err_406        = HTTPD_CONF_USE_ERR_406;
@@ -461,7 +462,7 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   opts->use_tcp_cork       = HTTPD_CONF_USE_TCP_CORK;
   
   opts->use_req_conf       = HTTPD_CONF_USE_REQ_CONF;
-  opts->allow_hdr_split    = HTTPD_CONF_USE_ALLOW_HDR_SPLIT; /* 16th bitfield */
+  opts->allow_hdr_split    = HTTPD_CONF_USE_ALLOW_HDR_SPLIT;
   opts->allow_hdr_nil      = HTTPD_CONF_USE_ALLOW_HDR_NIL;
   
   opts->chk_dot_dir        = HTTPD_CONF_USE_CHK_DOT_DIR;
@@ -471,7 +472,7 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   
   opts->add_def_port       = HTTPD_CONF_ADD_DEF_PORT;
 
-  opts->use_noatime        = HTTPD_CONF_USE_NOATIME; /* 23rd bitfield */
+  opts->use_noatime        = HTTPD_CONF_USE_NOATIME;
   
   opts->max_header_sz      = HTTPD_CONF_INPUT_MAXSZ;
 
@@ -567,6 +568,7 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(use_vhosts_name);
   HTTPD_POLICY_CP_VAL(use_range);
   HTTPD_POLICY_CP_VAL(use_range_1_0);
+  HTTPD_POLICY_CP_VAL(use_adv_range);
   HTTPD_POLICY_CP_VAL(use_public_only);
   HTTPD_POLICY_CP_VAL(use_enc_content_replacement);
   HTTPD_POLICY_CP_VAL(use_err_406);

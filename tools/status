@@ -1,0 +1,9 @@
+(org.and.httpd-conf-req-1.0
+  (match-request [not client-ipv4-cidr-eq 127.0.0.0/8
+                    # client-ipv4-cidr-eq 10.0.0.0/8 ; Your local network here
+                  ]
+      return <forbidden>)
+
+   Content-Type: text/html
+   filename [(skip-document-root)
+              limit <none>]       = <doc-root/..> generated_html <path> .html)

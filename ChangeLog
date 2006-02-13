@@ -1,3 +1,109 @@
+2006-02-12  James Antill  <james@and.org>
+
+	* src/httpd.c (http_fin_err_req): Remove simple	error pages.
+
+	* src/httpd_conf_main.c (httpd_match_request_tst_d1): Added all the
+	conditional request headers to be looked at for no-zero length.
+
+	* src/evnt.c (EVNT__POLL_FLGS): Make more user friendly debug for poll
+	flags.
+
+	* src/Makefile.am (XTIMER_Q_LDLIBS): Added debug timer_q stuff, from
+	1.0.7.
+
+	* src/and-httpd.c (main): Added timer_q_exit() from 1.0.7.
+
+2006-02-10  James Antill  <james@and.org>
+
+	* src/httpd.c (http_parse_host): Always 400 if no host header, even if
+	a valid abs-URI.
+
+2006-02-09  James Antill  <james@and.org>
+
+	* src/and-httpd.c (serv_canon_policies): Make sure all policies have a 
+	valid document root.
+
+	* src/httpd_conf_main.c (httpd_match_request_tst_d1): Added save/restore
+	behaviour for vary header ... so we can change policy for IO limiting
+	based on UA/ref/etc. without screwing anything up.
+
+	* src/opt_serv.c (opt_serv_conf_free_beg): Split free'ing up into two
+	stages ... needed for limiting.
+	(opt_serv_conf_free_end): Dito.
+
+	* src/evnt.c (evnt_limit_timeout_w): Added IO limiting.
+	(evnt_limit_timeout_r): Added IO limiting.
+
+2006-02-06  James Antill  <james@and.org>
+
+	* src/httpd_conf_req.c (httpd__conf_req_make_str): Use make_str() for
+	xtra_content "strings".
+	(httpd__conf_req_d1): Disallow certain edge cases for
+	expires/cache-control.
+
+	* src/cntl.c (cntl__cb_func_cntl_acpt_free): Free reference to Acpt
+	data.
+
+2006-02-05  James Antill  <james@and.org>
+
+	* Documentation/conf-httpd-main.txt: Add some documentation for
+	configuration files.
+
+2006-02-02  James Antill  <james@and.org>
+
+	* src/httpd.c (http_vlg_def): Added method to default logging.
+
+	* src/opt_serv.h (OPT_SERV_X_VSTR): Use opt_serv_sc_make_str().
+
+	* src/opt_serv.c (opt_serv_sc_make_str): Create helper to do string ops,
+	append, prepend, assign.
+	(opt_serv_sc_make_static_path): Use make_str() internally.
+
+2006-02-01  James Antill  <james@and.org>
+
+	* src/date.c (date__srch): Only allow valid types.
+
+2006-01-31  James Antill  <james@and.org>
+
+	* src/httpd.c (http_app_hdr_conf_vstr): Don't display empty headers.
+	(http_app_hdr_vstr_def): Don't display empty headers.
+	(http_app_hdr_vstr): Don't display empty headers.
+
+2006-01-19  James Antill  <james@and.org>
+
+	* src/and-ssi.c (ex_ssi_file_attr): Allow virtual indexed files.
+
+	* src/vlg.c (vlg_init): Added formatted numbers.
+
+	* src/and-httpd.c (serv_init): Added formatted numbers.
+
+	* src/and-cntl.c (main): Added formatted numbers.
+
+	* src/and-cntl.c (UI_CMD): Allow commands with an argument.
+
+	* src/evnt.c (evnt_sc_timeout_via_mtime): Allow no timeouts.
+
+2006-01-12  James Antill  <james@and.org>
+
+	* src/opt_serv.h (OPT_SERV_SC_MATCH_INIT): Minor cleanup.
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Add match-request to file
+	requestion configuration.
+
+	* src/opt_serv.c (opt_serv_sc_tst): Added ELSE generic test.
+
+2005-12-09  James Antill  <james@and.org>
+
+	* src/httpd.c (httpd_serv_add_vhost): Remove front dots before doing
+	"www." removal on canonize.
+
+2005-12-01  James Antill  <james@and.org>
+
+	* src/httpd.c (http_parse_req): Account for packets on errors before
+	packet completion.
+	(httpd_serv__parse_no_req): Account for packets on errors before
+	packet completion.
+
 2005-11-29  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.6

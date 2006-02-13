@@ -1,0 +1,32 @@
+GET / HTTP/1.1
+Host: default
+Accept-Encoding: x
+
+GET / HTTP/1.1
+Host: default
+
+GET / HTTP/1.1
+Host: default
+Accept-Encoding: x
+
+GET / HTTP/1.1
+Host: default
+Accept-Encoding: x
+
+
+HEAD / HTTP/1.1
+Host: default
+Accept-Encoding: x
+
+HEAD / HTTP/1.1
+Host: default
+
+HEAD / HTTP/1.1
+Host: default
+Accept-Encoding: x
+
+HEAD / HTTP/1.1
+Accept-Encoding: x
+Host: default
+Connection: close
+

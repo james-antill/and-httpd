@@ -67,8 +67,7 @@ static const struct tm *date__srch(Date_store *data, time_t val)
 
   ASSERT(malloc_check_sz_mem(data, sizeof(Date_store)) || TRUE);
 
-  ASSERT((data->tmt == DATE__TYPE_TM_UNKNOWN) ||
-         (data->tmt == DATE__TYPE_TM_GMT) ||
+  ASSERT((data->tmt == DATE__TYPE_TM_GMT) ||
          (data->tmt == DATE__TYPE_TM_LOC));
   
   while (num < DATE__CACHE_NUM)

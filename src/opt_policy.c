@@ -5,6 +5,7 @@
 
 #include "mk.h"
 
+#include <stddef.h> /* offsetof */
 
 void opt_policy_exit(Opt_serv_policy_opts *opts)
 {
@@ -12,21 +13,60 @@ void opt_policy_exit(Opt_serv_policy_opts *opts)
   
   vstr_free_base(opts->policy_name); opts->policy_name = NULL;
   opts->beg = NULL;
+  
+  ASSERT( opts->ref_io_limit);
+  vstr_ref_del(opts->ref_io_limit);
+  ASSERT(!opts->ref_io_limit);
+}
+
+static void opt_policy__io_lim_ref_cb(struct Vstr_ref *ref)
+{
+  Opt_serv_policy_opts *opts = NULL;
+  struct Evnt_limit *lim = NULL;
+
+  if (!ref)
+    return;
+  
+  lim = ref->ptr;
+  ASSERT(lim);
+
+  /* ISO C magic, converts a ptr to io_limit into a pointer to policy_opts */
+  opts = (Opt_serv_policy_opts *)(((char *)lim) -
+                                  offsetof(Opt_serv_policy_opts, io_limit));
+  opts->ref_io_limit = NULL; /* more magic */
 }
 
 int opt_policy_init(Opt_serv_opts *beg_opts, Opt_serv_policy_opts *opts)
 {
   ASSERT(beg_opts);
 
-  opts->policy_name = vstr_make_base(NULL);
-  if (!opts->policy_name ||
+  opts->ref_io_limit = NULL;
+  
+  opts->policy_name  = vstr_make_base(NULL);
+  opts->ref_io_limit = vstr_ref_make_ptr(&opts->io_limit,
+                                         opt_policy__io_lim_ref_cb);
+  if (!opts->policy_name  ||
+      !opts->ref_io_limit ||
       FALSE)
-  {
-    opt_policy_exit(opts);
-    return (FALSE);
-  }
+    goto fail;
 
+  opts->io_limit.io_r_cur         = 0;
+  opts->io_limit.io_r_max         = 0;
+  opts->io_limit.io_r_tm.tv_sec   = 0;
+  opts->io_limit.io_w_cur         = 0;
+  opts->io_limit.io_w_max         = 0;
+  opts->io_limit.io_w_tm.tv_sec   = 0;
+  
+  opts->io_nslimit.io_r_cur       = 0;
+  opts->io_nslimit.io_r_max       = 0;
+  opts->io_nslimit.io_r_tm.tv_sec = 0;
+  opts->io_nslimit.io_w_cur       = 0;
+  opts->io_nslimit.io_w_max       = 0;
+  opts->io_nslimit.io_w_tm.tv_sec = 0;
+  
   opts->idle_timeout    = OPT_SERV_CONF_DEF_IDLE_TIMEOUT;
+  opts->max_timeout     = OPT_SERV_CONF_DEF_MAX_TIMEOUT;
+  
   opts->max_connections = OPT_SERV_CONF_DEF_MAX_CONNECTIONS;
   
   opts->use_insta_close = OPT_SERV_CONF_USE_INSTA_CLOSE;
@@ -35,6 +75,10 @@ int opt_policy_init(Opt_serv_opts *beg_opts, Opt_serv_policy_opts *opts)
   opts->next = NULL;
   
   return (TRUE);
+  
+ fail:
+  opt_policy_exit(opts);
+  return (FALSE);
 }
 
 static void opt_policy_free(Vstr_ref *ref)

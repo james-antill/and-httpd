@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies 1.4
 
-SUBDIRS = src tools Documentation err
+SUBDIRS = src tools Documentation err conf_tmpl
 
 docmaindir = $(datadir)/doc/and-httpd-$(VERSION)
 docmain_DATA = TODO README NEWS ChangeLog AUTHORS COPYING

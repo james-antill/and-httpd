@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003, 2004, 2005  James Antill
+ *  Copyright (C) 2002, 2003, 2004, 2005, 2006  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,12 @@
 #include <timer_q.h>
 
 #include <sys/sendfile.h>
+
+#define EVNT__POLL_FLGS(x)                                              \
+ ((((x) & (POLLIN | POLLOUT)) == (POLLIN | POLLOUT)) ? "(POLLIN | POLLOUT)" : \
+  (((x) &  POLLIN)                                   ? "(POLLIN)"           : \
+  (((x) &           POLLOUT)                         ?          "(POLLOUT)" : \
+   "()")))
 
 #define CONF_EVNT_NO_EPOLL FALSE
 #define CONF_EVNT_EPOLL_SZ (10 * 1000) /* size is just a speed hint */
@@ -310,13 +316,15 @@ static int evnt__valid(struct Evnt *evnt)
   {
     ret = !!evnt__srch(&q_connect, evnt);
     assert(!(SOCKET_POLL_INDICATOR(evnt->ind)->events  & POLLIN));
-    assert( (SOCKET_POLL_INDICATOR(evnt->ind)->events  & POLLOUT));
+    assert( (SOCKET_POLL_INDICATOR(evnt->ind)->events  & POLLOUT) ||
+            evnt->tm_l_w);
     assert(!(SOCKET_POLL_INDICATOR(evnt->ind)->revents & POLLIN));
   }
   else   if (evnt->flag_q_send_recv)
   {
     ret = !!evnt__srch(&q_send_recv, evnt);
-    assert( (SOCKET_POLL_INDICATOR(evnt->ind)->events  & POLLOUT));
+    assert( (SOCKET_POLL_INDICATOR(evnt->ind)->events  & POLLOUT) ||
+            evnt->tm_l_w);
   }
   else   if (evnt->flag_q_recv)
   {
@@ -448,6 +456,9 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   evnt->io_r_shutdown    = FALSE;
   evnt->io_w_shutdown    = FALSE;
   
+  evnt->io_r_limited     = FALSE;
+  evnt->io_w_limited     = FALSE;
+  
   evnt->prev_bytes_r = 0;
   
   evnt->acct.req_put = 0;
@@ -468,7 +479,12 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   if (!(evnt->io_w = vstr_make_base(NULL)))
     goto make_vstr_fail;
   
-  evnt->tm_o = NULL;
+  evnt->tm_o   = NULL;
+
+  evnt->tm_l_r = NULL;
+  evnt->tm_l_w = NULL;
+  evnt->lims    = NULL;
+  evnt->lim_num = 0;
   
   if (!(evnt->ind = evnt_poll_add(evnt, fd)))
     goto poll_add_fail;
@@ -512,18 +528,28 @@ static void evnt__free1(struct Evnt *evnt)
   vstr_free_base(evnt->io_r); evnt->io_r = NULL;
   
   evnt_poll_del(evnt);
+  evnt_limit_free(evnt);
 }
 
-static void evnt__free2(Vstr_ref *sa, Vstr_ref *acpt_sa, Timer_q_node *tm_o)
+static void evnt__free_tq(Timer_q_node *tm)
+{
+  if (tm)
+  {
+    timer_q_cntl_node(tm, TIMER_Q_CNTL_NODE_SET_DATA, NULL);
+    timer_q_quick_del_node(tm);
+  }
+}
+
+static void evnt__free2(Vstr_ref *sa, Vstr_ref *acpt_sa,
+                        Timer_q_node *tm_o,
+                        Timer_q_node *tm_l_r, Timer_q_node *tm_l_w)
 { /* post callbacks, evnt no longer exists */
   vstr_ref_del(sa);
   vstr_ref_del(acpt_sa);
 
-  if (tm_o)
-  {
-    timer_q_cntl_node(tm_o, TIMER_Q_CNTL_NODE_SET_DATA, NULL);
-    timer_q_quick_del_node(tm_o);
-  }
+  evnt__free_tq(tm_o);
+  evnt__free_tq(tm_l_r);
+  evnt__free_tq(tm_l_w);
 }
 
 static void evnt__free(struct Evnt *evnt)
@@ -533,7 +559,9 @@ static void evnt__free(struct Evnt *evnt)
     Vstr_ref *sa = evnt->sa_ref;
     Vstr_ref *acpt_sa = evnt->acpt_sa_ref;
     Timer_q_node *tm_o  = evnt->tm_o;
-  
+    Timer_q_node *tm_l_r  = evnt->tm_l_r;
+    Timer_q_node *tm_l_w  = evnt->tm_l_w;
+
     evnt__free1(evnt);
 
     ASSERT(evnt__num >= 1); /* in case they come back in via. the cb */
@@ -541,7 +569,7 @@ static void evnt__free(struct Evnt *evnt)
     ASSERT(evnt__num == evnt__debug_num_all());
 
     evnt->cbs->cb_func_free(evnt);
-    evnt__free2(sa, acpt_sa, tm_o);
+    evnt__free2(sa, acpt_sa, tm_o, tm_l_r, tm_l_w);
   }
 }
 
@@ -554,13 +582,22 @@ void evnt_free(struct Evnt *evnt)
   }
 }
 
+static void evnt__close_now(struct Evnt *evnt)
+{
+  if (evnt->flag_q_closed)
+    return;
+  
+  evnt_free(evnt);
+}
+
 static void evnt__uninit(struct Evnt *evnt)
 {
   ASSERT((evnt->flag_q_connect + evnt->flag_q_accept + evnt->flag_q_recv +
           evnt->flag_q_send_recv + evnt->flag_q_none) == 0);
 
   evnt__free1(evnt);
-  evnt__free2(evnt->sa_ref, evnt->acpt_sa_ref, evnt->tm_o);
+  evnt__free2(evnt->sa_ref, evnt->acpt_sa_ref,
+              evnt->tm_o, evnt->tm_l_r, evnt->tm_l_w);
 }
 
 static int evnt_fd__set_nodelay(int fd, int val)
@@ -893,6 +930,442 @@ void evnt_close(struct Evnt *evnt)
   ASSERT(evnt__valid(evnt));
 }
 
+int evnt_limit_add(struct Evnt *evnt, Vstr_ref *ref)
+{
+  Vstr_ref **refs = evnt->lims;
+  unsigned int lim_num = evnt->lim_num;
+  struct Evnt_limit *lim = ref->ptr;
+
+  evnt->io_r_limited |= !!lim->io_r_max;
+  evnt->io_w_limited |= !!lim->io_w_max;
+  
+  if (++lim_num == 1)
+    refs = MK(sizeof(Vstr_ref *));
+  else
+    MV(evnt->lims, refs, sizeof(Vstr_ref *) * lim_num);
+
+  if (!refs)
+    return (FALSE);
+  
+  evnt->lims = refs;
+  evnt->lims[evnt->lim_num] = vstr_ref_add(ref);
+  evnt->lim_num = lim_num;
+
+  return (TRUE);
+}
+
+int evnt_limit_dup(struct Evnt *evnt, const struct Evnt_limit *lim)
+{
+  Vstr_ref *ref = vstr_ref_make_memdup(lim, sizeof(struct Evnt_limit));
+  int ret = FALSE;
+  
+  if (!ref)
+    return (FALSE);
+
+  ret = evnt_limit_add(evnt, ref);
+  vstr_ref_del(ref);
+  
+  return (ret);
+}
+
+void evnt_limit_chg(struct Evnt *evnt, unsigned int scan, Vstr_ref *ref)
+{
+  Vstr_ref *tmp = NULL;
+  
+  ASSERT(evnt->lim_num > scan);
+  tmp = evnt->lims[scan];
+
+  if (ref)
+  {
+    struct Evnt_limit *lim = ref->ptr;
+
+    evnt->io_r_limited |= !!lim->io_r_max;
+    evnt->io_w_limited |= !!lim->io_w_max;
+  
+    ref = vstr_ref_add(ref);
+  }
+
+  evnt->lims[scan] = ref;
+  vstr_ref_del(tmp);
+}
+
+void evnt_limit_alt(struct Evnt *evnt, unsigned int scan,
+                    const struct Evnt_limit *nlim)
+{
+  Vstr_ref *ref = NULL;
+  struct Evnt_limit *lim = NULL;
+  
+  ASSERT(evnt->lim_num > scan);
+  ref = evnt->lims[scan];
+  ASSERT(ref);
+  ASSERT(ref->ref == 1); /* should be the only owner of this data,
+                          * if we are changing it */
+
+  lim = ref->ptr;
+  
+  evnt->io_r_limited |= !!lim->io_r_max;
+  evnt->io_w_limited |= !!lim->io_w_max;
+
+  lim->io_r_max = nlim->io_r_max;
+  lim->io_w_max = nlim->io_w_max;
+
+  if (lim->io_r_cur > lim->io_r_max)
+    lim->io_r_cur = lim->io_r_max;
+  
+  if (lim->io_w_cur > lim->io_w_max)
+    lim->io_w_cur = lim->io_w_max;
+}
+
+void evnt_limit_free(struct Evnt *evnt)
+{
+  unsigned int scan = 0;
+
+  while (scan < evnt->lim_num)
+    vstr_ref_del(evnt->lims[scan++]);
+  ASSERT(scan == evnt->lim_num);
+
+  F(evnt->lims);
+  evnt->lims    = NULL;
+  evnt->lim_num = 0;
+}
+
+static void evnt__limit_tm_chk(const struct timeval *tv, struct timeval *ltv,
+                               unsigned long *cur, unsigned long max)
+{
+  struct timeval tv_end[1];
+  struct timeval tv_reset[1];
+
+  *tv_end   = *ltv; TIMER_Q_TIMEVAL_ADD_SECS(tv_end,   1, 0);
+  *tv_reset = *ltv; TIMER_Q_TIMEVAL_ADD_SECS(tv_reset, 3, 0);
+
+  if (!ltv->tv_sec)
+  {
+    *cur = max;
+    return;
+  }
+
+  /* if it's been more than a second ... reset */
+  if (TIMER_Q_TIMEVAL_CMP(tv, tv_end) > 0)
+  {
+    if (TIMER_Q_TIMEVAL_CMP(tv, tv_reset) < 0)
+      ++ltv->tv_sec; /* try and be nice */
+    else
+    { /* if it's been more than 3 seconds, just restart */
+      ltv->tv_sec  = 0;
+      ltv->tv_usec = 0;
+    }
+    
+    *cur = max;
+  }
+}
+
+static void evnt__limit_chk(struct Evnt *evnt)
+{
+  struct timeval tv[1];
+  unsigned int scan = 0;
+  
+  EVNT__COPY_TV(tv);
+  
+  evnt->io_r_limited = FALSE; /* blank and reset */
+  evnt->io_w_limited = FALSE;
+  
+  while (scan < evnt->lim_num)
+  {
+    if (evnt->lims[scan])
+    {
+      struct Evnt_limit *lim = evnt->lims[scan]->ptr;
+
+      evnt->io_r_limited |= !!lim->io_r_max;
+      evnt->io_w_limited |= !!lim->io_w_max;
+  
+      if (evnt->io_r_limited)
+      {
+        vlg_dbg2(vlg, "limit chk r beg (%'lu <= %'lu) @%lu:%lu\n",
+                 lim->io_r_cur, lim->io_r_max,
+                 lim->io_r_tm.tv_sec, lim->io_r_tm.tv_usec);
+        evnt__limit_tm_chk(tv, &lim->io_r_tm, &lim->io_r_cur, lim->io_r_max);
+        vlg_dbg2(vlg, "limit chk r beg (%'lu <= %'lu) @%lu:%lu\n",
+                 lim->io_r_cur, lim->io_r_max,
+                 lim->io_r_tm.tv_sec, lim->io_r_tm.tv_usec);
+      }
+      
+      if (evnt->io_w_limited)
+      {
+        vlg_dbg2(vlg, "limit chk w beg (%'lu <= %'lu) @%lu:%lu\n",
+                 lim->io_w_cur, lim->io_w_max,
+                 lim->io_w_tm.tv_sec, lim->io_w_tm.tv_usec);
+        evnt__limit_tm_chk(tv, &lim->io_w_tm, &lim->io_w_cur, lim->io_w_max);
+        vlg_dbg2(vlg, "limit chk w end (%'lu <= %'lu) @%lu:%lu\n",
+                 lim->io_w_cur, lim->io_w_max,
+                 lim->io_w_tm.tv_sec, lim->io_w_tm.tv_usec);
+      }
+    }
+    
+    ++scan;
+  }  
+  ASSERT(scan == evnt->lim_num);
+}
+
+static struct Evnt_limit *evnt_limit_r(struct Evnt *evnt, unsigned long sz)
+{
+  struct Evnt_limit *ret = NULL;
+  unsigned int scan = 0;
+  
+  if (!evnt->io_r_limited)
+    return (NULL);
+
+  evnt__limit_chk(evnt);
+
+  while (scan < evnt->lim_num)
+  {
+    if (evnt->lims[scan])
+    {
+      struct Evnt_limit *lim = evnt->lims[scan]->ptr;
+
+      if (lim->io_r_max && (!ret || (ret->io_r_cur > lim->io_r_cur)))
+        ret = lim;
+    }
+    
+    ++scan;
+  }
+  ASSERT(scan == evnt->lim_num);
+
+  if (ret)
+    vlg_dbg2(vlg, "limit io_r(%'lu <= %'lu)\n", ret->io_r_cur, sz);
+
+  if (ret && (ret->io_r_cur > sz))
+    ret = NULL;
+
+  return (ret);
+}
+
+static struct Evnt_limit *evnt_limit_w(struct Evnt *evnt, unsigned long sz)
+{
+  struct Evnt_limit *ret = NULL;
+  unsigned int scan = 0;
+
+  if (!evnt->io_w_limited)
+    return (NULL);
+  
+  evnt__limit_chk(evnt);
+
+  while (scan < evnt->lim_num)
+  {
+    if (evnt->lims[scan])
+    {
+      struct Evnt_limit *lim = evnt->lims[scan]->ptr;
+
+      if (lim->io_w_max && (!ret || (ret->io_w_cur > lim->io_w_cur)))
+        ret = lim;
+    }
+    
+    ++scan;
+  }
+  ASSERT(scan == evnt->lim_num);
+  
+  if (ret)
+    vlg_dbg2(vlg, "limit io_w(%'lu <= %'lu)\n", ret->io_w_cur, sz);
+
+  if (ret && (ret->io_w_cur > sz))
+    ret = NULL;
+
+  return (ret);
+}
+
+static Timer_q_base *evnt__timeout_lim_r_1  = NULL; /* read/recv/accept */
+static Timer_q_base *evnt__timeout_lim_r_10 = NULL;
+static Timer_q_base *evnt__timeout_lim_w_1  = NULL; /* write/send/connect */
+static Timer_q_base *evnt__timeout_lim_w_10 = NULL;
+
+static void evnt__timer_cb_lim_r(int type, void *data)
+{
+  struct Evnt *evnt = data;
+
+  if (!evnt) /* deleted */
+    return;
+  
+  ASSERT(evnt__valid(evnt));
+  
+  if (type == TIMER_Q_TYPE_CALL_RUN_ALL)
+    return;
+
+  evnt->tm_l_r = NULL;
+  evnt_wait_cntl_add(evnt, POLLIN);
+  
+  if (type == TIMER_Q_TYPE_CALL_DEL)
+    return;
+
+  if (evnt->flag_q_accept)
+  {
+    assert(FALSE);
+  }
+  else if (!evnt->cbs->cb_func_recv(evnt))
+    evnt__close_now(evnt);
+}
+
+static int evnt_limit_timeout_r(struct Evnt *evnt, struct Evnt_limit *lim)
+{
+  struct timeval tv[1];
+  unsigned long msecs = 0;
+
+  if (evnt->tm_l_r || !lim || lim->io_r_cur)
+    return (TRUE);
+
+  EVNT__COPY_TV(tv);
+  msecs = timer_q_timeval_udiff_msecs(tv, &lim->io_r_tm);
+
+  if (msecs < 1000)
+    msecs = 1000 - msecs;
+  else
+    msecs = 0;
+  vlg_dbg2(vlg, "timeout_r_make(%p, %lu)\n", evnt, msecs);
+  
+  if (msecs <= 100)
+  {
+    TIMER_Q_TIMEVAL_ADD_SECS(tv, 0, 100 * 1000);
+    evnt->tm_l_r = timer_q_add_node(evnt__timeout_lim_r_1, evnt, tv,
+                                    TIMER_Q_FLAG_NODE_DEFAULT);
+  }
+  else
+  {
+    TIMER_Q_TIMEVAL_ADD_SECS(tv, 1,          0);
+    evnt->tm_l_r = timer_q_add_node(evnt__timeout_lim_r_10, evnt, tv,
+                                    TIMER_Q_FLAG_NODE_DEFAULT);
+  }
+    
+  evnt_wait_cntl_del(evnt, POLLIN);
+
+  return (!!evnt->tm_l_r);
+}
+
+static void evnt__timer_cb_lim_w(int type, void *data)
+{
+  struct Evnt *evnt = data;
+
+  if (!evnt) /* deleted */
+    return;
+  
+  ASSERT(evnt__valid(evnt));
+  
+  if (type == TIMER_Q_TYPE_CALL_RUN_ALL)
+    return;
+
+  evnt->tm_l_w = NULL;
+  if (evnt->flag_q_send_recv)
+  {
+    evnt_wait_cntl_add(evnt, POLLOUT);
+    SOCKET_POLL_INDICATOR(evnt->ind)->revents |= POLLOUT;
+  }
+  
+  if (type == TIMER_Q_TYPE_CALL_DEL)
+    return;
+
+  if (evnt->flag_q_connect)
+  {
+    assert(FALSE);
+  }
+  else if (!evnt->cbs->cb_func_send(evnt))
+    evnt__close_now(evnt);
+}
+
+static int evnt_limit_timeout_w(struct Evnt *evnt, struct Evnt_limit *lim)
+{
+  struct timeval tv[1];
+  unsigned long msecs = 0;
+  
+  if (evnt->tm_l_w || !lim || lim->io_w_cur)
+    return (TRUE);
+
+  EVNT__COPY_TV(tv);
+  msecs = timer_q_timeval_udiff_msecs(tv, &lim->io_w_tm);
+
+  if (msecs < 1000)
+    msecs = 1000 - msecs;
+  else
+    msecs = 0;
+  vlg_dbg2(vlg, "timeout_w_make(%p, %lu)\n", evnt, msecs);
+  
+  if (msecs <= 100)
+  {
+    TIMER_Q_TIMEVAL_ADD_SECS(tv, 0, 100 * 1000);
+    evnt->tm_l_w = timer_q_add_node(evnt__timeout_lim_w_1, evnt, tv,
+                                    TIMER_Q_FLAG_NODE_DEFAULT);
+  }
+  else
+  {
+    TIMER_Q_TIMEVAL_ADD_SECS(tv, 1,          0);
+    evnt->tm_l_w = timer_q_add_node(evnt__timeout_lim_w_10, evnt, tv,
+                                    TIMER_Q_FLAG_NODE_DEFAULT);
+  }
+    
+  evnt_wait_cntl_del(evnt, POLLOUT);
+
+  return (!!evnt->tm_l_w);
+}
+
+/* takes limit values into account as well */
+static void evnt__acct_r(struct Evnt *evnt, size_t bytes)
+{
+  unsigned int scan = 0;
+  
+  while (scan < evnt->lim_num)
+  {
+    if (evnt->lims[scan])
+    {
+      struct Evnt_limit *lim = evnt->lims[scan]->ptr;
+
+      if (lim->io_r_max)
+      {
+        if (!lim->io_r_tm.tv_sec)
+        {
+          EVNT__COPY_TV(&lim->io_r_tm.tv_sec);
+          ASSERT(lim->io_r_cur == lim->io_r_max);
+        }
+
+        /* must be at least this small, or we screwed up limiting */
+        ASSERT(lim->io_r_cur >= bytes);
+        lim->io_r_cur -= bytes;
+      }
+    }
+    
+    ++scan;
+  }
+  ASSERT(scan == evnt->lim_num);
+
+  evnt->acct.bytes_r += bytes;
+}
+
+static void evnt__acct_w(struct Evnt *evnt, size_t bytes)
+{
+  unsigned int scan = 0;
+  
+  while (scan < evnt->lim_num)
+  {
+    if (evnt->lims[scan])
+    {
+      struct Evnt_limit *lim = evnt->lims[scan]->ptr;
+      
+      if (lim->io_w_max)
+      {
+        if (!lim->io_w_tm.tv_sec)
+        {
+          EVNT__COPY_TV(&lim->io_w_tm.tv_sec);
+          ASSERT(lim->io_w_cur == lim->io_w_max);
+        }
+
+        /* must be at least this small, or we screwed up limiting */
+        ASSERT(lim->io_w_cur >= bytes);
+        lim->io_w_cur -= bytes;
+      }
+    }
+
+    ++scan;
+  }
+  ASSERT(scan == evnt->lim_num);
+  
+  evnt->acct.bytes_w += bytes;
+}
+
 void evnt_put_pkt(struct Evnt *evnt)
 {
   ASSERT(evnt__valid(evnt));
@@ -932,14 +1405,29 @@ static int evnt__call_send(struct Evnt *evnt, unsigned int *ern)
 {
   size_t tmp = evnt->io_w->len;
   int fd = evnt_fd(evnt);
+  struct Evnt_limit *lim = NULL;
 
-  if (!vstr_sc_write_fd(evnt->io_w, 1, tmp, fd, ern) && (errno != EAGAIN))
-    return (FALSE);
+  if (!(lim = evnt_limit_w(evnt, evnt->io_w->len)))
+  {
+    if (!vstr_sc_write_fd(evnt->io_w, 1, tmp, fd, ern) && (errno != EAGAIN))
+      return (FALSE);
+  }
+  else if (lim->io_w_cur)
+  {
+    if (!vstr_sc_write_fd(evnt->io_w, 1, lim->io_w_cur, fd, ern) &&
+        (errno != EAGAIN))
+      return (FALSE);
+  }
 
   tmp -= evnt->io_w->len;
   vlg_dbg3(vlg, "write(%p) = %zu\n", evnt, tmp);
   
-  evnt->acct.bytes_w += tmp;
+  evnt__acct_w(evnt, tmp);
+  if (!evnt_limit_timeout_w(evnt, lim))
+  {
+    errno = ENOMEM, *ern = VSTR_TYPE_SC_WRITE_FD_ERR_MEM;
+    return (FALSE);
+  }
   
   return (TRUE);
 }
@@ -966,7 +1454,8 @@ int evnt_send_add(struct Evnt *evnt, int force_q, size_t max_sz)
   }
 
   /* already on send_q -- or already polling (and not forcing) */
-  if (evnt->flag_q_send_now || (evnt->flag_q_send_recv && !force_q))
+  if (evnt->flag_q_send_now || evnt->tm_l_w ||
+      (evnt->flag_q_send_recv && !force_q))
   {
     ASSERT(evnt__valid(evnt));
     return (TRUE);
@@ -1046,14 +1535,14 @@ static void evnt__send_fin(struct Evnt *evnt)
   }
   else if (!evnt->flag_q_send_recv &&  evnt->io_w->len)
   {
-    int pflags = POLLOUT;
+    int pflags = evnt->tm_l_w ? 0 : POLLOUT;
     ASSERT(evnt->flag_q_none || evnt->flag_q_recv);
     if (evnt->flag_q_none)
       evnt_del(&q_none, evnt), evnt->flag_q_none = FALSE;
     else
       evnt_del(&q_recv, evnt), evnt->flag_q_recv = FALSE;
     evnt_add(&q_send_recv, evnt); evnt->flag_q_send_recv = TRUE;
-    if (!evnt->io_r_shutdown) pflags |= POLLIN;
+    if (!evnt->io_r_shutdown && !evnt->tm_l_r) pflags |= POLLIN;
     evnt_wait_cntl_add(evnt, pflags);
   }
 }
@@ -1094,24 +1583,38 @@ int evnt_recv(struct Evnt *evnt, unsigned int *ern)
   size_t tmp = evnt->io_r->len;
   unsigned int num_min = 2;
   unsigned int num_max = 6; /* ave. browser reqs are 500ish, ab is much less */
-  
+  struct Evnt_limit *lim = NULL;
+  unsigned int buf_sz = 0;
+
   ASSERT(evnt__valid(evnt) && ern);
 
-  /* FIXME: this is set for HTTPD's default buf sizes of 120 (128 - 8) */
-  if (evnt->prev_bytes_r >= (120 * 2))
+  /* default for HTTPD's buf size of 120 (128 - 8) */
+  if (!vstr_cntl_conf(data->conf, VSTR_CNTL_CONF_GET_NUM_BUF_SZ, &buf_sz))
+    buf_sz = 120;
+
+  if (evnt->prev_bytes_r >= (buf_sz * 2))
   {  
     num_min =  8; /* 8 * 120 = 960 */
     num_max =  8;
   }
-  if (evnt->prev_bytes_r >= (120 * 8))
+  if (evnt->prev_bytes_r >= (buf_sz * 8))
     num_max = 64; /* 64 * 120 = 7680 */
+
+  if (!(lim = evnt_limit_r(evnt, num_max * buf_sz)))
+    vstr_sc_read_iov_fd(data, data->len, evnt_fd(evnt), num_min, num_max, ern);
+  else if (lim->io_r_cur)
+    vstr_sc_read_len_fd(data, data->len, evnt_fd(evnt), lim->io_r_cur, ern);
+  else /* pretend we read "something" ... but magicly got nothing, not EOF */
+    *ern = VSTR_TYPE_SC_READ_FD_ERR_NONE;
   
-  vstr_sc_read_iov_fd(data, data->len, evnt_fd(evnt), num_min, num_max, ern);
   evnt->prev_bytes_r = (evnt->io_r->len - tmp);
+  evnt__acct_r(evnt, evnt->prev_bytes_r);
   
   vlg_dbg3(vlg, "read(%p) = %ju\n", evnt, evnt->prev_bytes_r);
-  evnt->acct.bytes_r += evnt->prev_bytes_r;
   
+  if (!evnt_limit_timeout_r(evnt, lim))
+    errno = ENOMEM, *ern = VSTR_TYPE_SC_READ_FD_ERR_MEM;
+    
   switch (*ern)
   {
     case VSTR_TYPE_SC_READ_FD_ERR_NONE:
@@ -1168,7 +1671,8 @@ int evnt_sendfile(struct Evnt *evnt, int ffd,
   ssize_t ret = 0;
   off64_t tmp_off = *f_off;
   size_t  tmp_len = *f_len;
-  
+  struct Evnt_limit *lim = NULL;
+
   *ern = 0;
   
   ASSERT(evnt__valid(evnt));
@@ -1178,24 +1682,44 @@ int evnt_sendfile(struct Evnt *evnt, int ffd,
   if (*f_len > SSIZE_MAX)
     tmp_len =  SSIZE_MAX;
   
-  if ((ret = sendfile64(evnt_fd(evnt), ffd, &tmp_off, tmp_len)) == -1)
+  if (!(lim = evnt_limit_w(evnt, tmp_len)))
   {
-    if (errno == EAGAIN)
-      return (TRUE);
+    if ((ret = sendfile64(evnt_fd(evnt), ffd, &tmp_off, tmp_len)) == -1)
+    {
+      if (errno == EAGAIN)
+        return (TRUE);
 
-    *ern = VSTR_TYPE_SC_READ_FD_ERR_READ_ERRNO;
-    return (FALSE);
+      *ern = VSTR_TYPE_SC_READ_FD_ERR_READ_ERRNO;
+      return (FALSE);
+    }
+  }
+  else if (lim->io_w_cur)
+  {
+    if ((ret = sendfile64(evnt_fd(evnt), ffd, &tmp_off, lim->io_w_cur)) == -1)
+    {
+      if (errno == EAGAIN)
+        return (TRUE);
+
+      *ern = VSTR_TYPE_SC_READ_FD_ERR_READ_ERRNO;
+      return (FALSE);
+    }
   }
 
-  if (!ret)
+  if (!ret && (!lim || lim->io_w_cur))
   {
     *ern = VSTR_TYPE_SC_READ_FD_ERR_EOF;
     return (FALSE);
   }
   
   *f_off = tmp_off;
+
+  evnt__acct_w(evnt, ret);
+  if (!evnt_limit_timeout_w(evnt, lim))
+  {
+    errno = ENOMEM, *ern = VSTR_TYPE_SC_WRITE_FD_ERR_MEM;
+    return (FALSE);
+  }
   
-  evnt->acct.bytes_w += ret;
   EVNT__COPY_TV(&evnt->mtime);
   
   *f_len -= ret;
@@ -1264,7 +1788,7 @@ static int evnt__get_timeout(void)
   }
 
   vlg_dbg2(vlg, "get_timeout = %d\n", msecs);
-
+  
   return (msecs);
 }
 
@@ -1281,14 +1805,6 @@ void evnt_scan_q_close(void)
   }
 
   ASSERT(!q_closed);
-}
-
-static void evnt__close_now(struct Evnt *evnt)
-{
-  if (evnt->flag_q_closed)
-    return;
-  
-  evnt_free(evnt);
 }
 
 /* if something goes wrong drop all accept'ing events */
@@ -1316,15 +1832,22 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
   {
     struct Evnt *scan_next = scan->next;
     int done = FALSE;
+    int revents = 0;
 
     ASSERT(evnt__valid(scan));
     
-    if (scan->flag_q_closed)
-      goto next_connect;
+    revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
+    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
     
-    assert(!(SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLIN));
+    if (scan->flag_q_closed)
+    {
+      done = !!revents;
+      goto next_connect;
+    }
+    
+    assert(!(revents & POLLIN));
     /* done as one so we get error code */
-    if (SOCKET_POLL_INDICATOR(scan->ind)->revents & (POLLOUT|bad_poll_flags))
+    if (revents & (POLLOUT|bad_poll_flags))
     {
       int ern = 0;
       socklen_t len = sizeof(int);
@@ -1357,7 +1880,6 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (evnt_poll_direct_enabled()) break;
 
    next_connect:
-    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
     if (done)
       --ready;
 
@@ -1370,14 +1892,21 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
      * -- edge triggering needs to requeue on non failure */
     struct Evnt *scan_next = scan->next;
     int done = FALSE;
+    int revents = 0;
 
     ASSERT(evnt__valid(scan));
     
-    if (scan->flag_q_closed)
-      goto next_accept;
+    revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
+    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
     
-    assert(!(SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLOUT));
-    if (!done && (SOCKET_POLL_INDICATOR(scan->ind)->revents & bad_poll_flags))
+    if (scan->flag_q_closed)
+    {
+      done = !!revents;
+      goto next_accept;
+    }
+    
+    assert(!(revents & POLLOUT));
+    if (!done && (revents & bad_poll_flags))
     { /* done first as it's an error with the accept fd, whereas accept
        * generates new fds */
       done = TRUE;
@@ -1385,7 +1914,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
       goto next_accept;
     }
 
-    if (SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLIN)
+    if (revents & POLLIN)
     {
       struct sockaddr_in sa;
       socklen_t len = sizeof(struct sockaddr_in);
@@ -1400,7 +1929,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
        * should just kill the listen socket and wait to die. But for instance.
        * we can't just kill the socket on EMFILE, as we might have hit our
        * resource limit */
-      while ((SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLIN) &&
+      while ((revents & POLLIN) &&
              (fd = accept(evnt_fd(scan), (struct sockaddr *) &sa, &len)) != -1)
       {
         if (!(tmp = scan->cbs->cb_func_accept(scan, fd,
@@ -1432,7 +1961,6 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (evnt_poll_direct_enabled()) break;
     
    next_accept:
-    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
     if (done)
       --ready;
 
@@ -1444,20 +1972,27 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
   {
     struct Evnt *scan_next = scan->next;
     int done = FALSE;
+    int revents = 0;
     
     ASSERT(evnt__valid(scan));
     
-    if (scan->flag_q_closed)
-      goto next_recv;
+    revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
+    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
     
-    if (SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLIN)
+    if (scan->flag_q_closed)
+    {
+      done = !!revents;
+      goto next_recv;
+    }
+    
+    if (revents & POLLIN)
     {
       done = TRUE;
       if (!scan->cbs->cb_func_recv(scan))
         evnt__close_now(scan);
     }
 
-    if (!done && (SOCKET_POLL_INDICATOR(scan->ind)->revents & bad_poll_flags))
+    if (!done && (revents & bad_poll_flags))
     {
       done = TRUE;
       if (scan->io_r_shutdown || scan->io_w_shutdown ||
@@ -1465,9 +2000,9 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
         evnt__close_now(scan);
     }
 
+   next_recv:
     if (!done && evnt_poll_direct_enabled()) break;
 
-   next_recv:
     if (done)
       --ready;
     
@@ -1479,13 +2014,20 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
   {
     struct Evnt *scan_next = scan->next;
     int done = FALSE;
+    int revents = 0;
     
     ASSERT(evnt__valid(scan));
     
+    revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
+    SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
+    
     if (scan->flag_q_closed)
+    {
+      done = !!revents;
       goto next_send;
-
-    if (SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLIN)
+    }
+    
+    if (revents & POLLIN)
     {
       done = TRUE;
       if (!scan->cbs->cb_func_recv(scan))
@@ -1495,23 +2037,23 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
       }
     }
     
-    if (SOCKET_POLL_INDICATOR(scan->ind)->revents & POLLOUT)
+    if (revents & POLLOUT)
     {
       done = TRUE; /* need groups so we can do direct send here */
       if (!evnt_send_add(scan, TRUE, max_sz))
         evnt__close_now(scan);
     }
 
-    if (!done && (SOCKET_POLL_INDICATOR(scan->ind)->revents & bad_poll_flags))
+    if (!done && (revents & bad_poll_flags))
     {
       done = TRUE;
       if (scan->io_r_shutdown || !scan->cbs->cb_func_shutdown_r(scan))
         evnt__close_now(scan);
     }
 
+   next_send:
     if (!done && evnt_poll_direct_enabled()) break;
 
-   next_send:
     if (done)
       --ready;
 
@@ -1537,8 +2079,6 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
       evnt__close_now(scan);
       goto next_none;
     }
-    else
-      assert(!SOCKET_POLL_INDICATOR(scan->ind)->revents);
 
     ASSERT(!done);
     if (evnt_poll_direct_enabled()) break;
@@ -1596,6 +2136,8 @@ static void evnt__close_1(struct Evnt **root)
     Vstr_ref *acpt_sa = scan->acpt_sa_ref;
     Vstr_ref *sa = scan->sa_ref;
     Timer_q_node *tm_o  = scan->tm_o;
+    Timer_q_node *tm_l_r  = scan->tm_l_r;
+    Timer_q_node *tm_l_w  = scan->tm_l_w;
 
     vstr_free_base(scan->io_w); scan->io_w = NULL;
     vstr_free_base(scan->io_r); scan->io_r = NULL;
@@ -1603,7 +2145,7 @@ static void evnt__close_1(struct Evnt **root)
     evnt_poll_del(scan);
     
     --evnt__num;
-    evnt__free2(sa, acpt_sa, tm_o);
+    evnt__free2(sa, acpt_sa, tm_o, tm_l_r, tm_l_w);
     scan->cbs->cb_func_free(scan);
     
     scan = scan_next;
@@ -1878,6 +2420,7 @@ static void evnt__timer_cb_mtime(int type, void *data)
 
     /* FIXME: linger close time configurable? */
     EVNT__COPY_TV(&evnt->mtime);
+    evnt->msecs_tm_mtime /= 2;
     diff = evnt->msecs_tm_mtime;
   }
   
@@ -1890,45 +2433,50 @@ static void evnt__timer_cb_mtime(int type, void *data)
 }
 
 void evnt_timeout_init(void)
-{
+{ /* FIXME: timer_q-1.0.7 move when empty still has bugs */
+  int flags = TIMER_Q_FLAG_BASE_DEFAULT & ~TIMER_Q_FLAG_BASE_MOVE_WHEN_EMPTY;
+  
   ASSERT(!evnt__timeout_1);
 
   EVNT__UPDATE_TV();
 
-  /* move when empty is buggy, *sigh* */
-  evnt__timeout_1   = timer_q_add_base(evnt__timer_cb_mtime,
-                                       TIMER_Q_FLAG_BASE_INSERT_FROM_END);
-  evnt__timeout_10  = timer_q_add_base(evnt__timer_cb_mtime,
-                                       TIMER_Q_FLAG_BASE_INSERT_FROM_END);
-  evnt__timeout_100 = timer_q_add_base(evnt__timer_cb_mtime,
-                                       TIMER_Q_FLAG_BASE_INSERT_FROM_END);
+  evnt__timeout_1   = timer_q_add_base(evnt__timer_cb_mtime, flags);
+  evnt__timeout_10  = timer_q_add_base(evnt__timer_cb_mtime, flags);
+  evnt__timeout_100 = timer_q_add_base(evnt__timer_cb_mtime, flags);
 
   if (!evnt__timeout_1 || !evnt__timeout_10 || !evnt__timeout_100)
     VLG_ERRNOMEM((vlg, EXIT_FAILURE, "timer init"));
 
-  /* FIXME: massive hack 1.0.5 is broken */
-  timer_q_cntl_base(evnt__timeout_1,
-                    TIMER_Q_CNTL_BASE_SET_FLAG_INSERT_FROM_END, FALSE);
-  timer_q_cntl_base(evnt__timeout_10,
-                    TIMER_Q_CNTL_BASE_SET_FLAG_INSERT_FROM_END, FALSE);
-  timer_q_cntl_base(evnt__timeout_100,
-                    TIMER_Q_CNTL_BASE_SET_FLAG_INSERT_FROM_END, FALSE);
+  /* we always allocate limit timers, just easier that way ... */
+  evnt__timeout_lim_r_1   = timer_q_add_base(evnt__timer_cb_lim_r, flags);
+  evnt__timeout_lim_r_10  = timer_q_add_base(evnt__timer_cb_lim_r, flags);
+  evnt__timeout_lim_w_1   = timer_q_add_base(evnt__timer_cb_lim_w, flags);
+  evnt__timeout_lim_w_10  = timer_q_add_base(evnt__timer_cb_lim_w, flags);
+
+  if (!evnt__timeout_lim_r_1 || !evnt__timeout_lim_r_10 ||
+      !evnt__timeout_lim_w_1 || !evnt__timeout_lim_w_10)
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "timer init"));
 }
 
 void evnt_timeout_exit(void)
 {
   ASSERT(evnt__timeout_1);
   
-  timer_q_del_base(evnt__timeout_1);   evnt__timeout_1   = NULL;
-  timer_q_del_base(evnt__timeout_10);  evnt__timeout_10  = NULL;
-  timer_q_del_base(evnt__timeout_100); evnt__timeout_100 = NULL;
+  timer_q_del_base(evnt__timeout_1);        evnt__timeout_1   = NULL;
+  timer_q_del_base(evnt__timeout_10);       evnt__timeout_10  = NULL;
+  timer_q_del_base(evnt__timeout_100);      evnt__timeout_100 = NULL;
+  timer_q_del_base(evnt__timeout_lim_r_1);  evnt__timeout_lim_r_1 = NULL;
+  timer_q_del_base(evnt__timeout_lim_r_10); evnt__timeout_lim_r_10 = NULL;
+  timer_q_del_base(evnt__timeout_lim_w_1);  evnt__timeout_lim_w_1 = NULL;
+  timer_q_del_base(evnt__timeout_lim_w_10); evnt__timeout_lim_w_10 = NULL;
 }
 
 int evnt_sc_timeout_via_mtime(struct Evnt *evnt, unsigned long msecs)
 {
   struct timeval tv[1];
 
-  evnt->msecs_tm_mtime = msecs;
+  if (!(evnt->msecs_tm_mtime = msecs))
+    return (TRUE);
   
   EVNT__COPY_TV(tv);
   
@@ -1943,6 +2491,7 @@ void evnt_sc_main_loop(size_t max_sz)
   int ready = 0;
   struct timeval tv[1];
 
+  EVNT__UPDATE_TV();
   ready = evnt_poll();
   if ((ready == -1) && (errno != EINTR))
     vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", "poll");
@@ -1955,6 +2504,7 @@ void evnt_sc_main_loop(size_t max_sz)
   evnt_scan_send_fds();
   evnt_out_dbg3("3");
 
+  EVNT__UPDATE_TV();
   EVNT__COPY_TV(tv);
   timer_q_run_norm(tv);
   
@@ -1988,9 +2538,7 @@ void evnt_sc_serv_cb_func_acpt_free(struct Evnt *evnt)
   evnt_vlg_stats_info(acpt_listener->evnt, "ACCEPT FREE");
 
   acpt_data->evnt = NULL;
-
   vstr_ref_del(acpt_listener->ref);
-  
   F(acpt_listener);
 }
 
@@ -2209,8 +2757,9 @@ int evnt_poll_child_init(void)
 
 void evnt_wait_cntl_add(struct Evnt *evnt, int flags)
 {
+  /* FIXME: do the POLLOUT revents differently ... move accept into the cb */
   SOCKET_POLL_INDICATOR(evnt->ind)->events  |= flags;
-  SOCKET_POLL_INDICATOR(evnt->ind)->revents |= flags;  
+  SOCKET_POLL_INDICATOR(evnt->ind)->revents |= (flags & POLLIN);
 }
 
 void evnt_wait_cntl_del(struct Evnt *evnt, int flags)
@@ -2318,7 +2867,8 @@ static int evnt__epoll_readd(struct Evnt *evnt)
   {
     int flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
 
-    vlg_dbg2(vlg, "epoll_mod_add(%p,%d)\n", evnt, flags);
+    vlg_dbg2(vlg, "epoll_readd(%p,%u=%s)\n", evnt,
+             flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -2355,7 +2905,8 @@ void evnt_wait_cntl_add(struct Evnt *evnt, int flags)
 {
   if ((SOCKET_POLL_INDICATOR(evnt->ind)->events & flags) == flags)
     return;
-  
+
+  /* FIXME: do the POLLOUT revents differently ... move accept into the cb */
   SOCKET_POLL_INDICATOR(evnt->ind)->events  |=  flags;
   SOCKET_POLL_INDICATOR(evnt->ind)->revents |= (flags & POLLIN);
   
@@ -2364,7 +2915,8 @@ void evnt_wait_cntl_add(struct Evnt *evnt, int flags)
     struct epoll_event epevent[1];
     
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
-    vlg_dbg2(vlg, "epoll_mod_add(%p,%d)\n", evnt, flags);
+    vlg_dbg2(vlg, "epoll_mod_add(%p,%u=%s)\n", evnt,
+             flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -2387,7 +2939,8 @@ void evnt_wait_cntl_del(struct Evnt *evnt, int flags)
     struct epoll_event epevent[1];
     
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;
-    vlg_dbg2(vlg, "epoll_mod_del(%p,%d)\n", evnt, flags);
+    vlg_dbg2(vlg, "epoll_mod_del(%p,%u=%s)\n", evnt,
+             flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -2406,7 +2959,7 @@ unsigned int evnt_poll_add(struct Evnt *evnt, int fd)
     struct epoll_event epevent[1];
     int flags = 0;
 
-    vlg_dbg2(vlg, "epoll_add(%p,%d)\n", evnt, flags);
+    vlg_dbg2(vlg, "epoll_add(%p,%u=%s)\n", evnt, flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -2534,10 +3087,10 @@ int evnt_poll(void)
     evnt  = events[scan].data.ptr;
 
     ASSERT(evnt__valid(evnt));
-    
-    vlg_dbg2(vlg, "epoll_wait(%p,%u)\n", evnt, flags);
-    vlg_dbg2(vlg, "epoll_wait[flags]=a=%u|r=%u\n",
-             evnt->flag_q_accept, evnt->flag_q_recv);
+
+    vlg_dbg2(vlg, "epoll_wait(%p,%u=%s)\n", evnt, flags,EVNT__POLL_FLGS(flags));
+    vlg_dbg2(vlg, "epoll_wait[flags]=a=%u|r=%u|s=%u\n",
+             evnt->flag_q_accept, evnt->flag_q_recv, evnt->flag_q_send_recv);
 
     assert(((SOCKET_POLL_INDICATOR(evnt->ind)->events & flags) == flags) ||
            ((POLLHUP|POLLERR) & flags));

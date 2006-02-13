@@ -1,5 +1,26 @@
+/*
+ *  Copyright (C) 2002, 2003, 2004, 2005, 2006  James Antill
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ *  email: james@and.org
+ */
+/* controller channel for servers, also has code for multiple procs. at once */
 
 #include "cntl.h"
+#include "opt_serv.h"
 #include <unistd.h>
 
 #include <poll.h>
@@ -27,6 +48,9 @@ struct Cntl_waiter_obj
  struct Evnt *evnt;
  unsigned int num;
 };
+
+/* for simplicity */
+#define VEQ(vstr, p, l, cstr) vstr_cmp_cstr_eq(vstr, p, l, cstr)
 
 static Vlg *vlg = NULL;
 static struct Evnt *acpt_cntl_evnt = NULL;
@@ -299,7 +323,7 @@ static int cntl__srch_waiter_evnt(const Bag_obj *obj, const void *data)
 
 static void cntl__cb_func_free(struct Evnt *evnt)
 {
-  evnt_vlg_stats_info(evnt, "CNTL FREE");
+  opt_serv_sc_free_beg(evnt, "CNTL FREE");
 
   if (waiters)
   {
@@ -335,9 +359,12 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
 
   while (evnt->io_r->len && !stop)
   {
-    size_t pos = 0;
-    size_t len = 0;
-    size_t ns1 = 0;
+    size_t pos  = 0;
+    size_t len  = 0;
+    size_t ns1  = 0;
+    size_t cpos = 0;
+    size_t clen = 0;
+    size_t ns2  = 0;
     
     if (!(ns1 = vstr_parse_netstr(evnt->io_r, 1, evnt->io_r->len, &pos, &len)))
     {
@@ -345,18 +372,23 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
         return (FALSE);
       return (TRUE);
     }
-
+    if ((ns2 = vstr_parse_netstr(evnt->io_r, pos, len, &cpos, &clen)))
+    { /* double netstr ... might have arguments... */
+      SWAP_TYPE(pos, cpos, size_t);
+      SWAP_TYPE(len, clen, size_t);
+    }
+    
     evnt_got_pkt(evnt);
 
     if (0){ }
-    else if (vstr_cmp_cstr_eq(evnt->io_r, pos, len, "CLOSE"))
-    {
+    else if (VEQ(evnt->io_r, pos, len, "CLOSE"))
+    { /* FIXME: if arg. ns2  ... search for that and close */
       cntl__close(evnt->io_w);
       
       if (!cntl_waiter_add(evnt, 1, ns1, &stop))
         goto malloc_bad;
     }
-    else if (vstr_cmp_cstr_eq(evnt->io_r, pos, len, "DBG"))
+    else if (VEQ(evnt->io_r, pos, len, "DBG"))
     {
       vlg_debug(vlg);
       cntl__dbg(evnt->io_w);
@@ -364,7 +396,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       if (!cntl_waiter_add(evnt, 1, ns1, &stop))
         goto malloc_bad;
     }
-    else if (vstr_cmp_cstr_eq(evnt->io_r, pos, len, "UNDBG"))
+    else if (VEQ(evnt->io_r, pos, len, "UNDBG"))
     {
       vlg_undbg(vlg);
       cntl__dbg(evnt->io_w);
@@ -372,7 +404,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       if (!cntl_waiter_add(evnt, 1, ns1, &stop))
         goto malloc_bad;
     }
-    else if (vstr_cmp_cstr_eq(evnt->io_r, pos, len, "LIST"))
+    else if (VEQ(evnt->io_r, pos, len, "LIST"))
     {
       cntl__scan_events(evnt->io_w, "CONNECT",   evnt_queue("connect"));
       cntl__scan_events(evnt->io_w, "ACCEPT",    evnt_queue("accept"));
@@ -384,7 +416,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       if (!cntl_waiter_add(evnt, 1, ns1, &stop))
         goto malloc_bad;
     }
-    else if (vstr_cmp_cstr_eq(evnt->io_r, pos, len, "STATUS"))
+    else if (VEQ(evnt->io_r, pos, len, "STATUS"))
     {
       cntl__status(evnt->io_w);
 
@@ -415,14 +447,18 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
 
 static void cntl__cb_func_acpt_free(struct Evnt *evnt)
 {
+  struct Acpt_listener *acpt_listener = (struct Acpt_listener *)evnt;
+  struct Acpt_data *acpt_data = acpt_listener->ref->ptr;
+
   evnt_vlg_stats_info(evnt, "ACCEPT CNTL FREE");
   
   ASSERT(acpt_cntl_evnt == evnt);
-  
   acpt_cntl_evnt = NULL;
-
-  F(evnt);
-
+  
+  acpt_data->evnt = NULL;
+  vstr_ref_del(acpt_listener->ref);
+  F(acpt_listener);
+  
   evnt_acpt_close_all();
   
   if (childs && !potential_waiters)
@@ -432,6 +468,7 @@ static void cntl__cb_func_acpt_free(struct Evnt *evnt)
 static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
                                          struct sockaddr *sa, socklen_t len)
 {
+  Acpt_listener *acpt_listener = (Acpt_listener *)from_evnt;
   struct Evnt *evnt = NULL;
   
   ASSERT(acpt_cntl_evnt);
@@ -440,7 +477,7 @@ static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
   ASSERT(len >= 2);
   
   if (sa->sa_family != AF_LOCAL)
-    goto make_acpt_fail;
+    goto valid_family_fail;
   
   if (!(evnt = MK(sizeof(struct Evnt))))
     goto mk_acpt_fail;
@@ -451,20 +488,41 @@ static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
 
   evnt->cbs->cb_func_recv = cntl__cb_func_recv;
   evnt->cbs->cb_func_free = cntl__cb_func_free;
+
+  evnt->acpt_sa_ref = vstr_ref_add(acpt_listener->ref);
+  
   ++potential_waiters;
   
   return (evnt);
-
+  
  make_acpt_fail:
   F(evnt);
   VLG_WARNNOMEM_RET(NULL, (vlg, "%s: %m\n", "accept"));
  mk_acpt_fail:
+ valid_family_fail:
   VLG_WARN_RET(NULL, (vlg, "%s: %m\n", "accept"));
+}
+
+static void cntl__sc_serv_make_acpt_data_cb(Vstr_ref *ref)
+{ /* FIXME: same as evnt__sc_serv_make_acpt_data_cb */
+  struct Acpt_data *ptr = NULL;
+  
+  if (!ref)
+    return;
+
+  ptr = ref->ptr;
+  vstr_ref_del(ptr->sa);
+  F(ptr);
+  free(ref);
 }
 
 void cntl_make_file(Vlg *passed_vlg, const char *fname)
 {
+  Acpt_listener *acpt_listener = NULL;
+  Acpt_data *acpt_data = NULL;
   struct Evnt *evnt = NULL;
+  Vstr_ref *ref = NULL;
+  unsigned int q_listen_len = 8;
 
   ASSERT(!vlg && passed_vlg);
 
@@ -473,12 +531,25 @@ void cntl_make_file(Vlg *passed_vlg, const char *fname)
   ASSERT(fname);
   ASSERT(!acpt_cntl_evnt);
     
-  if (!(evnt = MK(sizeof(struct Evnt))))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file: %m\n"));
+  if (!(acpt_listener = MK(sizeof(Acpt_listener))))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname));
+  acpt_listener->max_connections = 0;
+  evnt = acpt_listener->evnt;
   
-  if (!evnt_make_bind_local(evnt, fname, 8))
-    vlg_err(vlg, EXIT_FAILURE, "cntl file: %m\n");
+  if (!(acpt_data = MK(sizeof(Acpt_data))))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname));
+  acpt_data->evnt = NULL;
+  acpt_data->sa   = NULL;
   
+  if (!(ref = vstr_ref_make_ptr(acpt_data, cntl__sc_serv_make_acpt_data_cb)))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "make_bind(%s): %m\n", fname));
+  acpt_listener->ref = ref;
+  
+  if (!evnt_make_bind_local(evnt, fname, q_listen_len))
+    vlg_err(vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname);
+  acpt_data->evnt = evnt;
+  acpt_data->sa   = vstr_ref_add(evnt->sa_ref);
+
   evnt->cbs->cb_func_accept = cntl__cb_func_accept;
   evnt->cbs->cb_func_free   = cntl__cb_func_acpt_free;
 
@@ -487,13 +558,17 @@ void cntl_make_file(Vlg *passed_vlg, const char *fname)
 
 static void cntl__cb_func_cntl_acpt_free(struct Evnt *evnt)
 {
+  struct Acpt_listener *acpt_listener = (struct Acpt_listener *)evnt;
+  struct Acpt_data *acpt_data = acpt_listener->ref->ptr;
+
   evnt_vlg_stats_info(evnt, "CHILD CNTL FREE");
   
   ASSERT(acpt_cntl_evnt == evnt);
-  
   acpt_cntl_evnt = NULL;
-
-  F(evnt);
+  
+  acpt_data->evnt = NULL;
+  vstr_ref_del(acpt_listener->ref);
+  F(acpt_listener);
   
   evnt_acpt_close_all();
 }
@@ -503,11 +578,10 @@ static void cntl__cb_func_pipe_acpt_free(struct Evnt *evnt)
   evnt_vlg_stats_info(evnt, "CHILD PIPE FREE");
   
   ASSERT(acpt_pipe_evnt == evnt);
-  
   acpt_pipe_evnt = NULL;
 
   F(evnt);
-
+  
   evnt_acpt_close_all();
 }
 

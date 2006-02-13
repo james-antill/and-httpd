@@ -1,0 +1,35 @@
+org.and.httpd-conf-req-1.0
+. match-init
+./ org.and.daemon-conf-1.0/match-init
+. match-request
+./ org.and.httpd-conf-main-1.0/match-request
+. return
+. Location:
+. Cache-Control:
+. Content-Disposition:
+. Content-Language:
+. Content-Location:
+. identity/Content-MD5: | Content-MD5:
+. gzip/Content-MD5:
+. bzip2/Content-MD5:
+. Content-Type:
+. ETag: | identity/ETag:
+. gzip/ETag:
+. bzip2/ETag:
+. Expires:
+. Link:
+. P3P:
+. filename
+. parse-accept
+. parse-accept-language
+. allow-accept-encoding
+. Vary:_*
+. Vary:_Accept
+. Vary:_Accept-Charset
+. Vary:_Accept-Language
+. Vary:_Referrer | Vary:_Referer
+. Vary:_User-Agent
+. content-language-extension | content-lang-ext
+. content-type-extension | content-type-ext
+. content-type-negotiate | content-type-neg
+. content-language-negotiate | content-lang-neg

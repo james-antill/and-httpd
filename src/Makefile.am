@@ -6,23 +6,36 @@ AUTOMAKE_OPTIONS = no-dependencies 1.4
 
 if DBG_VSTR
 CFLAGS = # Remove -O2 automake/autoconf braindamage
+endif
+
+if DBG_VSTR
 if VSTR_DBG_AVAIL
-
-GEN_CFLAGS = $(VSTR_DBG_CFLAGS) @CFLAGS@ @WARNS@
-GEN_LDLIBS = $(VSTR_DBG_LDLIBS) @LDFLAGS@
-
+XVSTR_LDLIBS = $(VSTR_DBG_LDLIBS)
+XVSTR_CFLAGS = $(VSTR_DBG_CFLAGS)
 else
-
-GEN_CFLAGS = $(VSTR_CFLAGS) @CFLAGS@ @WARNS@
-GEN_LDLIBS = $(VSTR_LDLIBS) @LDFLAGS@
-
+XVSTR_LDLIBS = $(VSTR_LDLIBS)
+XVSTR_CFLAGS = $(VSTR_CFLAGS)
 endif
 else
-
-GEN_CFLAGS = $(VSTR_CFLAGS) @CFLAGS@ @WARNS@
-GEN_LDLIBS = $(VSTR_LDLIBS) @LDFLAGS@
-
+XVSTR_LDLIBS = $(VSTR_LDLIBS)
+XVSTR_CFLAGS = $(VSTR_CFLAGS)
 endif
+
+if DBG_TIMER_Q
+if TIMER_Q_DBG_AVAIL
+XTIMER_Q_LDLIBS = $(TIMER_Q_DBG_LDLIBS)
+XTIMER_Q_CFLAGS = $(TIMER_Q_DBG_CFLAGS)
+else
+XTIMER_Q_LDLIBS = $(TIMER_Q_LDLIBS)
+XTIMER_Q_CFLAGS = $(TIMER_Q_CFLAGS)
+endif
+else
+XTIMER_Q_LDLIBS = $(TIMER_Q_LDLIBS)
+XTIMER_Q_CFLAGS = $(TIMER_Q_CFLAGS)
+endif
+
+GEN_CFLAGS = $(XVSTR_CFLAGS) @CFLAGS@ @WARNS@
+GEN_LDLIBS = $(XVSTR_LDLIBS) @LDFLAGS@
 
 # if USE_STATIC_LIBS
 # GEN_CFLAGS += -DCONF_FULL_STATIC=1
@@ -44,9 +57,9 @@ and_httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
 and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                         httpd_policy.h \
                         $(DAEMON_FILES_HDRS) httpd.h httpd_err_codes.h
-and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(TIMER_Q_CFLAGS) \
+and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(XTIMER_Q_CFLAGS) \
                      -DHTTPD_CONF_VERSION='"@VERSION@"'
-and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(TIMER_Q_LDLIBS)
+and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(XTIMER_Q_LDLIBS)
 
 if LIBCAP_AVAIL
 and_httpd_LDADD += -lcap

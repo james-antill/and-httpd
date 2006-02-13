@@ -40,7 +40,7 @@ host_triplet = @host@
 subdir = tools
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/and-httpd.in $(srcdir)/and-httpd_gzip.in \
-	$(srcdir)/make_index.in \
+	$(srcdir)/and-httpd_status.in $(srcdir)/make_index.in \
 	$(srcdir)/scons_and_httpd_helpers.py.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -48,11 +48,13 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/autoconf.h
-CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip make_index \
-	scons_and_httpd_helpers.py
+CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip and-httpd_status \
+	make_index scons_and_httpd_helpers.py
 am__installdirs = "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" \
 	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" \
-	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"
+	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" \
+	"$(DESTDIR)$(wwwconfdir)" "$(DESTDIR)$(wwwgendir)" \
+	"$(DESTDIR)$(wwwhtmldir)"
 crondSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 initdSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 toolsmainSCRIPT_INSTALL = $(INSTALL_SCRIPT)
@@ -68,7 +70,11 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 confDATA_INSTALL = $(INSTALL_DATA)
 confdDATA_INSTALL = $(INSTALL_DATA)
 toolsmainDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(conf_DATA) $(confd_DATA) $(toolsmain_DATA)
+wwwconfDATA_INSTALL = $(INSTALL_DATA)
+wwwgenDATA_INSTALL = $(INSTALL_DATA)
+wwwhtmlDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(conf_DATA) $(confd_DATA) $(toolsmain_DATA) $(wwwconf_DATA) \
+	$(wwwgen_DATA) $(wwwhtml_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 ALLOCA = @ALLOCA@
@@ -94,6 +100,8 @@ CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DBG_TIMER_Q_FALSE = @DBG_TIMER_Q_FALSE@
+DBG_TIMER_Q_TRUE = @DBG_TIMER_Q_TRUE@
 DBG_VSTR_FALSE = @DBG_VSTR_FALSE@
 DBG_VSTR_TRUE = @DBG_VSTR_TRUE@
 DEFS = @DEFS@
@@ -155,6 +163,10 @@ TAR_PATH = @TAR_PATH@
 TIMER_Q_AVAIL_FALSE = @TIMER_Q_AVAIL_FALSE@
 TIMER_Q_AVAIL_TRUE = @TIMER_Q_AVAIL_TRUE@
 TIMER_Q_CFLAGS = @TIMER_Q_CFLAGS@
+TIMER_Q_DBG_AVAIL_FALSE = @TIMER_Q_DBG_AVAIL_FALSE@
+TIMER_Q_DBG_AVAIL_TRUE = @TIMER_Q_DBG_AVAIL_TRUE@
+TIMER_Q_DBG_CFLAGS = @TIMER_Q_DBG_CFLAGS@
+TIMER_Q_DBG_LDLIBS = @TIMER_Q_DBG_LDLIBS@
 TIMER_Q_LDLIBS = @TIMER_Q_LDLIBS@
 TRUE_PATH = @TRUE_PATH@
 VERSION = @VERSION@
@@ -213,18 +225,26 @@ target_alias = @target_alias@
 toolsmaindir = $(datadir)/and-httpd-$(VERSION)-tools
 toolsmain_DATA = scons_and_httpd_helpers.py
 toolsmain_SCRIPTS = \
+                and-httpd-status \
                 and-httpd-syslog2apache-httpd-combined-log \
+                conv_html2text \
                 gzip-r \
                 make_index
 
 initddir = $(sysconfdir)/init.d
 initd_SCRIPTS = and-httpd
 cronddir = $(sysconfdir)/cron.hourly
-crond_SCRIPTS = and-httpd_gzip
+crond_SCRIPTS = and-httpd_gzip and-httpd_status
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt
 confddir = $(sysconfdir)/and-httpd/conf.d
-confd_DATA = README _redirect-index.conf _,tools.conf
+confd_DATA = README _redirect-index.conf _,tools.conf _io-limiting.conf
+wwwconfdir = $(localstatedir)/www/conf
+wwwconf_DATA = status status.html status.html.gz status.html.bz2
+wwwhtmldir = $(localstatedir)/www/html
+wwwhtml_DATA = 
+wwwgendir = $(localstatedir)/www/generated_html
+wwwgen_DATA = 
 
 # Generated from autoconf
 CLEANFILES = $(initd_SCRIPTS)
@@ -263,6 +283,8 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 and-httpd: $(top_builddir)/config.status $(srcdir)/and-httpd.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 and-httpd_gzip: $(top_builddir)/config.status $(srcdir)/and-httpd_gzip.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+and-httpd_status: $(top_builddir)/config.status $(srcdir)/and-httpd_status.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 make_index: $(top_builddir)/config.status $(srcdir)/make_index.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
@@ -386,6 +408,57 @@ uninstall-toolsmainDATA:
 	  echo " rm -f '$(DESTDIR)$(toolsmaindir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(toolsmaindir)/$$f"; \
 	done
+install-wwwconfDATA: $(wwwconf_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(wwwconfdir)" || $(mkdir_p) "$(DESTDIR)$(wwwconfdir)"
+	@list='$(wwwconf_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(wwwconfDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(wwwconfdir)/$$f'"; \
+	  $(wwwconfDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(wwwconfdir)/$$f"; \
+	done
+
+uninstall-wwwconfDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(wwwconf_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(wwwconfdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(wwwconfdir)/$$f"; \
+	done
+install-wwwgenDATA: $(wwwgen_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(wwwgendir)" || $(mkdir_p) "$(DESTDIR)$(wwwgendir)"
+	@list='$(wwwgen_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(wwwgenDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(wwwgendir)/$$f'"; \
+	  $(wwwgenDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(wwwgendir)/$$f"; \
+	done
+
+uninstall-wwwgenDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(wwwgen_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(wwwgendir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(wwwgendir)/$$f"; \
+	done
+install-wwwhtmlDATA: $(wwwhtml_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(wwwhtmldir)" || $(mkdir_p) "$(DESTDIR)$(wwwhtmldir)"
+	@list='$(wwwhtml_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(wwwhtmlDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(wwwhtmldir)/$$f'"; \
+	  $(wwwhtmlDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(wwwhtmldir)/$$f"; \
+	done
+
+uninstall-wwwhtmlDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(wwwhtml_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(wwwhtmldir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(wwwhtmldir)/$$f"; \
+	done
 tags: TAGS
 TAGS:
 
@@ -424,7 +497,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)"; do \
+	for dir in "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwconfdir)" "$(DESTDIR)$(wwwgendir)" "$(DESTDIR)$(wwwhtmldir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -472,7 +545,8 @@ info-am:
 
 install-data-am: install-confDATA install-confdDATA \
 	install-crondSCRIPTS install-initdSCRIPTS \
-	install-toolsmainDATA install-toolsmainSCRIPTS
+	install-toolsmainDATA install-toolsmainSCRIPTS \
+	install-wwwconfDATA install-wwwgenDATA install-wwwhtmlDATA
 
 install-exec-am:
 
@@ -501,7 +575,8 @@ ps-am:
 uninstall-am: uninstall-confDATA uninstall-confdDATA \
 	uninstall-crondSCRIPTS uninstall-info-am \
 	uninstall-initdSCRIPTS uninstall-toolsmainDATA \
-	uninstall-toolsmainSCRIPTS
+	uninstall-toolsmainSCRIPTS uninstall-wwwconfDATA \
+	uninstall-wwwgenDATA uninstall-wwwhtmlDATA
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
@@ -510,12 +585,15 @@ uninstall-am: uninstall-confDATA uninstall-confdDATA \
 	install-data install-data-am install-exec install-exec-am \
 	install-info install-info-am install-initdSCRIPTS install-man \
 	install-strip install-toolsmainDATA install-toolsmainSCRIPTS \
+	install-wwwconfDATA install-wwwgenDATA install-wwwhtmlDATA \
 	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
 	uninstall-confDATA uninstall-confdDATA uninstall-crondSCRIPTS \
 	uninstall-info-am uninstall-initdSCRIPTS \
-	uninstall-toolsmainDATA uninstall-toolsmainSCRIPTS
+	uninstall-toolsmainDATA uninstall-toolsmainSCRIPTS \
+	uninstall-wwwconfDATA uninstall-wwwgenDATA \
+	uninstall-wwwhtmlDATA
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

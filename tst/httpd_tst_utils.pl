@@ -17,6 +17,7 @@ sub http_cntl_list
     if (!$list_pid) {
       sleep(2);
       system("./and-cntl -e list and-httpd_cntl > /dev/null");
+      system("./and-cntl -e 'list foo' and-httpd_cntl > /dev/null");
       _exit(0);
     }
     return $list_pid;
@@ -29,23 +30,28 @@ sub httpd__munge_ret
     # Remove date, because that changes each time
     $output =~ s/^(Date:).*$/$1/gm;
     # Remove last-modified = start date for error messages
-    $output =~
-      s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
-	^(Date:)$ (\n)
-	^(Server: .*)$ (\n)
-	^(Last-Modified:) .*$
-	#$1$2$3$4$5$6$7#gmx;
+    $_ = $output;
+    s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
+      ^(Date:)$ (\n)
+      ^(Server: .*)$ (\n)
+      ^(Last-Modified:) .*$
+      #$1$2$3$4$5$6$7#gmx;
+    # NOTE: that Server: can now be missing...
+    s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
+      ^(Date:)$ (\n)
+      ^(Last-Modified:) .*$
+      #$1$2$3$4$5#gmx;
+
+
     # Remove last modified for trace ops
-    $output =~
-      s!^(Last-Modified:).*$ (\n)
-        ^(Content-Type: \s message/http.*)$
-	!$1$2$3!gmx;
+    s!^(Last-Modified:).*$ (\n)
+      ^(Content-Type: \s message/http.*)$
+      !$1$2$3!gmx;
 
     # Remove (Debug) comment from Server...
-    $output =~
-      s!^(Server: [^ ]*) \(Debug\)!$1!gm;
+    s!^(Server: [^ ]*) \(Debug\)!$1!gm;
 
-    return $output;
+    return $_;
   }
 
 sub httpd_file_tst
@@ -519,6 +525,8 @@ if (@ARGV)
 	  { all_conf_x_x_tsts(9, shift); $y = 1; }
 	elsif ($arg eq "conf_10")
 	  { all_conf_x_tsts(10); $y = 1; }
+	elsif ($arg eq "conf_11")
+	  { all_conf_x_tsts(11); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -619,6 +627,11 @@ sub conf_tsts
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.9.1");
 	    all_conf_x_tsts(10);
+	  }
+	elsif ($_ == 11)
+	  {
+	    daemon_status("and-httpd_cntl", "127.0.10.1");
+	    all_conf_x_tsts(11);
 	  }
 	else
 	  { failure("Bad conf number."); }

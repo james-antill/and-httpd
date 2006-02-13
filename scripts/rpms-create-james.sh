@@ -1,22 +1,24 @@
 #! /bin/bash -e
 
-if [ ! -r VERSION -o ! -r and-httpd.spec -o ! -r configure ]; then
+pkg=and-httpd
+
+if [ ! -r VERSION -o ! -r $pkg.spec -o ! -r configure ]; then
   if [ -r configure ]; then
 #    ./scripts/b/DOCS.sh
-    ./scripts/b/DOCS.sh
+    ./scripts/b/def-debug.sh
   else
-    echo "No VERSION, and-httpd.spec or configure file." &>2
+    echo "No VERSION, $pkg.spec or configure file." &>2
     exit 1
   fi
 fi
 
 v="`cat VERSION`"
 s="`pwd`"
-cd ../build/and-httpd
+cd ../build/$pkg
 
-rm -rf and-httpd-$v
-cp -a $s ./and-httpd-$v
-cd ./and-httpd-$v
+rm -rf $pkg-$v
+cp -a $s ./$pkg-$v
+cd ./$pkg-$v
 
 ./scripts/clean.sh full
 
@@ -32,7 +34,7 @@ rm -rf ./{arch}
 find . -name .arch-ids -type d -print0 | xargs -0 rm -rf
 
 # Create tarballs/RPMS
-cp $s/and-httpd.spec .
+cp $s/$pkg.spec .
 
 cd ..
 
@@ -56,19 +58,19 @@ else
 echo Using normal release of 1.
 fi
 
-perl -i -pe "s/^Release: 1/Release: $rel/" and-httpd-$v/and-httpd.spec
+perl -i -pe "s/^Release: 1/Release: $rel/" $pkg-$v/$pkg.spec
 
-tar -cf and-httpd-$v.tar and-httpd-$v
-bzip2 -9f and-httpd-$v.tar
+tar -cf   $pkg-$v.tar $pkg-$v
+bzip2 -9f $pkg-$v.tar
 
-tar -cf and-httpd-$v.tar and-httpd-$v
-gzip -9f and-httpd-$v.tar
+tar -cf   $pkg-$v.tar $pkg-$v
+gzip -9f  $pkg-$v.tar
 
-sudo rpmbuild -ta --define "chk $chk" and-httpd-$v.tar.gz
+sudo rpmbuild -ta --define "chk $chk" $pkg-$v.tar.gz
 
-echo "/usr/src/redhat/RPMS/*/and-httpd*-$v-$rel*"
-echo "/usr/src/redhat/SRPMS/and-httpd*-$v-$rel*"
+echo "/usr/src/redhat/RPMS/*/$pkg*-$v-$rel*"
+echo "/usr/src/redhat/SRPMS/$pkg*-$v-$rel*"
 
-ls -aslhF /usr/src/redhat/RPMS/*/and-httpd*-$v-${rel}*
-ls -aslhF /usr/src/redhat/SRPMS/and-httpd*-$v-${rel}*
+ls -ahslF /usr/src/redhat/RPMS/*/$pkg*-$v-$rel*
+ls -ahslF /usr/src/redhat/SRPMS/$pkg*-$v-$rel*
 
