@@ -207,8 +207,10 @@ extern inline void httpd_policy_path_mod_name(const Vstr_base *s1,
                                               size_t *pos, size_t *len)
 {
   size_t srch = vstr_srch_chr_rev(s1, *pos, *len, '/');
-  HTTPD_POLICY__ASSERT(srch);
 
+  if (!srch)
+    return;
+  
   *len -= vstr_sc_posdiff(*pos, srch);
   *pos += vstr_sc_posdiff(*pos, srch);
 }
@@ -217,9 +219,11 @@ extern inline void httpd_policy_path_mod_dirn(const Vstr_base *s1,
                                               size_t *pos, size_t *len)
 {
   size_t srch = vstr_srch_chr_rev(s1, *pos, *len, '/');
-  HTTPD_POLICY__ASSERT(srch);
 
-  *len = vstr_sc_posdiff(*pos, srch);
+  if (srch)
+    *len = vstr_sc_posdiff(*pos, srch);
+  else
+    *len = 0;
 }
 
 extern inline void httpd_policy_path_mod_extn(const Vstr_base *s1,
@@ -475,7 +479,9 @@ extern inline void httpd_policy_uri_mod_name(const Vstr_base *s1,
 {
   size_t srch1 = vstr_srch_chr_rev(s1, *pos, *len, '/');
   size_t srch2 = vstr_srch_case_cstr_buf_rev(s1, *pos, *len, "%2f");
-  HTTPD_POLICY__ASSERT(srch1);
+
+  if (!srch1 && !srch2)
+    return;
 
   if (srch1 < srch2)
     srch1 = srch2 + 2;
@@ -489,8 +495,13 @@ extern inline void httpd_policy_uri_mod_dirn(const Vstr_base *s1,
 {
   size_t srch1 = vstr_srch_chr_rev(s1, *pos, *len, '/');
   size_t srch2 = vstr_srch_case_cstr_buf_rev(s1, *pos, *len, "%2f");
-  HTTPD_POLICY__ASSERT(srch1);
 
+  if (!srch1 && !srch2)
+  {
+    *len = 0;
+    return;
+  }
+  
   if (srch1 < srch2)
     srch1 = srch2 + 2;
   

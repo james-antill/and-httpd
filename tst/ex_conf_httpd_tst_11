@@ -18,10 +18,11 @@
    policy conf-httpd-tst-11.1-<default>
 
     (HTTP
-     advertise-range false
-     trace-op false
+        text-plain-redirect true
+        advertise-range false
+        trace-op false
 
-     Server: foo/1.2.3)
+        Server: foo/1.2.3)
     (match-init [debug]
      HTTP
      Server: += ' (' Debug ')')
@@ -52,16 +53,21 @@
   (org.and.daemon-conf-1.0
    policy conf-httpd-tst-11.1-<limited> ; Allow a single connection to use 0.5K/s 
      limit io       ; with 5K/s for everyone
-    (policy-process/s    write 100)
-     policy-connection/s write  50)
+    (policy-process/s    write 200)
+     policy-connection/s write  75)
 
   (match-request 'non-compression IO Limits'
-                 [policy-eq conf-httpd-tst-11.1-<default> protect-vary ! Accept-Encoding:]
+                 [policy-eq conf-httpd-tst-11.1-<default>
+                 # (|| method-eq GET method-eq POST)
+                  protect-vary ! Accept-Encoding:]
      policy            conf-httpd-tst-11.1-<limited>
      connection-policy conf-httpd-tst-11.1-<limited>)
   (match-init [true] ; Change if you want to never get back...
    match-request     'compression IO Limits'
-                 [policy-eq conf-httpd-tst-11.1-<limited> protect-vary   Accept-Encoding:]
+                 [policy-eq conf-httpd-tst-11.1-<limited>
+                  ||
+                    # (! || method-eq GET method-eq POST)
+                     protect-vary   Accept-Encoding:]
      policy            conf-httpd-tst-11.1-<default>
      connection-policy conf-httpd-tst-11.1-<default>)
 
@@ -80,6 +86,41 @@
      policy 503)
   (match-request '503' [path-eq /virt/tst_11/c503]
      connection-policy 503)
+
+  (match-request 'lowercase path' [path-beg /virt/tst_11/lowercase-path/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/lowercase-path/] ''
+        Location: (= <lowercase> <path>)
+        return <permanent-redirect>)
+  (match-request 'uppercase path' [path-beg /virt/tst_11/uppercase-path/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/uppercase-path/] '/'
+        Location: (= <uppercase> <path>)
+        return <permanent-redirect>)
+
+  (match-request 'lowercase ext' [path-beg /virt/tst_11/lowercase-ext/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/lowercase-ext/] ''
+        Location: [limit <extension>] (= <lowercase> <extension>)
+        return <permanent-redirect>)
+  (match-request 'uppercase ext' [path-beg /virt/tst_11/uppercase-ext/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/uppercase-ext/] /
+        Location: [limit <extension>] (= <uppercase> <extension>)
+        return <permanent-redirect>)
+
+  (match-request 'lowercase exts' [path-beg /virt/tst_11/lowercase-exts/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/lowercase-exts/] ''
+        Location: [limit <extensions>] (= <lowercase> <extensions>)
+        return <permanent-redirect>)
+  (match-request 'uppercase exts' [path-beg /virt/tst_11/uppercase-exts/]
+     org.and.httpd-conf-req-1.0
+        Location: [limit <path>-beg /virt/tst_11/uppercase-exts/] "/"
+        Location: [limit <extensions>] (= <uppercase> <extensions>)
+        return <permanent-redirect>)
+
+
    match-request 'vary static all' [path-eq '/virt/tst_11/vary static all']
      org.and.httpd-conf-req-1.0
        (match-request  [hostname-eq alfkjadlfjaslkfj] sym-not-exist)

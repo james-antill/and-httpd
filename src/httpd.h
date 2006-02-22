@@ -36,6 +36,7 @@ struct Http_hdrs
  Vstr_sect_node hdr_if_range[1];
  Vstr_sect_node hdr_if_unmodified_since[1];
  Vstr_sect_node hdr_range[1];
+ Vstr_sect_node hdr_x_moz[1];
 
  /* can have multiple headers... */
  struct Http_hdrs__multi {
@@ -115,15 +116,19 @@ typedef struct Httpd_req_data
 
  size_t vhost_prefix_len;
  
+ unsigned int content_enc_identity;
+ unsigned int content_enc_gzip;
+ unsigned int content_enc_bzip2;
+ 
  unsigned int ver_0_9 : 1;
  unsigned int ver_1_1 : 1;
  unsigned int head_op : 1;
 
- unsigned int content_encoding_gzip  : 1;
- unsigned int content_encoding_xgzip : 1; /* only valid if gzip is TRUE */
- unsigned int content_encoding_bzip2 : 1;
- 
+ unsigned int parsed_content_encoding   : 1;
  unsigned int content_encoding_identity : 1;
+ unsigned int content_encoding_gzip     : 1;
+ unsigned int content_encoding_bzip2    : 1;
+ unsigned int content_encoding_xgzip    : 1; /* only valid if gzip is == 1000 */
 
  unsigned int direct_uri         : 1;
  unsigned int direct_filename    : 1;
@@ -148,6 +153,7 @@ typedef struct Httpd_req_data
  unsigned int vary_ir   : 1;
  unsigned int vary_im   : 1;
  unsigned int vary_inm  : 1;
+ unsigned int vary_xm   : 1;
  
  unsigned int chked_encoded_path : 1;
  unsigned int chk_encoded_slash  : 1;
@@ -274,9 +280,14 @@ extern int http_req_content_type(Httpd_req_data *);
 
 extern unsigned int http_parse_accept(Httpd_req_data *,
                                       const Vstr_base *, size_t, size_t);
+extern int http_parse_accept_encoding(Httpd_req_data *, int);
 extern unsigned int http_parse_accept_language(Httpd_req_data *,
                                                const Vstr_base *,
                                                size_t, size_t);
+extern int httpd_match_etags(Httpd_req_data *,
+                             const Vstr_base *, size_t, size_t,
+                             const Vstr_base *, size_t, size_t,
+                             int);
 
 extern void http_app_def_hdrs(struct Con *, Httpd_req_data *,
                               unsigned int, const char *, time_t,

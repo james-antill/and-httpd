@@ -1,0 +1,193 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+
+http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+
+http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-path/foo.html.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOO.HTML.PL
+
+http://foo.example.com/FOO.HTML.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOO.HTML.PL
+
+http://foo.example.com/FOO.HTML.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOO.HTML.PL
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOO.HTML.PL
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/virt/tst_11/lowercase-ext/fOO.html.pl
+
+http://foo.example.com/virt/tst_11/lowercase-ext/fOO.html.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/virt/tst_11/lowercase-ext/fOo.HTML.pl
+
+http://foo.example.com/virt/tst_11/lowercase-ext/fOo.HTML.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/virt/tst_11/lowercase-ext/fOo.html.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/virt/tst_11/lowercase-ext/FOo.hTMl.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOO.html.PL
+
+http://foo.example.com/fOO.html.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOo.HTML.PL
+
+http://foo.example.com/fOo.HTML.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOo.html.PL
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOo.hTMl.PL
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-exts/fOO.html.pl
+
+http://foo.example.com/virt/tst_11/lowercase-exts/fOO.html.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-exts/fOo.html.pl
+
+http://foo.example.com/virt/tst_11/lowercase-exts/fOo.html.pl
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-exts/fOo.html.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 63
+Location: http://foo.example.com/virt/tst_11/lowercase-exts/FOo.html.pl
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOO.HTML.PL
+
+http://foo.example.com/fOO.HTML.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOo.HTML.PL
+
+http://foo.example.com/fOo.HTML.PL
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/fOo.HTML.PL
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Last-Modified:
+Connection: close
+Content-Type: text/plain
+Content-Length: 36
+Location: http://foo.example.com/FOo.HTML.PL
+

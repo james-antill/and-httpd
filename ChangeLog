@@ -1,3 +1,65 @@
+2006-02-21  James Antill  <james@and.org>
+
+	* tools/and-httpd.conf: Explain syslog facility.
+
+	* src/opt_serv.c (opt_serv__conf_d1): Added syslog facility config.
+
+	* Documentation/USER_AGENT_ACCEPT: Add galeon-2.0.0 and IE
+
+2006-02-19  James Antill  <james@and.org>
+
+	* src/evnt.h (evnt___chk_in): Enable SA checking.
+
+	* src/evnt.c (evnt__free1): Track evnt's via. their SA in logging.
+
+	* tools/_io-limiting.conf: Add ability to limit on mozilla prefetching.
+
+	* src/httpd.c (http_app_def_hdrs): Vary on X-Moz.
+
+	* src/httpd.c (http__parse_hdrs): Track X-Moz header.
+
+	* src/httpd.c (httpd__try_fd_encoding): Fix preferring gzip over bzip2.
+
+	* src/evnt.c (evnt_shutdown_w): On shutdown_w(), delete all current
+	read data and add POLLIN (for EOF), if possible (much faster shutdown
+	on stopped connections).
+	(evnt_shutdown_w): Remove work around for 2.4.22-1.2199.4.legacy.npt
+	TCP_CORK bug.
+
+2006-02-18  James Antill  <james@and.org>
+
+	* tools/and-httpd.in: Don't pass --mime-types-xtra, as it's in the
+	config. file now (and the path was incorrect).
+
+	* tools/_io-limiting.conf: Don't limit on HEAD/OPTION/TRACE methods.
+
+	* src/httpd_policy.h (httpd_policy_uri_mod_name): Don't assume '/'
+	characters.
+	(httpd_policy_uri_mod_dirn): Don't assume '/' characters.
+	(httpd_policy_path_mod_name): Don't assume '/' characters.
+	(httpd_policy_path_mod_dirn): Don't assume '/' characters.
+
+	* src/httpd_policy.c (httpd_policy__build_path): Add <lowercase> and
+	<uppercase>.
+
+	* src/httpd_conf_req.c (HTTPD__CONF_REDIR): Length must be calculated
+	from an absolute URL, so do that first (fix non-absolute url redirect
+	content-length's).
+
+	* src/httpd_conf_main.c (httpd_match_request_tst_d1): Do non-case
+	sensitive matches against methods.
+	(httpd_match_request_tst_d1): tm-dow-eq triggers vary-star.
+
+	* src/httpd_conf_req.c (HTTPD__CONF_REDIR): Fix non-absolute redirect
+	message length responses.
+
+	* tools/and-httpd.in: Remove MIME extras file argument, it's in the
+	main config. file.
+
+	* src/httpd_conf_main.c (httpd__conf_main_policy_http_d1): Allow
+	text/plain redirection messages (nothing should be looking at this
+	anyway).
+
 2006-02-12  James Antill  <james@and.org>
 
 	* src/httpd.c (http_fin_err_req): Remove simple	error pages.

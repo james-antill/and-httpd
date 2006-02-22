@@ -350,11 +350,63 @@ static int httpd__match_request_tst_op_d1(Conf_parse *conf, Conf_token *token,
                                      matches, prev_match));
 }
 
+/* match tokens against a passed in header */
+#define HTTPD_MATCH__TYPE_REQ_HDR_EQ      1
+#define HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ 2
+#define HTTPD_MATCH__TYPE_REQ_HDR_AE      3
+#define HTTPD_MATCH__TYPE_REQ_HDR_IM      4
+#define HTTPD_MATCH__TYPE_REQ_HDR_INM     5
+static int httpd_match__req_hdr(Httpd_req_data *req,
+                                Conf_parse *conf, Conf_token *token,
+                                const Vstr_base *s1, size_t pos, size_t len,
+                                int flags)
+{
+  if (!conf_token_list_num(token, token->depth_num))
+    return (!!pos); /* does the header exist */
+
+  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+
+  /* FIXME: add [] tests for search etc.? */
+  
+  switch (flags)
+  {
+    case HTTPD_MATCH__TYPE_REQ_HDR_IM:
+    case HTTPD_MATCH__TYPE_REQ_HDR_INM: /* disallow weak etag's? */
+    {
+      const Vstr_sect_node *val = conf_token_value(token);
+  
+      return (val && httpd_match_etags(req, conf->data, val->pos, val->len,
+                                       s1, pos, len, TRUE));
+    }
+    case HTTPD_MATCH__TYPE_REQ_HDR_EQ:
+      return (conf_token_cmp_val_eq(conf, token, s1, pos, len));
+    case HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ:
+      return (conf_token_cmp_case_val_eq(conf, token, s1, pos, len));
+    case HTTPD_MATCH__TYPE_REQ_HDR_AE:
+      http_parse_accept_encoding(req, TRUE);
+
+      if (0) { }
+      else if (conf_token_cmp_val_cstr_eq(conf, token, "identity"))
+        return (!!req->content_enc_identity);
+      else if (conf_token_cmp_val_cstr_eq(conf, token, "gzip"))
+        return (!!req->content_enc_gzip);
+      else if (conf_token_cmp_val_cstr_eq(conf, token, "bzip2"))
+        return (!!req->content_enc_bzip2);
+
+      return (FALSE);
+  }
+
+  ASSERT_NOT_REACHED();
+  
+  return (FALSE);
+}
+
 int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
                                Conf_parse *conf, Conf_token *token,
                                int *matches, int prev_match)
 {
   Vstr_base *http_data = con->evnt->io_r;
+  Vstr_base *http_multi_data = req->http_hdrs->multi->comb;
   int clist = FALSE;
   
   ASSERT(con && req);  
@@ -479,6 +531,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     int req_vary_ir   = req->vary_ir;
     int req_vary_im   = req->vary_im;
     int req_vary_inm  = req->vary_inm;
+    int req_vary_xm   = req->vary_xm;
 
     ASSERT(*matches);
     while (*matches && conf_token_list_num(token, depth))
@@ -503,6 +556,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     req->vary_ir   = req_vary_ir;
     req->vary_im   = req_vary_im;
     req->vary_inm  = req_vary_inm;
+    req->vary_xm   = req_vary_xm;
   }
   else if (OPT_SERV_SYM_EQ("Accept-Encoding:"))
   { /* in theory could call http_parse_accept_encoding() and make sure
@@ -510,66 +564,94 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     Vstr_sect_node *h_ae = req->http_hdrs->multi->hdr_accept_encoding;
 
     req->vary_ae = TRUE;
-    *matches = !!h_ae->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_multi_data, h_ae->pos, h_ae->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_AE);
   }
   else if (OPT_SERV_SYM_EQ("If-Modified-Since:"))
   {
     Vstr_sect_node *h_ims = req->http_hdrs->hdr_if_modified_since;
 
     req->vary_ims = TRUE;
-    *matches = !!h_ims->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, h_ims->pos, h_ims->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_EQ);
   }
   else if (OPT_SERV_SYM_EQ("If-Unmodified-Since:"))
   {
     Vstr_sect_node *h_ius = req->http_hdrs->hdr_if_unmodified_since;
 
     req->vary_ius = TRUE;
-    *matches = !!h_ius->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, h_ius->pos, h_ius->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_EQ);
   }
   else if (OPT_SERV_SYM_EQ("If-Range:"))
   {
     Vstr_sect_node *h_ir = req->http_hdrs->hdr_if_range;
 
     req->vary_ir = TRUE;
-    *matches = !!h_ir->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, h_ir->pos, h_ir->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_EQ);
   }
   else if (OPT_SERV_SYM_EQ("If-Match:"))
   {
     Vstr_sect_node *h_im = req->http_hdrs->multi->hdr_if_match;
 
     req->vary_im = TRUE;
-    *matches = !!h_im->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_multi_data, h_im->pos, h_im->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_IM);
   }
   else if (OPT_SERV_SYM_EQ("If-None-Match:"))
   {
     Vstr_sect_node *h_inm = req->http_hdrs->multi->hdr_if_none_match;
 
     req->vary_inm = TRUE;
-    *matches = !!h_inm->len;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_multi_data, h_inm->pos, h_inm->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_INM);
   }
-  else if (OPT_SERV_SYM_EQ("hostname-eq") || OPT_SERV_SYM_EQ("hostname=="))
+  else if (OPT_SERV_SYM_EQ("X-Moz:"))
+  { /* in theory could call http_parse_accept_encoding() and make sure
+     * they are allowing gzip ... but non-zero len is probably fine for now */
+    Vstr_sect_node *h_xm = req->http_hdrs->hdr_x_moz;
+
+    req->vary_xm = TRUE;
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, h_xm->pos, h_xm->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_EQ);
+  }
+  else if (OPT_SERV_SYM_EQ("Host:") ||
+           /* compat */
+           OPT_SERV_SYM_EQ("hostname-eq") || OPT_SERV_SYM_EQ("hostname=="))
   { /* doesn't do escaping because DNS is ASCII */
     Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
     Vstr_base *d_h      = req->policy->default_hostname;
 
-    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     if (h_h->len)
-      *matches = conf_token_cmp_case_val_eq(conf, token,
-                                            http_data, h_h->pos, h_h->len);
+      *matches = httpd_match__req_hdr(req, conf, token,
+                                      http_data, h_h->pos, h_h->len,
+                                      HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ);
     else
-      *matches = conf_token_cmp_case_val_eq(conf, token,
-                                            d_h, 1, d_h->len);
+      *matches = httpd_match__req_hdr(req, conf, token,
+                                      d_h, 1, d_h->len,
+                                      HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ);
   }
-  else if (OPT_SERV_SYM_EQ("user-agent-eq") || OPT_SERV_SYM_EQ("UA-eq") ||
+  else if (OPT_SERV_SYM_EQ("User-Agent:") ||
+           /* compat */
+           OPT_SERV_SYM_EQ("user-agent-eq") || OPT_SERV_SYM_EQ("UA-eq") ||
            OPT_SERV_SYM_EQ("user-agent==") || OPT_SERV_SYM_EQ("UA=="))
   { /* doesn't do escaping because URLs are ASCII */
     Vstr_sect_node *h_ua = req->http_hdrs->hdr_ua;
 
     req->vary_ua = TRUE;
-    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    *matches = conf_token_cmp_case_val_eq(conf, token, http_data, 1, h_ua->len);
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, 1, h_ua->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_EQ);
   }
-  else if (OPT_SERV_SYM_EQ("user-agent-search-eq") ||
+  else if (OPT_SERV_SYM_EQ("user-agent-search-eq") || /* required compat */
            OPT_SERV_SYM_EQ("user-agent-search==") ||
            OPT_SERV_SYM_EQ("user-agent-srch-eq") ||
            OPT_SERV_SYM_EQ("user-agent-srch==") ||
@@ -580,19 +662,22 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
 
     req->vary_ua = TRUE;
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    *matches = !!conf_token_srch_case_val(conf, token, http_data, 1, h_ua->len);
+    *matches = !!conf_token_srch_val(conf, token, http_data, 1, h_ua->len);
   }
-  else if (OPT_SERV_SYM_EQ("referrer-eq") || OPT_SERV_SYM_EQ("referer-eq") ||
+  else if (OPT_SERV_SYM_EQ("Referer:")    || OPT_SERV_SYM_EQ("Referrer:") ||
+           /* compat */
+           OPT_SERV_SYM_EQ("referrer-eq") || OPT_SERV_SYM_EQ("referer-eq") ||
            OPT_SERV_SYM_EQ("referrer==")  || OPT_SERV_SYM_EQ("referer=="))
   { /* doesn't do escaping because URLs are ASCII */
     Vstr_sect_node *h_ref = req->http_hdrs->hdr_referer;
 
     req->vary_rf = TRUE;
-    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    *matches = conf_token_cmp_case_val_eq(conf, token,
-                                          http_data, 1, h_ref->len);
+    *matches = httpd_match__req_hdr(req, conf, token,
+                                    http_data, 1, h_ref->len,
+                                    HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ);
   }
   else if (OPT_SERV_SYM_EQ("referrer-beg") || OPT_SERV_SYM_EQ("referer-beg"))
+    /* required compat */
   { /* doesn't do escaping because URLs are ASCII */
     Vstr_sect_node *h_ref = req->http_hdrs->hdr_referer;
 
@@ -601,7 +686,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     *matches = conf_token_cmp_case_val_beg_eq(conf, token,
                                               http_data, 1, h_ref->len);
   }
-  else if (OPT_SERV_SYM_EQ("referrer-search-eq") ||
+  else if (OPT_SERV_SYM_EQ("referrer-search-eq") || /* required compat */
            OPT_SERV_SYM_EQ("referrer-search==") ||
            OPT_SERV_SYM_EQ("referrer-srch-eq") ||
            OPT_SERV_SYM_EQ("referrer-srch==") ||
@@ -628,8 +713,8 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     Vstr_sect_node *meth = VSTR_SECTS_NUM(req->sects, 1);
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    *matches = conf_token_cmp_case_val_eq(conf, token,
-                                          http_data, meth->pos, meth->len);
+    *matches = conf_token_cmp_val_eq(conf, token,
+                                     http_data, meth->pos, meth->len);
   }
   else if (OPT_SERV_SYM_EQ("tm-dow-eq") || OPT_SERV_SYM_EQ("tm-dow=="))
   { /* so we can do msff :) */
@@ -640,7 +725,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
 
     if (!tm) return (FALSE);
 
-    /* vary_star ... or nothing ? */
+    req->vary_star = TRUE;
     OPT_SERV_X_UINT(tmp);
     *matches = tmp == tm->tm_wday;
   }
@@ -1058,6 +1143,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     CONF_SC_MAKE_CLIST_END(); /* end of http checks */
   }
   
+  else if (OPT_SERV_SYM_EQ("text-plain-redirect"))
+    OPT_SERV_X_TOGGLE(opts->use_text_plain_redirect);
   else if (OPT_SERV_SYM_EQ("encoded-content-replacement")) /* allow gzip */
     OPT_SERV_X_TOGGLE(opts->use_enc_content_replacement);
   else if (OPT_SERV_SYM_EQ("keep-alive"))

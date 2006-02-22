@@ -56,22 +56,22 @@
 #define CONF_GETTIMEOFDAY_TIME TRUE /* does tv_sec contain time(NULL) */
 
 #ifdef CONF_FULL_STATIC
-# define EVNT__RESOLVE_NAME(evnt, x) do {                               \
-   if ((EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
-     EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);            \
+# define EVNT__RESOLVE_NAME(saddr, x) do {                               \
+   if ((saddr->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
+     saddr->sin_addr.s_addr = htonl(INADDR_ANY);            \
  } while (FALSE)
 #else
 # include <netdb.h>
-# define EVNT__RESOLVE_NAME(evnt, x) do {                               \
-   if ((EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
+# define EVNT__RESOLVE_NAME(saddr, x) do {                               \
+   if ((saddr->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
    {                                                                    \
      struct hostent *h = gethostbyname(x);                              \
                                                                         \
-     EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);            \
+     saddr->sin_addr.s_addr = htonl(INADDR_ANY);            \
      if (h)                                                             \
-       memcpy(&EVNT_SA_IN4(evnt)->sin_addr.s_addr,                      \
+       memcpy(&saddr->sin_addr.s_addr,                      \
               h->h_addr_list[0],                                        \
-              sizeof(EVNT_SA_IN4(evnt)->sin_addr.s_addr));              \
+              sizeof(saddr->sin_addr.s_addr));              \
    }                                                                    \
  } while (FALSE)
 #endif
@@ -486,9 +486,6 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   evnt->lims    = NULL;
   evnt->lim_num = 0;
   
-  if (!(evnt->ind = evnt_poll_add(evnt, fd)))
-    goto poll_add_fail;
-
   EVNT__COPY_TV(&evnt->ctime);
   EVNT__COPY_TV(&evnt->mtime);
 
@@ -502,11 +499,14 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
   
   evnt_fd__set_nonblock(fd, TRUE);
 
+  if (!(evnt->ind = evnt_poll_add(evnt, fd)))
+    goto poll_add_fail;
+
   return (TRUE);
 
- fcntl_fail:
-  evnt_poll_del(evnt);
  poll_add_fail:
+  vstr_ref_del(evnt->sa_ref); evnt->sa_ref = NULL;
+ fcntl_fail:
   vstr_free_base(evnt->io_w);
  make_vstr_fail:
   vstr_free_base(evnt->io_r);
@@ -520,9 +520,11 @@ static void evnt__free1(struct Evnt *evnt)
   evnt_send_del(evnt);
 
   if (evnt->io_r && evnt->io_r->len)
-    vlg_dbg2(vlg, "evnt__free1(%p) io_r len = %zu\n", evnt, evnt->io_r->len);
+    vlg_dbg2(vlg, "evnt__free1($<sa:%p>) io_r len = %zu\n",
+             EVNT_SA(evnt), evnt->io_r->len);
   if (evnt->io_w && evnt->io_w->len)
-    vlg_dbg2(vlg, "evnt__free1(%p) io_w len = %zu\n", evnt, evnt->io_w->len);
+    vlg_dbg2(vlg, "evnt__free1($<sa:%p>) io_w len = %zu\n",
+             EVNT_SA(evnt), evnt->io_w->len);
   
   vstr_free_base(evnt->io_w); evnt->io_w = NULL;
   vstr_free_base(evnt->io_r); evnt->io_r = NULL;
@@ -635,6 +637,7 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
   int fd = -1;
   socklen_t alloc_len = sizeof(struct sockaddr_in);
   Vstr_ref *ref = NULL;
+  struct sockaddr_in *saddr = NULL;
   
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
@@ -643,6 +646,12 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
+  saddr = ref->ptr;
+  
+  saddr->sin_family = AF_INET;
+  saddr->sin_port = htons(port);
+  saddr->sin_addr.s_addr = inet_addr(ipv4_string);
+
   if (!evnt_init(evnt, fd, ref))
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
@@ -650,11 +659,7 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
   if (!evnt->flag_io_nagle)
     evnt_fd__set_nodelay(fd, TRUE);
   
-  EVNT_SA_IN4(evnt)->sin_family = AF_INET;
-  EVNT_SA_IN4(evnt)->sin_port = htons(port);
-  EVNT_SA_IN4(evnt)->sin_addr.s_addr = inet_addr(ipv4_string);
-
-  ASSERT(port && (EVNT_SA_IN4(evnt)->sin_addr.s_addr != htonl(INADDR_ANY)));
+  ASSERT(port && (saddr->sin_addr.s_addr != htonl(INADDR_ANY)));
   
   if (connect(fd, EVNT_SA(evnt), alloc_len) == -1)
   {
@@ -686,6 +691,7 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
   int fd = -1;
   size_t len = strlen(fname) + 1;
   struct sockaddr_un tmp_sun;
+  struct sockaddr_un *saddr = NULL;
   socklen_t alloc_len = 0;
   Vstr_ref *ref = NULL;
 
@@ -699,12 +705,14 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
+  saddr = ref->ptr;
+  
+  saddr->sun_family = AF_LOCAL;
+  memcpy(saddr->sun_path, fname, len);
+  
   if (!evnt_init(evnt, fd, ref))
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
-  
-  EVNT_SA_UN(evnt)->sun_family = AF_LOCAL;
-  memcpy(EVNT_SA_UN(evnt)->sun_path, fname, len);
   
   if (connect(fd, EVNT_SA(evnt), alloc_len) == -1)
   {
@@ -779,6 +787,7 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   int saved_errno = 0;
   socklen_t alloc_len = sizeof(struct sockaddr_in);
   Vstr_ref *ref = NULL;
+  struct sockaddr_in *saddr = NULL;
   
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
     goto sock_fail;
@@ -787,18 +796,20 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
-  if (!evnt_init(evnt, fd, ref))
-    goto init_fail;
+  saddr = ref->ptr;
+  
+  saddr->sin_family = AF_INET;
 
-  EVNT_SA_IN4(evnt)->sin_family = AF_INET;
-
-  EVNT_SA_IN4(evnt)->sin_addr.s_addr = htonl(INADDR_ANY);
+  saddr->sin_addr.s_addr = htonl(INADDR_ANY);
   if (acpt_addr && *acpt_addr) /* silent error becomes <any> */
-    EVNT__RESOLVE_NAME(evnt, acpt_addr);
-  if (EVNT_SA_IN4(evnt)->sin_addr.s_addr == htonl(INADDR_ANY))
+    EVNT__RESOLVE_NAME(saddr, acpt_addr);
+  if (saddr->sin_addr.s_addr == htonl(INADDR_ANY))
     acpt_addr = "any";
   
-  EVNT_SA_IN4(evnt)->sin_port = htons(server_port);
+  saddr->sin_port = htons(server_port);
+
+  if (!evnt_init(evnt, fd, ref))
+    goto init_fail;
 
   if (!evnt_fd__set_reuse(fd, TRUE))
     goto reuse_fail;
@@ -837,6 +848,7 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   int saved_errno = 0;
   size_t len = strlen(fname) + 1;
   struct sockaddr_un tmp_sun;
+  struct sockaddr_un *saddr = NULL;
   socklen_t alloc_len = 0;
   Vstr_ref *ref = NULL;
 
@@ -850,11 +862,13 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
     goto init_fail;
+  saddr = ref->ptr;
+
+  saddr->sun_family = AF_LOCAL;
+  memcpy(saddr->sun_path, fname, len);
+
   if (!evnt_init(evnt, fd, ref))
     goto init_fail;
-
-  EVNT_SA_UN(evnt)->sun_family = AF_LOCAL;
-  memcpy(EVNT_SA_UN(evnt)->sun_path, fname, len);
 
   unlink(fname);
   
@@ -1218,7 +1232,7 @@ static int evnt_limit_timeout_r(struct Evnt *evnt, struct Evnt_limit *lim)
     msecs = 1000 - msecs;
   else
     msecs = 0;
-  vlg_dbg2(vlg, "timeout_r_make(%p, %lu)\n", evnt, msecs);
+  vlg_dbg2(vlg, "timeout_r_make($<sa:%p>, %lu)\n", EVNT_SA(evnt), msecs);
   
   if (msecs <= 100)
   {
@@ -1283,7 +1297,7 @@ static int evnt_limit_timeout_w(struct Evnt *evnt, struct Evnt_limit *lim)
     msecs = 1000 - msecs;
   else
     msecs = 0;
-  vlg_dbg2(vlg, "timeout_w_make(%p, %lu)\n", evnt, msecs);
+  vlg_dbg2(vlg, "timeout_w_make($<sa:%p>, %lu)\n", EVNT_SA(evnt), msecs);
   
   if (msecs <= 100)
   {
@@ -1420,7 +1434,7 @@ static int evnt__call_send(struct Evnt *evnt, unsigned int *ern)
   }
 
   tmp -= evnt->io_w->len;
-  vlg_dbg3(vlg, "write(%p) = %zu\n", evnt, tmp);
+  vlg_dbg3(vlg, "write($<sa:%p>) = %zu\n", EVNT_SA(evnt), tmp);
   
   evnt__acct_w(evnt, tmp);
   if (!evnt_limit_timeout_w(evnt, lim))
@@ -1549,13 +1563,11 @@ static void evnt__send_fin(struct Evnt *evnt)
 
 int evnt_shutdown_w(struct Evnt *evnt)
 {
-  Vstr_base *out = evnt->io_w;
-  
   ASSERT(evnt__valid(evnt));
 
   vlg_dbg2(vlg, "shutdown(SHUT_WR) from[$<sa:%p>]\n", EVNT_SA(evnt));
 
-  /* evnt_fd_set_cork(evnt, FALSE); eats data in 2.4.22-1.2199.4.legacy.npt */
+  evnt_fd_set_cork(evnt, FALSE); /* eats data in 2.4.22-1.2199.4.legacy.npt */
   
   if (evnt->io_r_shutdown || evnt->io_w_shutdown)
     return (FALSE);
@@ -1568,9 +1580,13 @@ int evnt_shutdown_w(struct Evnt *evnt)
   }
   evnt->io_w_shutdown = TRUE;
 
-  vstr_del(out, 1, out->len);
+  vstr_del(evnt->io_w, 1, evnt->io_w->len);
+  vstr_del(evnt->io_r, 1, evnt->io_r->len);
   
   evnt__send_fin(evnt);
+  
+  if (evnt->flag_q_recv)
+    evnt_wait_cntl_add(evnt, POLLIN);
   
   ASSERT(evnt__valid(evnt));
 
@@ -1610,7 +1626,7 @@ int evnt_recv(struct Evnt *evnt, unsigned int *ern)
   evnt->prev_bytes_r = (evnt->io_r->len - tmp);
   evnt__acct_r(evnt, evnt->prev_bytes_r);
   
-  vlg_dbg3(vlg, "read(%p) = %ju\n", evnt, evnt->prev_bytes_r);
+  vlg_dbg3(vlg, "read($<sa:%p>) = %ju\n", EVNT_SA(evnt), evnt->prev_bytes_r);
   
   if (!evnt_limit_timeout_r(evnt, lim))
     errno = ENOMEM, *ern = VSTR_TYPE_SC_READ_FD_ERR_MEM;
@@ -2358,7 +2374,7 @@ static Timer_q_node *evnt__timeout_mtime_make(struct Evnt *evnt,
 {
   Timer_q_node *tm_o = NULL;
 
-  vlg_dbg2(vlg, "mtime_make(%p, %lu)\n", evnt, msecs);
+  vlg_dbg2(vlg, "mtime_make($<sa:%p>, %lu)\n", EVNT_SA(evnt), msecs);
   
   if (0) { }
   else if (msecs >= ( 99 * 1000))
@@ -2410,8 +2426,8 @@ static void evnt__timer_cb_mtime(int type, void *data)
     diff = evnt->msecs_tm_mtime - diff; /* seconds left until timeout */
   else
   {
-    vlg_dbg2(vlg, "timeout = %p[$<sa:%p>] (%lu, %lu)\n",
-             evnt, EVNT_SA(evnt), diff, evnt->msecs_tm_mtime);
+    vlg_dbg2(vlg, "timeout from[$<sa:%p>] = (%'lu, %'lu)\n",
+             EVNT_SA(evnt), diff, evnt->msecs_tm_mtime);
     if (evnt->flag_insta_close || !evnt_shutdown_w(evnt))
     {
       evnt_close(evnt);
@@ -2433,8 +2449,8 @@ static void evnt__timer_cb_mtime(int type, void *data)
 }
 
 void evnt_timeout_init(void)
-{ /* FIXME: timer_q-1.0.7 move when empty still has bugs */
-  int flags = TIMER_Q_FLAG_BASE_DEFAULT & ~TIMER_Q_FLAG_BASE_MOVE_WHEN_EMPTY;
+{
+  int flags = TIMER_Q_FLAG_BASE_DEFAULT;
   
   ASSERT(!evnt__timeout_1);
 
@@ -2867,7 +2883,7 @@ static int evnt__epoll_readd(struct Evnt *evnt)
   {
     int flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
 
-    vlg_dbg2(vlg, "epoll_readd(%p,%u=%s)\n", evnt,
+    vlg_dbg2(vlg, "epoll_readd($<sa:%p>,%u=%s)\n", EVNT_SA(evnt),
              flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
@@ -2915,7 +2931,7 @@ void evnt_wait_cntl_add(struct Evnt *evnt, int flags)
     struct epoll_event epevent[1];
     
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;    
-    vlg_dbg2(vlg, "epoll_mod_add(%p,%u=%s)\n", evnt,
+    vlg_dbg2(vlg, "epoll_mod_add($<sa:%p>,%u=%s)\n", EVNT_SA(evnt),
              flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
@@ -2939,7 +2955,7 @@ void evnt_wait_cntl_del(struct Evnt *evnt, int flags)
     struct epoll_event epevent[1];
     
     flags = SOCKET_POLL_INDICATOR(evnt->ind)->events;
-    vlg_dbg2(vlg, "epoll_mod_del(%p,%u=%s)\n", evnt,
+    vlg_dbg2(vlg, "epoll_mod_del($<sa:%p>,%u=%s)\n", EVNT_SA(evnt),
              flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
@@ -2959,7 +2975,8 @@ unsigned int evnt_poll_add(struct Evnt *evnt, int fd)
     struct epoll_event epevent[1];
     int flags = 0;
 
-    vlg_dbg2(vlg, "epoll_add(%p,%u=%s)\n", evnt, flags, EVNT__POLL_FLGS(flags));
+    vlg_dbg2(vlg, "epoll_add($<sa:%p>,%u=%s)\n", EVNT_SA(evnt),
+             flags, EVNT__POLL_FLGS(flags));
     epevent->events   = flags;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -2986,7 +3003,7 @@ void evnt_poll_del(struct Evnt *evnt)
     int fd = SOCKET_POLL_INDICATOR(evnt->ind)->fd;
     struct epoll_event epevent[1];
 
-    vlg_dbg2(vlg, "epoll_del(%p,%d)\n", evnt, 0);
+    vlg_dbg2(vlg, "epoll_del($<sa:%p>)\n", EVNT_SA(evnt));
     epevent->events   = 0;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
     epevent->data.ptr = evnt;
@@ -3026,7 +3043,7 @@ int evnt_poll_swap_accept_read(struct Evnt *evnt, int fd)
   {
     struct epoll_event epevent[1];
 
-    vlg_dbg2(vlg, "epoll_swap(%p,%d,%d)\n", evnt, old_fd, fd);
+    vlg_dbg2(vlg, "epoll_swap($<sa:%p>,%d,%d)\n", EVNT_SA(evnt), old_fd, fd);
     
     epevent->events   = POLLIN;
     epevent->data.u64 = 0; /* FIXME: keep valgrind happy */
@@ -3088,8 +3105,9 @@ int evnt_poll(void)
 
     ASSERT(evnt__valid(evnt));
 
-    vlg_dbg2(vlg, "epoll_wait(%p,%u=%s)\n", evnt, flags,EVNT__POLL_FLGS(flags));
-    vlg_dbg2(vlg, "epoll_wait[flags]=a=%u|r=%u|s=%u\n",
+    vlg_dbg2(vlg, "epoll_wait($<sa:%p>,%u=%s)\n", EVNT_SA(evnt),
+             flags, EVNT__POLL_FLGS(flags));
+    vlg_dbg2(vlg, "epoll[flags]=a=%u|r=%u|s=%u\n",
              evnt->flag_q_accept, evnt->flag_q_recv, evnt->flag_q_send_recv);
 
     assert(((SOCKET_POLL_INDICATOR(evnt->ind)->events & flags) == flags) ||

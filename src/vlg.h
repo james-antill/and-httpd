@@ -17,6 +17,7 @@ typedef struct Vlg
  struct Vstr_base *out_vstr;
  struct Vstr_base *sig_out_vstr;
  const char *prog_name;
+
  int syslog_fd;
 
  Date_store *dt;
@@ -24,6 +25,8 @@ typedef struct Vlg
 
  time_t (*tm_get)(void);
  
+ unsigned int syslog_facility;
+
  unsigned int syslog_stream : 1;
  unsigned int log_pid : 1;
  unsigned int out_dbg : 2;

@@ -34,6 +34,8 @@
 # define RLIMIT_AS 0
 #endif
 
+#include <syslog.h>
+
 static Vlg *vlg = NULL;
 
 
@@ -454,6 +456,8 @@ int opt_serv_match_init(struct Opt_serv_opts *opts,
     } while (FALSE)
 
 
+#define OPT_SERV__TMP_EQ(x) vstr_cmp_cstr_eq(conf->tmp, 1, conf->tmp->len, x)
+
 static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
                              Conf_parse *conf, Conf_token *token,
                              int clist)
@@ -491,12 +495,12 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     opts->drop_privs = val;
     CONF_SC_MAKE_CLIST_MID(depth, clist);
 
-    else if (OPT_SERV_SYM_EQ("uid"))       OPT_SERV_X_UINT(opts->priv_uid);
-    else if (OPT_SERV_SYM_EQ("usrname"))   OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("username"))  OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("gid"))       OPT_SERV_X_UINT(opts->priv_gid);
-    else if (OPT_SERV_SYM_EQ("grpname"))   OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
-    else if (OPT_SERV_SYM_EQ("groupname")) OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("uid"))      OPT_SERV_X_UINT(opts->priv_uid);
+    else if (OPT_SERV_SYM_EQ("usrname"))  OPT_SERV_X_VSTR(opts,opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("username")) OPT_SERV_X_VSTR(opts,opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("gid"))      OPT_SERV_X_UINT(opts->priv_gid);
+    else if (OPT_SERV_SYM_EQ("grpname"))  OPT_SERV_X_VSTR(opts,opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("groupname"))OPT_SERV_X_VSTR(opts,opts->vpriv_gid);
     else if (OPT_SERV_SYM_EQ("keep-CAP_FOWNER") ||
              OPT_SERV_SYM_EQ("keep-cap-fowner"))
       OPT_SERV_X_TOGGLE(opts->keep_cap_fowner);
@@ -577,6 +581,68 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       return (FALSE);
     
     opts->num_procs = opt__val;
+  }
+  else if (OPT_SERV_SYM_EQ("logging"))
+  {
+    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
+
+    if (0) { }
+    
+    else if (OPT_SERV__TMP_EQ("syslog"))
+    {
+      CONF_SC_MAKE_CLIST_BEG(logging_syslog, clist);
+      else if (OPT_SERV_SYM_EQ("facility"))
+      {
+        OPT_SERV_X_SINGLE_VSTR(conf->tmp);
+        if (0) { }
+        
+        else if (OPT_SERV__TMP_EQ("AUTHPRIV") ||
+                 OPT_SERV__TMP_EQ("AUTH"))
+          opts->syslog_facility = LOG_AUTHPRIV;
+        else if (OPT_SERV__TMP_EQ("CRON"))   opts->syslog_facility = LOG_CRON;
+        else if (OPT_SERV__TMP_EQ("DAEMON")) opts->syslog_facility = LOG_DAEMON;
+        else if (OPT_SERV__TMP_EQ("FTP"))    opts->syslog_facility = LOG_FTP;
+        else if (OPT_SERV__TMP_EQ("LOCAL"))
+        {
+          unsigned int num = 0;
+          
+          OPT_SERV_X_UINT(num);
+          switch (num)
+          {
+            default: return (FALSE);
+            case 0: opts->syslog_facility = LOG_LOCAL0;
+            case 1: opts->syslog_facility = LOG_LOCAL1;
+            case 2: opts->syslog_facility = LOG_LOCAL2;
+            case 3: opts->syslog_facility = LOG_LOCAL3;
+            case 4: opts->syslog_facility = LOG_LOCAL4;
+            case 5: opts->syslog_facility = LOG_LOCAL5;
+            case 6: opts->syslog_facility = LOG_LOCAL6;
+            case 7: opts->syslog_facility = LOG_LOCAL7;
+          }
+        }
+        else if (OPT_SERV__TMP_EQ("LOCAL0")) opts->syslog_facility = LOG_LOCAL0;
+        else if (OPT_SERV__TMP_EQ("LOCAL1")) opts->syslog_facility = LOG_LOCAL1;
+        else if (OPT_SERV__TMP_EQ("LOCAL2")) opts->syslog_facility = LOG_LOCAL2;
+        else if (OPT_SERV__TMP_EQ("LOCAL3")) opts->syslog_facility = LOG_LOCAL3;
+        else if (OPT_SERV__TMP_EQ("LOCAL4")) opts->syslog_facility = LOG_LOCAL4;
+        else if (OPT_SERV__TMP_EQ("LOCAL5")) opts->syslog_facility = LOG_LOCAL5;
+        else if (OPT_SERV__TMP_EQ("LOCAL6")) opts->syslog_facility = LOG_LOCAL6;
+        else if (OPT_SERV__TMP_EQ("LOCAL7")) opts->syslog_facility = LOG_LOCAL7;
+        else if (OPT_SERV__TMP_EQ("LPR"))    opts->syslog_facility = LOG_LPR;
+        else if (OPT_SERV__TMP_EQ("MAIL"))   opts->syslog_facility = LOG_MAIL;
+        else if (OPT_SERV__TMP_EQ("NEWS"))   opts->syslog_facility = LOG_NEWS;
+        else if (OPT_SERV__TMP_EQ("USER"))   opts->syslog_facility = LOG_USER;
+        else if (OPT_SERV__TMP_EQ("UUCP"))   opts->syslog_facility = LOG_UUCP;
+        
+        else
+          return (FALSE);
+
+      }
+      CONF_SC_MAKE_CLIST_END();
+    }
+    
+    else
+      return (FALSE);
   }
   else if (OPT_SERV_SYM_EQ("resource-limits") ||
            OPT_SERV_SYM_EQ("rlimit"))

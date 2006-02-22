@@ -514,9 +514,9 @@ static int httpd__content_location_valid(Httpd_req_data *req,
 
 #define HTTPD__CONF_REDIR(req, code) do {                               \
       if ((req)->direct_uri) {                                          \
-        HTTPD_REDIR_MSG(req, code, "Req conf");                         \
         httpd_req_absolute_uri(con, req,                                \
                                (req)->fname, 1, (req)->fname->len);     \
+        HTTPD_REDIR_MSG(req, code, "Req conf");                         \
         return (FALSE);                                                 \
       }                                                                 \
     } while (FALSE)

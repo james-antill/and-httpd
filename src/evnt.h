@@ -124,7 +124,7 @@ struct Evnt
  unsigned int io_w_limited     : 1; /* 17 */
 };
 
-#if 1 /* ! COMPILE_DEBUG */
+#if ! COMPILE_DEBUG
 # define EVNT_SA(x)     ((struct sockaddr     *)(x)->sa_ref->ptr)
 # define EVNT_SA_IN4(x) ((struct sockaddr_in  *)(x)->sa_ref->ptr)
 # define EVNT_SA_IN6(x) ((struct sockaddr_in6 *)(x)->sa_ref->ptr)
@@ -137,7 +137,8 @@ static struct sockaddr     *evnt___chk_sa(void *ptr) COMPILE_ATTR_USED();
 static struct sockaddr     *evnt___chk_sa(void *ptr)
 {
   struct sockaddr *sa = ptr;
-  if ((sa->sa_family != AF_INET) &&
+  if (sa && /* vlg__fmt__add_vstr_add_sa accepts NULLs */
+      (sa->sa_family != AF_INET) &&
       (sa->sa_family != AF_INET6) &&
       (sa->sa_family != AF_LOCAL))
     abort();
@@ -180,7 +181,7 @@ typedef struct Acpt_data
  struct Evnt *evnt;
  Vstr_ref *sa;
 } Acpt_data;
-#if 1 /* ! COMPILE_DEBUG -- can't check due to useage when creating SAs */
+#if ! COMPILE_DEBUG
 # define ACPT_SA(x)     ((struct sockaddr     *)(x)->sa->ptr)
 # define ACPT_SA_IN4(x) ((struct sockaddr_in  *)(x)->sa->ptr)
 # define ACPT_SA_IN6(x) ((struct sockaddr_in6 *)(x)->sa->ptr)

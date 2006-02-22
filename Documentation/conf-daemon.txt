@@ -41,6 +41,7 @@ org.and.daemon-conf-1.0
 . parent-death-signal
 . pid-file
 . processes | procs
+. logging
 . resource-limits | rlimit
 .. address-space | AS
 .. core | CORE

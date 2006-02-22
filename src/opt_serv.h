@@ -100,6 +100,8 @@ typedef struct Opt_serv_opts
  gid_t priv_gid;
  unsigned int num_procs;
 
+ unsigned int syslog_facility;
+ 
  unsigned int rlim_as_num;
  unsigned int rlim_core_num;
  unsigned int rlim_file_num;
@@ -139,6 +141,7 @@ typedef struct Opt_serv_opts
     NULL, OPT_SERV_CONF_DEF_PRIV_UID,                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_GID,                                   \
     OPT_SERV_CONF_DEF_NUM_PROCS,                                        \
+    LOG_DAEMON,                                                         \
     OPT_SERV_CONF_DEF_RLIM_AS_NUM,                                      \
     OPT_SERV_CONF_DEF_RLIM_CORE_NUM,                                    \
     OPT_SERV_CONF_DEF_RLIM_FILE_NUM,                                    \

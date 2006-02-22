@@ -1,5 +1,27 @@
            GALEON
            ------
+GET / HTTP/1.1
+Host: code.and.org:8008
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.12) Gecko/20060202 Galeon/2.0.0
+Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
+Accept-Language: en
+Accept-Encoding: gzip,deflate
+Accept-Charset: UTF-8,*
+Keep-Alive: 300
+Connection: keep-alive
+
+GET /dir_list.css HTTP/1.1
+Host: code.and.org:8008
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.12) Gecko/20060202 Galeon/2.0.0
+Accept: text/css,*/*;q=0.1
+Accept-Language: en
+Accept-Encoding: gzip,deflate
+Accept-Charset: UTF-8,*
+Keep-Alive: 300
+Connection: keep-alive
+Referer: http://code.and.org:8008/
+
+
 Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,image/jpeg,image/gif;q=0.2,*/*;q=0.1
 Accept-Encoding: gzip, deflate, compress;q=0.9
 Accept-Language: en
@@ -8,6 +30,8 @@ Accept-Charset: UTF-8,*
 
            FIREFOX
            -------
+
+
 Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
 Accept-Language: en-us,en;q=0.5
 Accept-Encoding: gzip,deflate
@@ -15,6 +39,28 @@ Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7
 
 ...note both of the above also just do "Accept: text/css,*/*;q=0.1" when
 requesting stylesheet links.
+
+
+
+           IE
+           --
+GET / HTTP/1.1
+Accept: image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/vnd.ms-powerpoint, application/vnd.ms-excel, application/msword, application/x-shockwave-flash, */*
+Accept-Language: en-us
+Accept-Encoding: gzip, deflate
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)
+Host: code.and.org:8008
+Connection: Keep-Alive
+
+GET /dir_list.css HTTP/1.1
+Accept: */*
+Referer: http://code.and.org:8008
+Accept-Language: en-us
+Accept-Encoding: gzip, deflate
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322)
+Host: code.and.org:8008
+Connection: Keep-Alive
+
 
 
            konqueror

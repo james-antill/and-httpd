@@ -26,6 +26,11 @@ else
  exit 1;
 fi
 
+if [ "x$1" = "x" ] || [ "x$2" = "x" ]; then
+  echo " Format: $0 <tst-name> <num>"
+  exit 1
+fi
+
 prefix=$1
 num=$2
 

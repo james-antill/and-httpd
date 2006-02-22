@@ -34,8 +34,6 @@ prog_exe="@sbindir@/${prog_name}"
 
 cntl_exe="@sbindir@/and-cntl"
 
-MIME_EXTRAS_FILE="${localstatedir}/and-httpd/mime_types_extra.txt"
-
 FILE_BASE="${localstatedir}/run/${prog_name}"
 CNTL_FILE="${FILE_BASE}.cntl"
 PID_FILE="${FILE_BASE}.pid"
@@ -51,7 +49,7 @@ fi
 
 [ -r /etc/sysconfig/and-httpd ] && . /etc/sysconfig/and-httpd
 
-GPRE_ARGS="--mime-types-xtra ${MIME_EXTRAS_FILE} --cntl-file ${CNTL_FILE} --pid-file ${PID_FILE}"
+GPRE_ARGS="--cntl-file ${CNTL_FILE} --pid-file ${PID_FILE}"
 GPST_ARGS="--daemon=true"
 
 function start()

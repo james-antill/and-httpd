@@ -1,3 +1,6 @@
+GET /index.html HTTP/1.0
+Connection: keep-alive
+
 HEAD /index.html HTTP/1.0
 Connection: keep-alive
 
@@ -9,6 +12,9 @@ Connection: keep-alive
 
 HEAD /index.html HTTP/1.0
 Connection: keep-alive
+
+GET /index HTTP/1.1
+Host:
 
 HEAD /index HTTP/1.0
 

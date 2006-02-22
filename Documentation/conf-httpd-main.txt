@@ -85,10 +85,18 @@ org.and.httpd-conf-main-1.0
 .[ client-ipv4-cidr-eq
 .[ server-ipv4-cidr-eq
 .[ server-ipv4-port-eq
-.[ hostname-eq
-.[ user-agent-eq | UA-eq
+.[ :
+.[ Accept-Encoding:
+.[ If-Modified-Since:
+.[ If-Unmodified-Since:
+.[ If-Range:
+.[ If-Match:
+.[ If-None-Match:
+.[ X-Moz:
+.[ Host:
+.[ User-Agent:
 .[ user-agent-search-eq | user-agent-srch-eq | UA-srch-eq
-.[ referrer-eq | referer-eq
+.[ Referer: | Referrer:
 .[ referrer-beg
 .[ referrer-search-eq | referrer-srch-eq
 .[ http-0.9-eq

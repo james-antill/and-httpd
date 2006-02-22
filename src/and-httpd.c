@@ -657,6 +657,8 @@ static void serv_cmd_line(int argc, char *argv[])
     const char *cntl_file = NULL;
     Opt_serv_opts *opts = httpd_opts->s;
     
+    vlg->syslog_facility = opts->syslog_facility;
+  
     OPT_SC_EXPORT_CSTR(pid_file,   opts->pid_file,   FALSE, "pid file");
     OPT_SC_EXPORT_CSTR(cntl_file,  opts->cntl_file,  FALSE, "control file");
     OPT_SC_EXPORT_CSTR(chroot_dir, opts->chroot_dir, FALSE, "chroot directory");

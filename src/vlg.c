@@ -134,7 +134,7 @@ static int vlg__syslog_con(Vlg *vlg, int alt)
  sock_fail:
  conf_fail:
   if (!vlg__done_syslog_init)
-    openlog(vlg->prog_name, LOG_PID | LOG_NDELAY, LOG_DAEMON);
+    openlog(vlg->prog_name, LOG_PID | LOG_NDELAY, vlg->syslog_facility);
   vlg__done_syslog_init = TRUE;
   return (FALSE);
 }
@@ -165,7 +165,7 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
       if (!tmp)
         errno = ENOMEM, err(EXIT_FAILURE, "vlog__flush");
       
-      syslog(type, "%s", tmp);
+      syslog(type | vlg->syslog_facility, "%s", tmp);
     }
     else
     {
@@ -173,7 +173,7 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
       int fd = vlg->syslog_fd;
       size_t beg_len = 0;
 
-      vstr_add_fmt(dlg, 0, "<%u>%s %s[%lu]: ", type | LOG_DAEMON,
+      vstr_add_fmt(dlg, 0, "<%u>%s %s[%lu]: ", type | vlg->syslog_facility,
                    tm_data, vlg->prog_name, (unsigned long)pid);
       
       if (vlg->syslog_stream)
@@ -610,6 +610,7 @@ Vlg *vlg_make(void)
   
   vlg->tm_get             = vlg__tm_get;
   
+  vlg->syslog_facility    = LOG_DAEMON;
   vlg->syslog_stream      = FALSE;
   vlg->log_pid            = FALSE;
   vlg->out_dbg            = 0;

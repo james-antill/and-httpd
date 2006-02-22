@@ -58,7 +58,6 @@ http://www.sans.org/top20/#u2
          way to not include libcap, which doesn't have a static file
          way to use -Wl,-Bstatic?
         conf
-         lowercase ability for file paths.
          += -= *= for numbers.
          allow setting arbitrary socket options?
          call tzset() every X seconds, for changing timezone?

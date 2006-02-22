@@ -159,17 +159,20 @@
 #define CONF_MSG_RET_505 \
     CONF_MSG__MAKE(505, "The version of http used is not supported")
 
-#define HTTPD_REDIR_MSG(req, code, xmsg) do {                  \
-      (req)->error_xmsg  = xmsg;                               \
-      (req)->error_code = (code);                              \
+#define HTTPD_REDIR_MSG(req, code, xmsg) do {                     \
+      (req)->error_xmsg  = xmsg;                                  \
+      (req)->error_code = (code);                                 \
+      if (!req->policy->use_text_plain_redirect)                  \
+        (req)->error_len  = CONF_MSG_LEN_ ## code ((req)->fname); \
+      else                                                        \
+        (req)->error_len  = (req)->fname->len + 2;                \
       (req)->error_line = CONF_LINE_RET_ ## code;                 \
-      (req)->error_len  = CONF_MSG_LEN_ ## code ((req)->fname);   \
     } while (0)
 
 #define HTTPD_ERR(req, code) do {                                       \
       (req)->error_code  = (code);                                      \
-      (req)->error_line  = CONF_LINE_RET_ ## code ;                     \
       (req)->error_len   = COMPILE_STRLEN( CONF_MSG_RET_ ## code );     \
+      (req)->error_line  = CONF_LINE_RET_ ## code ;                     \
       (req)->error_msg   = CONF_MSG_RET_ ## code ;                      \
     } while (0)
 
