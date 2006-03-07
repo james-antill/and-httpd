@@ -1,3 +1,10 @@
+0.99.7 - 2006-03-06
+ IO limiting. Status page. Optimizations for CPU usage, bug fixes and
+code cleanups. Can turn the HTTP/0.9 protocol off. Syslog
+configuration, X-Moz header configuration. Can use text/plain
+redirects. Can ignore vary header calculations. Added multi step
+configuration of strings and numbers. Added [else] test for matches.
+
 0.99.6 - 2005-11-29
  Bug fixes, added coverage, more strictness checks, translations for error
 pages, added local extra detailed messages on why errors are returned. Added

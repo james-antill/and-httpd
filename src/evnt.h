@@ -272,6 +272,7 @@ extern void evnt_stats_add(struct Evnt *, const struct Evnt *);
 extern unsigned int evnt_num_all(void);
 extern int evnt_waiting(void);
 
+extern void evnt_fd_set_nagle(struct Evnt *, int);
 extern void evnt_fd_set_cork(struct Evnt *, int);
 extern void evnt_fd_set_defer_accept(struct Evnt *, int);
 extern int  evnt_fd_set_filter(struct Evnt *, const char *);

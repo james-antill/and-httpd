@@ -21193,7 +21193,7 @@ echo "$as_me: error: *** Vstr is required. See http://www.and.org/vstr/" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-if $PKG_CONFIG --exists vstr-debug ; then
+if $PKG_CONFIG --atleast-version=1.0.15 vstr-debug ; then
 
 
 if true; then
@@ -31888,7 +31888,7 @@ echo "$as_me:$LINENO: result: ${T_MD}Output Substitution:${T_ME}" >&5
 echo "${ECHO_T}${T_MD}Output Substitution:${T_ME}" >&6
 
 
-                                                                                                                                  ac_config_files="$ac_config_files Makefile conf_tmpl/Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/and-httpd_gzip tools/and-httpd_status tools/make_index tools/scons_and_httpd_helpers.py and-httpd.spec VERSION"
+                                                                                                                                            ac_config_files="$ac_config_files Makefile conf_tmpl/Makefile Documentation/Makefile err/Makefile src/Makefile tools/Makefile tools/and-httpd tools/and-httpd_gzip tools/and-httpd_logs tools/and-httpd_status tools/make_index tools/scons_and_httpd_helpers.py and-httpd.spec VERSION"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -32614,6 +32614,7 @@ do
   "tools/Makefile" ) CONFIG_FILES="$CONFIG_FILES tools/Makefile" ;;
   "tools/and-httpd" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd" ;;
   "tools/and-httpd_gzip" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_gzip" ;;
+  "tools/and-httpd_logs" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_logs" ;;
   "tools/and-httpd_status" ) CONFIG_FILES="$CONFIG_FILES tools/and-httpd_status" ;;
   "tools/make_index" ) CONFIG_FILES="$CONFIG_FILES tools/make_index" ;;
   "tools/scons_and_httpd_helpers.py" ) CONFIG_FILES="$CONFIG_FILES tools/scons_and_httpd_helpers.py" ;;

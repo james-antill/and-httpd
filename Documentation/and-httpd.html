@@ -20,19 +20,19 @@
   <body>
     <h1>And-HTTPD</h1>
 
-    <h2>Current version is 0.99.6</h2>
+    <h2>Current version is 0.99.7</h2>
 
 <p> NOTE that this software requires the Vstr, socket_poll and timer_q
  libraries.</p>
 
 <p>
- Note that this software currently has a <a href="#security-guarantee">$500 "security guarantee"</a>.
+ Note that this software currently has a <a href="#security-guarantee">$2,000 "security guarantee"</a>.
 </p>
 
 <ul>
   <li> Tar balls are available via.
-              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.6/">ftp</a> and
-              <a href="http://www.and.org/and-httpd/0.99.6/"><b>http</b></a>.
+              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.7/">ftp</a> and
+              <a href="http://www.and.org/and-httpd/0.99.7/"><b>http</b></a>.
 </li>
 
 <li>
@@ -195,14 +195,22 @@ has available.</li>
 <li><a href="http://www.and.org/vstr/">Vstr</a>, to manage IO buffers.</li>
 </ul>
 
+<p> It also does automatic gzip encoding negotiation (with pre-encoded data)
+and allows IO limiting for clients that don't request it (saving badiwdth).
+ Due to the design, keep-alive is basically free, which also helps reduce
+bandwidth.
+</p>
+
 <a id="secure"></a>
 <h3>Secure</h3>
-<p> Although written in C the code doesn't call any
+<p> Although written in C the code doesn't call
  <a href="http://www.and.org/vstr/security">simplistic "C string" functions</a>,
  so it isn't possible to create buffer overflows even if there is a logic
 problem. </p>
+<!-- % LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c
+ -->
 <pre>
-% LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c
+% LC_ALL=C egrep '[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*.c
 %
 </pre>
 <p> Unlike most other httpd servers and-httpd places strict limits on the
@@ -212,33 +220,34 @@ so it doesn't give away that empty directories exist
 (Ie. http://example.com/foo will not redirect to http://example.com/foo/ if
 that would just produce a 404 anyway). </p>
 
-<p>While And-httpd can be configured to be more "compliant", it by default
-will reject requests which have:</p>
+<p>While And-httpd can be configured to be more "compliant",
+it will by default reject requests which have:</p>
 
 <ul>
-<li>When using virtual hosts a hostname that isn't specifically allowed (this
-is actually encouraged by rfc2616)</li>
 <li>Encoded / characters in the URL-path</li>
 <li>Encoded . characters in the URL-path</li>
 <li>The sequence /./ in the URL-path</li>
 <li>The character / in the hostname</li>
 <li>Range requests of more than a single byterange (this is just ignored,
 and the rest of the request is processed)</li>
-<li>PUT/POST methods</li>
-<li>Any kind of payload (Ie. non-zero content-length, or a transfer encoding on a request)</li>
-<li>A content-type or content-language header with a content-length header.</li>
+<li>PUT/POST/CONNECT/etc. methods</li>
+<li>A content-type or content-language header without a content-length header.</li>
+<li>Any kind of payload. In other words a non-zero content-length, or a transfer encoding (other than identity) on a request.</li>
 <li>Any "extra" CR or LF characters in the hostname or URL-path. </li>
 <li>Any whitespace in a header name.</li>
 <li>Any repeating of headers that aren't allowed to be repeated.</li>
-<li>A URL-path that ends in any of: .shtml ~ # .tmp .htaccess or .sconsign
+<li>A URL-path that ends in any of: <tt>.shtml</tt> <tt>~</tt> <tt>#</tt> <tt>.tmp</tt> <tt>.htaccess</tt> or <tt>.sconsign</tt>
 (or their compressed versions) -- enforced by the extra mime types file</li>
+<li>When virtual hosting is enabled, a hostname that isn't specifically
+ allowed (this is actually encouraged by rfc2616)</li>
 </ul>
 
 <p>...while some of these might make it "non-compliant" with rfc2616, no real
 world clients do any of the above things. </p>
 
-<p>And-httpd can also be configured to reject TRACE methods, although that
-does no real harm and so is left as a debugging aid.</p>
+<p>And-httpd can also be configured to reject TRACE methods and HTTP/0.9
+requests, although due to the lack of harm those are left enabled as a
+debugging aid.</p>
 
 <p>And-httpd also has over 1.9MB of unit tests, which run from "make check"
 testing a significant portion of the above features.</p>
@@ -246,8 +255,8 @@ testing a significant portion of the above features.</p>
 <a id="secure-guarantee"></a>
 <h3 id="security-guarantee">Security guarantee</h3>
 
-<p>In fact I'm so sure that it is secure that I'm offering a
-"security guarantee" of $500.</p>
+<p> Because I'm so sure that And-httpd is secure, I'm offering
+a "security guarantee" of $2,000 for proof that I'm wrong.</p>
 
 <p>Obviously there are caveats:</p>
 
@@ -263,9 +272,9 @@ configuration that couldn't be expected to be put there by a "reasonable person
 who knows what they are doing" is not allowed (this is esp. true for
 information leak attacks, if it's a configuration issue it's not my
 problem). </li>
-<li>You have to have the latest Vstr, socket_poll and timer_q libraries
-installed. </li>
-<li>The $500 is only available to the first person who provides a working
+<li>You have to have at latest the versions of Vstr, socket_poll and timer_q
+libraries required by the autoconf installer. </li>
+<li>The $2,000 is only available to the first person who provides a working
 attack (I'll allow a couple of weeks for you to demonstrate something that works
 like an attack you describe).</li>
 </ul>
@@ -279,7 +288,7 @@ SELinux. </li>
 </ul>
 
 <p>...although, obviously, feel free to add those as extra security layers on
-your servers. </p>
+your live deployments. </p>
 
 <hr>
 
@@ -311,28 +320,14 @@ your servers. </p>
 </pre>
 
 <h2>NMAP simple service fingerprint(s)</h2>
-<p> This has been submitted and accepted for the next release of nmap.
- However if you want a readable response now, you can manually add
-these to your nmap-service-probes file.</p>
-
-<pre>
-# This is already part of the /usr/share/nmap/nmap-service-probes file
-Probe TCP GetRequest q|GET / HTTP/1.0\r\n\r\n|
-ports 70,79,80-85,88,113,139,143,280,497,515,540,554,631,783,993,995,1220,1503,2030,3052,3128,3372,3531,3689,5000,5432,5800,5900,6699,7070,8000-8010,8080-8085,8880-8888,9090,9999,10000,10005,11371,13722,15000,40193,4711
-
-# These are the "fingerprint"s for and-httpd
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) \(Debug\)|s v/and-httpd - Debug version/$1//
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+) ([^\r\n]+)|s v/and-httpd/$1/$2/
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd/(\d+\.\d+\.[-.\w]+)|s v/and-httpd/$1//
-match http m|^HTTP/1\.1 \d\d\d .*\r\nServer: and-httpd|s v/and-httpd///
-
-</pre>
+<p> The latest releases of nmap have and-httpd fingerprints in the service
+probes database.</p>
 
     <hr>
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Tue Nov 29 21:38:41 EST 2005
+Last modified: Tue Mar  7 03:31:33 EST 2006
 <!-- hhmts end -->
   </body>
 </html>

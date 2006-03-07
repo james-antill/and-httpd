@@ -4,6 +4,7 @@ toolsmain_DATA = scons_and_httpd_helpers.py
 
 toolsmain_SCRIPTS =                         \
                 and-httpd-status \
+                and-httpd-syslog-grep \
                 and-httpd-syslog2apache-httpd-combined-log \
                 conv_html2text \
                 gzip-r \
@@ -13,7 +14,7 @@ initddir = $(sysconfdir)/init.d
 initd_SCRIPTS = and-httpd
 
 cronddir = $(sysconfdir)/cron.hourly
-crond_SCRIPTS = and-httpd_gzip and-httpd_status
+crond_SCRIPTS = and-httpd_gzip and-httpd_status and-httpd_logs
 
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt

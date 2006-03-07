@@ -492,9 +492,10 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   opts->use_host_chk       = HTTPD_CONF_USE_HOST_CHK;
   opts->use_hdrs_no_x2     = HTTPD_CONF_USE_HDRS_NO_x2;
   opts->use_hdrs_non_spc   = HTTPD_CONF_USE_HDRS_NON_SPC;
-  opts->use_hdrs_err_411   = HTTPD_CONF_USE_HDRS_ERR_411;
+  opts->use_hdrs_err_411   = HTTPD_CONF_USE_HDRS_ERR_411;  
+  opts->allow_trace_op     = HTTPD_CONF_ALLOW_TRACE_OP;
+  opts->allow_http_0_9     = HTTPD_CONF_ALLOW_HTTP_0_9;
   
-  opts->use_trace_op       = HTTPD_CONF_USE_TRACE_OP;
   opts->remove_url_frag    = HTTPD_CONF_USE_REMOVE_FRAG;
   opts->remove_url_query   = HTTPD_CONF_USE_REMOVE_QUERY;
   opts->use_secure_dirs    = HTTPD_CONF_USE_SECURE_DIRS;
@@ -621,9 +622,10 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(use_internal_host_chk);
   HTTPD_POLICY_CP_VAL(use_host_chk);
   HTTPD_POLICY_CP_VAL(use_hdrs_no_x2);
-  HTTPD_POLICY_CP_VAL(use_hdrs_err_411);
   HTTPD_POLICY_CP_VAL(use_hdrs_non_spc);
-  HTTPD_POLICY_CP_VAL(use_trace_op);
+  HTTPD_POLICY_CP_VAL(use_hdrs_err_411);
+  HTTPD_POLICY_CP_VAL(allow_trace_op);
+  HTTPD_POLICY_CP_VAL(allow_http_0_9);
   HTTPD_POLICY_CP_VAL(remove_url_frag);
   HTTPD_POLICY_CP_VAL(remove_url_query);
   HTTPD_POLICY_CP_VAL(use_secure_dirs);

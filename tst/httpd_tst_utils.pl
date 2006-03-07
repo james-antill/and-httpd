@@ -264,6 +264,8 @@ sub all_none_tsts()
 sub all_conf_x_tsts
   {
     my $num = shift;
+    my $prevnum = $num - 1;
+    daemon_status("and-httpd_cntl", "127.0.$prevnum.1");
     sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num");
     sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num",
 	    {shutdown_w => 0});
@@ -276,7 +278,11 @@ sub all_conf_x_tsts
 sub all_conf_x_x_tsts
   {
     my $num = shift;
+    my $prevnum = $num - 1;
     my $val = shift || 1;
+
+    daemon_status("and-httpd_cntl", "127.0.$prevnum.$val");
+
     sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val");
     sub_tst(\&httpd_file_tst, "ex_httpd_conf_$num.$val",
 	    {shutdown_w => 0});
@@ -552,7 +558,8 @@ sub conf_tsts
   {
     my $beg = shift;
     my $end = shift;
-    my $args = '';
+    my $args = ' --configuration-data-daemon "rlimit CORE <unlimited>"';
+#    my $args = '';
 
     for ($beg..$end)
       { $args .= " -C $ENV{_TSTDIR}/ex_conf_httpd_tst_$_"; }
@@ -590,48 +597,21 @@ sub conf_tsts
 	    daemon_status("and-httpd_cntl", "127.0.3.1");
 	    all_none_tsts();
 	  }
-	elsif ($_ == 5)
+	elsif (($_ == 5) || ($_ == 6) || ($_ == 7) || ($_ == 10) || ($_ == 11))
 	  {
-	    daemon_status("and-httpd_cntl", "127.0.4.1");
-	    all_conf_x_tsts(5);
-	  }
-	elsif ($_ == 6)
-	  {
-	    daemon_status("and-httpd_cntl", "127.0.5.1");
-	    all_conf_x_tsts(6);
-	  }
-	elsif ($_ == 7)
-	  {
-	    daemon_status("and-httpd_cntl", "127.0.6.1");
-	    all_conf_x_tsts(7);
+	    all_conf_x_tsts($_);
 	  }
 	elsif ($_ == 8)
 	  {
-	    daemon_status("and-httpd_cntl", "127.0.7.1");
 	    all_conf_x_x_tsts(8, 1);
-	    daemon_status("and-httpd_cntl", "127.0.7.2");
 	    all_conf_x_x_tsts(8, 2);
-	    daemon_status("and-httpd_cntl", "127.0.7.3");
 	    all_conf_x_x_tsts(8, 3);
-	    daemon_status("and-httpd_cntl", "127.0.7.4");
 	    all_conf_x_x_tsts(8, 4);
 	  }
 	elsif ($_ == 9)
 	  {
-	    daemon_status("and-httpd_cntl", "127.0.8.1");
 	    all_conf_x_x_tsts(9, 1);
-	    daemon_status("and-httpd_cntl", "127.0.8.2");
 	    all_conf_x_x_tsts(9, 2);
-	  }
-	elsif ($_ == 10)
-	  {
-	    daemon_status("and-httpd_cntl", "127.0.9.1");
-	    all_conf_x_tsts(10);
-	  }
-	elsif ($_ == 11)
-	  {
-	    daemon_status("and-httpd_cntl", "127.0.10.1");
-	    all_conf_x_tsts(11);
 	  }
 	else
 	  { failure("Bad conf number."); }

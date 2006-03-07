@@ -315,8 +315,9 @@ sub daemon_init
 
     if (!$ldaemon_pid)
       { # Child
-	if (system("./${cmd} $port $opts $cntl $dbg $args $no_out"))
-	  { failure("daemon($cmd): $!"); }
+	my $args = "./${cmd} $port $opts $cntl $dbg $args $no_out";
+	if (system($args))
+	  { failure("daemon($args): $?"); }
 	success("daemon($cmd)");
       }
     $pdaemon_pid = $$;

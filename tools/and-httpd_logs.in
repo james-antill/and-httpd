@@ -1,0 +1,30 @@
+#! /bin/bash -e
+
+# Confish.
+KEEP_FOR_X_DAYS=91 # 13 * 7 == quarter of a year
+
+input_logs="@localstatedir@/log/messages.1 @localstatedir@/log/messages"
+and_httpd_logs_dir=@localstatedir@/log/and-httpd
+
+dtd="`date +'%y-%m-%d'`"
+dtm="`date +'%y-%m-%d'`"
+
+grep=@prefix@/share/and-httpd-@VERSION@-tools/and-httpd-syslog-grep
+comb=@prefix@/share/and-httpd-@VERSION@-tools/and-httpd-syslog2apache-httpd-combined-log
+
+# This needs configuring, as we can't out all the different syslog stuff atm.
+exit 0;
+
+if [ ! -d $and_httpd_logs_dir ]; then
+  mkdir -p $and_httpd_logs_dir
+fi
+
+touch          $and_httpd_logs_dir/and-httpd-$dtd
+$grep --output $and_httpd_logs_dir/and-httpd-$dtd $input_logs
+
+$comb --fast-check --sync-file \
+               $and_httpd_logs_dir/combined-and-httpd-$dtm \
+      --output $and_httpd_logs_dir/combined-and-httpd-$dtm \
+               $and_httpd_logs_dir/and-httpd-${dtm}*
+
+find $and_httpd_logs_dir -mtime "+$KEEP_FOR_X_DAYS" -print0 | xargs -0 rm -f

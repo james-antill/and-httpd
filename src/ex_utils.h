@@ -43,6 +43,14 @@
 # define TRUE 1
 #endif
 
+#ifndef SWAP_TYPE
+#define SWAP_TYPE(x, y, type) do {              \
+      type internal_local_tmp = (x);            \
+      (x) = (y);                                \
+      (y) = internal_local_tmp;                 \
+    } while (FALSE)
+#endif
+
 /* Simple getopt code... */
 #define EX_UTILS_GETOPT_NUM(name, var) \
     else if (!strncmp("--" name "=", argv[count], strlen("--" name "=")) || \

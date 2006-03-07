@@ -42,6 +42,8 @@ org.and.daemon-conf-1.0
 . pid-file
 . processes | procs
 . logging
+.. syslog
+... facility
 . resource-limits | rlimit
 .. address-space | AS
 .. core | CORE

@@ -48,7 +48,8 @@
 #define HTTPD_CONF_USE_HDRS_NO_x2 TRUE
 #define HTTPD_CONF_USE_HDRS_NON_SPC TRUE
 #define HTTPD_CONF_USE_HDRS_ERR_411 TRUE
-#define HTTPD_CONF_USE_TRACE_OP TRUE
+#define HTTPD_CONF_ALLOW_TRACE_OP TRUE
+#define HTTPD_CONF_ALLOW_HTTP_0_9 TRUE
 #define HTTPD_CONF_USE_REMOVE_FRAG TRUE
 #define HTTPD_CONF_USE_REMOVE_QUERY FALSE
 #define HTTPD_CONF_USE_SECURE_DIRS TRUE
@@ -116,14 +117,15 @@ typedef struct Httpd_policy_opts
  unsigned int use_hdrs_no_x2 : 1; /* 16th bitfield */
  unsigned int use_hdrs_non_spc : 1;
  unsigned int use_hdrs_err_411 : 1;
-
- unsigned int use_trace_op : 1;
+ unsigned int allow_trace_op : 1;
+ unsigned int allow_http_0_9 : 1;
+ 
  unsigned int remove_url_frag : 1;
  unsigned int remove_url_query : 1;
  unsigned int use_secure_dirs : 1;
- unsigned int use_friendly_dirs : 1; /* 24th bitfield */
+ unsigned int use_friendly_dirs : 1;
 
- unsigned int use_posix_fadvise : 1;
+ unsigned int use_posix_fadvise : 1; /* 24th bitfield */
  unsigned int use_tcp_cork : 1;
  
  unsigned int use_req_conf : 1;
@@ -133,13 +135,13 @@ typedef struct Httpd_policy_opts
  unsigned int chk_dot_dir : 1;
  
  unsigned int chk_encoded_slash : 1;
- unsigned int chk_encoded_dot   : 1; /* 32nd bitfield */
+ unsigned int chk_encoded_dot   : 1;
 
- unsigned int add_def_port : 1;
+ unsigned int add_def_port : 1; /* 32nd bitfield */
 
  unsigned int use_noatime : 1;
 
- unsigned int use_text_plain_redirect : 1; /* 35th bitfield */
+ unsigned int use_text_plain_redirect : 1; /* 36th bitfield */
 
  unsigned int max_header_sz;
 

@@ -209,6 +209,13 @@ extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
                                         Conf_parse *, Conf_token *,
                                         Vstr_base *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_sc_make_uint(Conf_parse *, Conf_token *, unsigned int *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_sc_make_ulong(Conf_parse *, Conf_token *, unsigned long *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_sc_make_uintmax(Conf_parse *, Conf_token *, uintmax_t *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+
 
 #ifndef CONF_FULL_STATIC
 extern void opt_serv_sc_resolve_uid(struct Opt_serv_opts *, const char *,
@@ -309,8 +316,24 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       (x) = !opt__val;                                          \
     } while (FALSE)
 
+#define OPT_SERV_X_SINGLE_UINT(x) do {                          \
+      unsigned int opt__val = 0;                                \
+                                                                \
+      if (conf_sc_token_parse_uint(conf, token, &opt__val))     \
+        return (FALSE);                                         \
+      (x) = opt__val;                                           \
+    } while (FALSE)
+
 #define OPT_SERV_X_UINT(x) do {                                 \
       unsigned int opt__val = 0;                                \
+                                                                \
+      if (!opt_serv_sc_make_uint(conf, token, &opt__val))       \
+        return (FALSE);                                         \
+      (x) = opt__val;                                           \
+    } while (FALSE)
+
+#define OPT_SERV_X_SINGLE_ULONG(x) do {                         \
+      unsigned long opt__val = 0;                               \
                                                                 \
       if (conf_sc_token_parse_uint(conf, token, &opt__val))     \
         return (FALSE);                                         \
@@ -320,7 +343,15 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 #define OPT_SERV_X_ULONG(x) do {                                \
       unsigned long opt__val = 0;                               \
                                                                 \
-      if (conf_sc_token_parse_uint(conf, token, &opt__val))     \
+      if (!opt_serv_sc_make_ulong(conf, token, &opt__val))      \
+        return (FALSE);                                         \
+      (x) = opt__val;                                           \
+    } while (FALSE)
+
+#define OPT_SERV_X_SINGLE_UINTMAX(x) do {                       \
+      uintmax_t opt__val = 0;                                   \
+                                                                \
+      if (conf_sc_token_parse_uintmax(conf, token, &opt__val))  \
         return (FALSE);                                         \
       (x) = opt__val;                                           \
     } while (FALSE)
@@ -328,18 +359,20 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 #define OPT_SERV_X_UINTMAX(x) do {                              \
       uintmax_t opt__val = 0;                                   \
                                                                 \
-      if (conf_sc_token_parse_umax(conf, token, &opt__val))     \
+      if (!opt_serv_sc_make_uintmax(conf, token, &opt__val))    \
         return (FALSE);                                         \
       (x) = opt__val;                                           \
     } while (FALSE)
 
-/* take either a number or one of a few symbols */
+/* take either a number or one of a few symbols, allow clist around symbols */
 #define OPT_SERV_X_SYM__NUM_BEG(x)                                      \
       if ((ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                        \
           !(pv = conf_token_value(token)))                              \
+        CONF_SC_TOGGLE_CLIST_VAR(clist_num);                            \
+      if (!(pv = conf_token_value(token)))                              \
         return (FALSE);                                                 \
                                                                         \
-      if (!pv)                                                          \
+      if (!ern)                                                         \
         (x) = val;                                                      \
       else                                                              \
       {                                                                 \
@@ -349,6 +382,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       const Vstr_sect_node *pv = NULL;                                  \
       unsigned int val = 0;                                             \
       int ern = 0;                                                      \
+      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_uint(conf, token, &val);                \
       OPT_SERV_X_SYM__NUM_BEG(x)
@@ -357,6 +391,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       const Vstr_sect_node *pv = NULL;                                  \
       unsigned long val = 0;                                            \
       int ern = 0;                                                      \
+      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_ulong(conf, token, &val);               \
       OPT_SERV_X_SYM__NUM_BEG(x)
@@ -365,6 +400,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
       const Vstr_sect_node *pv = NULL;                                  \
       uintmax_t val = 0;                                                \
       int ern = 0;                                                      \
+      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_uintmax(conf, token, &val);             \
       OPT_SERV_X_SYM__NUM_BEG(x)

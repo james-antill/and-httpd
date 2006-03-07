@@ -846,6 +846,8 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
   return (ret);
 }  
 
+/* NOTE: allow "1  .  000" or just allow "1.000" ... LWS is craptastic, why
+ * not go all the way ? */
 #define HTTP__PARSE_CHK_RET_OK() do {                   \
       HTTP_SKIP_LWS(data, pos, len);                    \
                                                         \
@@ -855,6 +857,8 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
       {                                                 \
         *passed_pos = pos;                              \
         *passed_len = len;                              \
+                                                        \
+        ASSERT(*val <= 1000);                           \
                                                         \
         return (TRUE);                                  \
       }                                                 \
@@ -868,6 +872,9 @@ static int http_parse_quality(Vstr_base *data,
 {
   size_t pos = *passed_pos;
   size_t len = *passed_len;
+  int lead_zero = FALSE;
+  unsigned int num_len = 0;
+  unsigned int parse_flags = VSTR_FLAG02(PARSE_NUM, NO_BEG_PM, NO_NEGATIVE);  
   
   ASSERT(val);
   
@@ -880,12 +887,15 @@ static int http_parse_quality(Vstr_base *data,
   
   if (!len || VPREFIX(data, pos, len, ","))
     return (TRUE);
+
+  if (VPREFIX(data, pos, len, ";q=0.")) /* opt */
+  {
+    len -= strlen(";q=0."); pos += strlen(";q=0.");
+    lead_zero = TRUE;
+    *val = 0;
+  }
   else if (VPREFIX(data, pos, len, ";"))
   {
-    int lead_zero = FALSE;
-    unsigned int num_len = 0;
-    unsigned int parse_flags = VSTR_FLAG02(PARSE_NUM, NO_BEG_PM, NO_NEGATIVE);
-    
     len -= 1; pos += 1;
     HTTP_SKIP_LWS(data, pos, len);
     
@@ -915,24 +925,24 @@ static int http_parse_quality(Vstr_base *data,
       return (FALSE);
     
     len -= 1; pos += 1;
-    HTTP_SKIP_LWS(data, pos, len);
-
-    *val += vstr_parse_uint(data, pos, len, 10 | parse_flags, &num_len, NULL);
-    if (!num_len || (num_len > 3) || (*val > 1000))
-      return (FALSE);
-    if (!lead_zero)
-      ASSERT(*val == 1000);
-    else
-    {
-      if (num_len < 3) *val *= 10;
-      if (num_len < 2) *val *= 10;
-    }
-    ASSERT(*val <= 1000);
-    
-    len -= num_len; pos += num_len;
-    
-    HTTP__PARSE_CHK_RET_OK();
   }
+
+  
+  HTTP_SKIP_LWS(data, pos, len);
+  
+  *val += vstr_parse_uint(data, pos, len, 10 | parse_flags, &num_len, NULL);
+  if (!num_len || (num_len > 3) || (*val > 1000))
+    return (FALSE);
+  if (!lead_zero)
+    ASSERT(*val == 1000);
+  else
+  {
+    if (num_len < 3) *val *= 10;
+    if (num_len < 2) *val *= 10;
+  }
+  len -= num_len; pos += num_len;
+  
+  HTTP__PARSE_CHK_RET_OK();
   
   return (FALSE);
 }
@@ -2006,7 +2016,7 @@ static void http_req_split_method(struct Con *con, struct Httpd_req_data *req)
 
   if (len)
     vstr_sects_add(req->sects, pos, len);
-  else
+  else if (req->policy->allow_http_0_9)
     req->ver_0_9 = TRUE;
 }
 
@@ -4038,8 +4048,11 @@ static int http_parse_req(struct Con *con)
   if (!(req = http_req_make(con)))
     return (FALSE);
 
-  if (con->parsed_method_ver_1_0) /* wait for all the headers */
-  {
+  if (!req->policy->allow_http_0_9)
+    con->parsed_method_ver_1_0 = TRUE;
+
+  if (con->parsed_method_ver_1_0)
+  { /* wait for all the headers */
     if (!http__parse_req_all(con, req, HTTP_END_OF_REQUEST, &ern_req_all))
       return (ern_req_all);
   }
@@ -4056,10 +4069,11 @@ static int http_parse_req(struct Con *con)
     evnt_got_pkt(con->evnt);
     VLG_WARNNOMEM_RET(http_fin_errmem_req(con, req), (vlg, "split: %m\n"));
   }
-  else if (req->sects->num < 2)
+  else if ((req->sects->num < 2) ||
+           (!req->policy->allow_http_0_9 && (req->sects->num < 3)))
   {
     evnt_got_pkt(con->evnt);
-    HTTPD_ERR_MSG_RET(req, 400, "No arguments", http_fin_err_req(con, req));
+    HTTPD_ERR_MSG_RET(req, 400, "Bad request line", http_fin_err_req(con, req));
   }
   else
   {
@@ -4074,7 +4088,7 @@ static int http_parse_req(struct Con *con)
     else
     { /* need to get all headers */
       if (!con->parsed_method_ver_1_0)
-      {
+      { /* req line isn't 0.9 ... so must continue to be */
         con->parsed_method_ver_1_0 = TRUE;
         req->len = 0;
         if (!http__parse_req_all(con, req, HTTP_END_OF_REQUEST, &ern_req_all))
@@ -4161,7 +4175,7 @@ static int http_parse_req(struct Con *con)
 
       return (http_req_op_opts(con, req));
     }
-    else if (req->policy->use_trace_op && VEQ(data, op_pos, op_len, "TRACE"))
+    else if (req->policy->allow_trace_op && VEQ(data, op_pos, op_len, "TRACE"))
       return (http_req_op_trace(con, req));
     else if (VEQ(data, op_pos, op_len, "TRACE") ||
              VEQ(data, op_pos, op_len, "POST") ||

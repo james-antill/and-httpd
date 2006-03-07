@@ -313,6 +313,7 @@ for my $i (@$resp)
 	$totals->{$from}->{recv}   = $recv;
 	$totals->{$from}->{sendui} = $sendui;
 	$totals->{$from}->{send}   = $send;
+	$totals->{$from}->{data}   = [];
       }
     if (m!^EVNT (?:SEND/RECV|RECV|NONE|SEND_NOW)$!)
       {
@@ -325,6 +326,9 @@ for my $i (@$resp)
 	my ($putui, $put)   = get_vars(qr/^req_put\[([^:]+):(.+)\]$/, $i);
 	my ($recvui, $recv) = get_vars(qr/^recv\[([^:]+):(.+)\]$/,    $i);
 	my ($sendui, $send) = get_vars(qr/^send\[([^:]+):(.+)\]$/,    $i);
+
+	next if ! defined($acpt);
+	next if ! exists $totals->{$acpt};
 	
 	++$totals->{$acpt}->{live};
 	

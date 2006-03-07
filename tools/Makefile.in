@@ -40,7 +40,8 @@ host_triplet = @host@
 subdir = tools
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/and-httpd.in $(srcdir)/and-httpd_gzip.in \
-	$(srcdir)/and-httpd_status.in $(srcdir)/make_index.in \
+	$(srcdir)/and-httpd_logs.in $(srcdir)/and-httpd_status.in \
+	$(srcdir)/make_index.in \
 	$(srcdir)/scons_and_httpd_helpers.py.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -48,8 +49,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/autoconf.h
-CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip and-httpd_status \
-	make_index scons_and_httpd_helpers.py
+CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip and-httpd_logs \
+	and-httpd_status make_index scons_and_httpd_helpers.py
 am__installdirs = "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" \
 	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" \
 	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" \
@@ -226,6 +227,7 @@ toolsmaindir = $(datadir)/and-httpd-$(VERSION)-tools
 toolsmain_DATA = scons_and_httpd_helpers.py
 toolsmain_SCRIPTS = \
                 and-httpd-status \
+                and-httpd-syslog-grep \
                 and-httpd-syslog2apache-httpd-combined-log \
                 conv_html2text \
                 gzip-r \
@@ -234,7 +236,7 @@ toolsmain_SCRIPTS = \
 initddir = $(sysconfdir)/init.d
 initd_SCRIPTS = and-httpd
 cronddir = $(sysconfdir)/cron.hourly
-crond_SCRIPTS = and-httpd_gzip and-httpd_status
+crond_SCRIPTS = and-httpd_gzip and-httpd_status and-httpd_logs
 confdir = $(sysconfdir)/and-httpd
 conf_DATA = and-httpd.conf mime_types_extra.txt
 confddir = $(sysconfdir)/and-httpd/conf.d
@@ -283,6 +285,8 @@ $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 and-httpd: $(top_builddir)/config.status $(srcdir)/and-httpd.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 and-httpd_gzip: $(top_builddir)/config.status $(srcdir)/and-httpd_gzip.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+and-httpd_logs: $(top_builddir)/config.status $(srcdir)/and-httpd_logs.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 and-httpd_status: $(top_builddir)/config.status $(srcdir)/and-httpd_status.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@

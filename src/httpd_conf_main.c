@@ -93,7 +93,7 @@ static int httpd__policy_connection_tst_d1(struct Con *con,
     struct sockaddr *sa   = CON_SEVNT_SA(con);
     unsigned int tst_port = 0;
 
-    OPT_SERV_X_UINT(tst_port);
+    OPT_SERV_X_SINGLE_UINT(tst_port);
 
     if (sa->sa_family != AF_INET)
       *matches = FALSE;
@@ -505,7 +505,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     struct sockaddr *sa   = CON_SEVNT_SA(con);
     unsigned int tst_port = 0;
 
-    OPT_SERV_X_UINT(tst_port);
+    OPT_SERV_X_SINGLE_UINT(tst_port);
 
     if (sa->sa_family != AF_INET)
       *matches = FALSE;
@@ -726,7 +726,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     if (!tm) return (FALSE);
 
     req->vary_star = TRUE;
-    OPT_SERV_X_UINT(tmp);
+    OPT_SERV_X_SINGLE_UINT(tmp);
     *matches = tmp == tm->tm_wday;
   }
   else if (OPT_SERV_SYM_EQ("content-lang-eq") ||
@@ -1114,6 +1114,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
       CONF_SC_MAKE_CLIST_END();
     }
     
+    else if (OPT_SERV_SYM_EQ("allow-HTTP/0.9"))
+      OPT_SERV_X_TOGGLE(opts->allow_http_0_9);
     else if (OPT_SERV_SYM_EQ("allow-dot-directory") ||
              OPT_SERV_SYM_EQ("allow-dot-dir") ||
              OPT_SERV_SYM_EQ("allow-.-dir"))
@@ -1158,7 +1160,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
   else if (OPT_SERV_SYM_EQ("advertise-range"))
     OPT_SERV_X_TOGGLE(opts->use_adv_range);
   else if (OPT_SERV_SYM_EQ("trace-op") || OPT_SERV_SYM_EQ("trace-operation"))
-    OPT_SERV_X_TOGGLE(opts->use_trace_op);
+    OPT_SERV_X_TOGGLE(opts->allow_trace_op);
   else if (OPT_SERV_SYM_EQ("url-remove-fragment")) /* compat */
     OPT_SERV_X_TOGGLE(opts->remove_url_frag);
   else if (OPT_SERV_SYM_EQ("url-remove-query")) /* compat */

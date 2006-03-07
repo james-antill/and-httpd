@@ -58,7 +58,6 @@ http://www.sans.org/top20/#u2
          way to not include libcap, which doesn't have a static file
          way to use -Wl,-Bstatic?
         conf
-         += -= *= for numbers.
          allow setting arbitrary socket options?
          call tzset() every X seconds, for changing timezone?
 	 userdirs? - problem due to getpwnam() braindamage
@@ -69,18 +68,15 @@ http://www.sans.org/top20/#u2
          getgroups before setgroups?
          Allow "macros", so you can say turn "extra speed" on etc.
           ACL lists for ipv4-etc.
-         CGI / fast_cgi / SCGI http://python.ca/nas/scgi/protocol.txt
+         CGI / fast_cgi / SCGI
          Better error reporting.
         update config. while live.
         optionally log full requests.
         log to files / hosts
         change gethostbyname() to the new BS.
           IPv6 (and flying cars)
-        Allow none 
 	Redirect for non-canonical URLs (Ie. %61 used) -- like %2e/%2f fixup
-	mime_types speed, by having explicit filename/ext matches
-          probably good enough to just match quickly against .*
-          have "/cgi/ pl" "/fcgi/ php" etc. when we get dynamic content
+        have MIME "/cgi/ pl" "/fcgi/ php" etc. when we get dynamic content
         nice()
 	public/symlinks path checking, not just file checking
          allowdev - http://www.arctic.org/~dean/apache/1.3/mod_allowdev.c

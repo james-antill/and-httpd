@@ -1,6 +1,9 @@
 #! /bin/sh -e
 
+www_dir=@localstatedir@/www
+
 gz=@prefix@/share/and-httpd-@VERSION@-tools/gzip-r
-$gz --type=all /var/www/generated_html
-$gz --type=all /var/www/err
-$gz --type=all --zero /var/www/html
+
+$gz --type=all --zero $www_dir/generated_html
+$gz --type=all --zero $www_dir/err
+$gz --type=all --zero $www_dir/html

@@ -73,6 +73,7 @@ extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
 
 #if !(USE_MALLOC_CHECK)
 # define MALLOC_CHECK_MEM(x) (1)
+# define MALLOC_CHECK_SZ_MEM(x, y) (1)
 # define MALLOC_CHECK_EMPTY() /* nothing */
 # define MALLOC_CHECK_DEC() (0)
 # define MALLOC_CHECK_FAIL_IN(x) /* nothing */
@@ -87,6 +88,7 @@ extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
 #include <stdio.h>
 
 # define MALLOC_CHECK_MEM(x)  malloc_check_mem(x)
+# define MALLOC_CHECK_SZ_MEM(x, y)  malloc_check_sz_mem(x, y)
 # define MALLOC_CHECK_EMPTY() malloc_check_empty()
 # define MALLOC_CHECK_DEC()                                             \
     (MALLOC_CHECK_STORE.mem_fail_num && !--MALLOC_CHECK_STORE.mem_fail_num)

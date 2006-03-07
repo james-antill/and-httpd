@@ -1,0 +1,132 @@
+#! /usr/bin/perl -w
+
+use strict;
+use FileHandle;
+
+use Getopt::Long;
+use Pod::Usage;
+
+my $dbg = 0;
+my $man = 0;
+my $help = 0;
+
+my $output_file = undef;
+my $input_file  = undef;
+
+pod2usage(0) if !
+GetOptions ("output|o=s"  => \$output_file,
+	    "debug!"      => \$dbg,
+	    "help|?"      => \$help,
+	    "man"         => \$man);
+pod2usage(-exitstatus => 0, -verbose => 1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+
+sub grep_syslog_and_httpd_line
+  {
+    $_ = shift;
+
+    return undef # Match syslog line...
+      unless /^
+	      \w+           \s # Month
+	      (?:\d\d|\s\d)     \s # Day
+	      \d+:\d+:\d+   \s # Time
+	      \w+           \s # Logging host
+	      (?:j|and-)httpd      # It's the and-httpd server
+	      \[ \d+ \]        # Pid of web server
+	      :                # MSG Seperator...
+	      .*$/x;
+    return $_;
+  }
+
+if (defined($output_file))
+  { open (OUT, ">> $output_file") || die "open($output_file): $!\n"; }
+else
+  { open (OUT, ">&STDOUT")        || die "dup2(STDOUT, OUT): $!\n";  }
+
+
+# Doesn't work for stdin. also doesn't work for more than one arg. ... screw it
+my $fname = undef;
+
+for $fname (@ARGV)
+  {
+    my $fh = undef;
+    if ($fname =~ /[.]gz$/)
+      {
+	open ($fh, "gzip -dc $fname |") || die "gunzip($fname): $!";
+      }
+    elsif ($fname =~ /[.]bz2$/)
+      {
+	open ($fh, "bzip2 -dc $fname |") || die "bunzip2($fname): $!";
+      }
+    else
+      {
+	open ($fh, "<", $fname) || die "open($fname): $!";
+      }
+
+    while (<$fh>)
+      {
+	my $cur_line = grep_syslog_and_httpd_line($_);
+	
+	next if (!defined ($cur_line));
+	
+	OUT->print($cur_line);
+      }
+  }
+
+if (defined($output_file) && defined($fname))
+  {
+    my @st = stat $fname;
+    my $atime = time;
+    my $mtime = $st[9];
+
+    utime $atime, $mtime, $output_file;
+  }
+
+
+__END__
+
+=head1 NAME
+
+and-httpd-syslog-grep - Show all syslog lines for and-httpd
+
+=head1 SYNOPSIS
+
+and-httpd-syslog-grep [options] <and-httpd files...>
+
+ Options:
+  --help -?         brief help message
+  --man             full documentation
+  --output -o       Append output to this file instead of stdout
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>
+
+Print a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+
+=item B<--sync-file>
+
+Only add enteries after last one in specified file.
+
+=item B<--output>
+
+Append output to this file instead of stdout.
+
+=back
+
+
+=head1 DESCRIPTION
+
+B<and-httpd-syslog-grep> does the equivalent of a grep on the input file
+for and-httpd, it is somewhat better though ... and will save modification
+times when an output file is used.
+
+
+=cut

@@ -152,7 +152,7 @@ else
   AC_MSG_ERROR([*** Vstr is required. See http://www.and.org/vstr/])
 fi
 
-if $PKG_CONFIG --exists vstr-debug ; then
+if $PKG_CONFIG --atleast-version=1.0.15 vstr-debug ; then
   AM_CONDITIONAL(VSTR_DBG_AVAIL, true)
   VSTR_DBG_CFLAGS="`$PKG_CONFIG --cflags vstr-debug`"
   VSTR_DBG_LDLIBS="`$PKG_CONFIG --libs   vstr-debug`"
@@ -1309,6 +1309,7 @@ AC_OUTPUT([Makefile
            tools/Makefile
            tools/and-httpd
            tools/and-httpd_gzip
+           tools/and-httpd_logs
            tools/and-httpd_status
            tools/make_index
            tools/scons_and_httpd_helpers.py

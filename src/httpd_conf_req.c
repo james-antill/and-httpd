@@ -387,15 +387,21 @@ static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
         else if (OPT_SERV_SYM_EQ("<extension>-end") ||
                  OPT_SERV_SYM_EQ("extension-end"))
           type = HTTPD_POLICY_REQ_EXTN_END;
-        else if (OPT_SERV_SYM_EQ("<extension>-eq") || OPT_SERV_SYM_EQ("extension-eq") ||
-                 OPT_SERV_SYM_EQ("<extension>==") || OPT_SERV_SYM_EQ("extension=="))
+        else if (OPT_SERV_SYM_EQ("<extension>-eq") ||
+                 OPT_SERV_SYM_EQ("extension-eq") ||
+                 OPT_SERV_SYM_EQ("<extension>==") ||
+                 OPT_SERV_SYM_EQ("extension=="))
           type = HTTPD_POLICY_REQ_EXTN_EQ;
-        else if (OPT_SERV_SYM_EQ("<extensions>-beg") || OPT_SERV_SYM_EQ("extensions-beg"))
+        else if (OPT_SERV_SYM_EQ("<extensions>-beg") ||
+                 OPT_SERV_SYM_EQ("extensions-beg"))
           type = HTTPD_POLICY_REQ_EXTS_BEG;
-        else if (OPT_SERV_SYM_EQ("<extensions>-end") || OPT_SERV_SYM_EQ("extensions-end"))
+        else if (OPT_SERV_SYM_EQ("<extensions>-end") ||
+                 OPT_SERV_SYM_EQ("extensions-end"))
           type = HTTPD_POLICY_REQ_EXTS_END;
-        else if (OPT_SERV_SYM_EQ("<extensions>-eq") || OPT_SERV_SYM_EQ("extensions-eq") ||
-                 OPT_SERV_SYM_EQ("<extensions>==") || OPT_SERV_SYM_EQ("extensions=="))
+        else if (OPT_SERV_SYM_EQ("<extensions>-eq") ||
+                 OPT_SERV_SYM_EQ("extensions-eq") ||
+                 OPT_SERV_SYM_EQ("<extensions>==") ||
+                 OPT_SERV_SYM_EQ("extensions=="))
           type = HTTPD_POLICY_REQ_EXTS_EQ;
         else if (OPT_SERV_SYM_EQ("<basename-without-extension>-beg") ||
                  OPT_SERV_SYM_EQ("basename-without-extension-beg"))

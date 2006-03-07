@@ -1,9 +1,9 @@
 #! /bin/sh -e
 
 # Confish.
-www_dir=/var/www/generated_html
+www_dir=@localstatedir@/www/generated_html
 
-st=@prefix@/share/and-httpd-@VERSION@-tools/
+st=@prefix@/share/and-httpd-@VERSION@-tools/and-httpd-status
 
 mkdir -p $www_dir
 $st > $www_dir/status.html

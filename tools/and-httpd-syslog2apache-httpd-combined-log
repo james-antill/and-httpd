@@ -27,74 +27,64 @@ use FileHandle;
 use Getopt::Long;
 use Pod::Usage;
 
+use POSIX qw(strftime);
+
+use Date::Manip;
+
+my $dbg = 0;
 my $man = 0;
 my $help = 0;
 
 my $output_file = undef;
 my $sync_file   = undef;
+my $conf_fast_chk = 0;
 
 pod2usage(0) if !
 GetOptions ("output|o=s"  => \$output_file,
-	    "sync-file=s"      => \$sync_file,
+	    "sync-file=s" => \$sync_file,
+	    "fast-check!" => \$conf_fast_chk,
+	    "debug!"      => \$dbg,
 	    "help|?"      => \$help,
 	    "man"         => \$man);
 pod2usage(-exitstatus => 0, -verbose => 1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
-if (defined($output_file))
-  { open (OUT, ">> $output_file") || die "open($output_file): $!\n"; }
-else
-  { open (OUT, ">&STDOUT")        || die "dup2(STDOUT, OUT): $!\n";  }
 
-my $last_line = undef;
-if (defined($sync_file))
+my $mon_map = {"Jan" => 1, "Feb" =>  2, "Mar" =>  3, "Apr" =>  4,
+	       "May" => 5, "Jun" =>  6, "Jul" =>  7, "Aug" =>  8,
+	       "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12};
+
+
+my $global_off = strftime("%z", localtime());
+
+sub parse_syslog_line
   {
-    open (IN, "< $sync_file")     || die "open($sync_file): $!\n";
+    $_ = shift;
 
-    while (<IN>)
-      {
-	next unless (m!^
-		       (?:\d+[.]){3}\d+ \s       # IP
-		       -                \s       # blank
-		       -                \s       # blank
-		       \[
-		         \d+/[^/]+/\d+    # date
-		         (:\d+){3} \s     # time
-		         [^]]+            # off
-		       \]              \s
-		       ".+"            \s       # req
-		       \d+             \s       # ret
-		       \d+             \s       # sz
-		       (".+")          \s       # ref
-		       (".+")          \s       # ua
-		       $!x);
-	$last_line = $_;
-      }
-  }
+    return undef # Match syslog line...
+      unless /^
+	      (\w+)         \s # Month
+	      (\d\d|\s\d)   \s # Day
+	      (\d+:\d+:\d+) \s # Time
+	      \w+           \s # Logging host
+	      (?:j|and-)httpd  # It's the and-httpd server
+	      \[ \d+ \]        # Pid of web server
+	      :             \s # MSG Seperator...
+	      (.+)
+	      $/x;
 
-while (<>)
-  {
-    next unless(/^
-		 (\w+)         \s # Month
-		 (\d\d|\s\d)   \s # Day
-		 (\d+:\d+:\d+) \s # Time
-		 \w+           \s # Logging host
-		 (?:j|and-)httpd  # It's the and-httpd server
-		 \[ \d+ \]        # Pid of web server
-		 :             \s # MSG Seperator...
-		 (.+)
-		 $/x);
     my ($mon, $day, $tm, $msg) = ($1, $2, $3, $4);
-    my $year = undef;
-    my $off = "-0500";
+    my $year = shift;
+    my $file_mon = shift;
 
+    # Deal with year rollover...
+    if (exists $mon_map->{$mon} && ($mon_map->{$mon} < $file_mon))
+      { $year--; }
+
+    my $off = $global_off; # FIXME: Assumes offset is constant *sighs*
+    # my $off = "+0000"; # FIXME: Assumes syslog is in GMT (wrong)
 
     $day =~ s/ /0/; # convert from leading space to leading zero
-
-# FIXME: use timestamp of file.
-    ($_,$_,$_,$_,$_,$year,$_,$_) = localtime(time);
-
-    $year += 1900;
 
     $_ = $msg;
     my $cur_line = undef;
@@ -149,16 +139,146 @@ $ip - - [$day/$mon/$year:$tm $off] "$req" $ret $sz "$referer" "$ua"
 EOL
       }
 
+    return $cur_line;
+  }
+
+
+sub parse_last_combined_line
+  {
+    my $fname = shift;
+
+    open (IN, "< $fname")     || die "open($fname): $!\n";
+
+    my $last_line = undef;
+    while (<IN>)
+      {
+	
+	next unless (m!^
+		       (?:\d+[.]){3}\d+ \s       # IP
+		       -                \s       # blank
+		       -                \s       # blank
+		       \[
+		         \d+/[^/]+/\d+    # date
+		         (:\d+){3} \s     # time
+		         [^]]+            # off
+		       \]              \s
+		       ".+"            \s       # req
+		       \d+             \s       # ret
+		       \d+             \s       # sz
+		       (".+")          \s       # ref
+		       (".+")          \s       # ua
+		       $!x);
+	$last_line = $_;
+      }
+
+    close(IN);
+
+    return $last_line;
+  }
+
+
+if (defined($output_file))
+  { open (OUT, ">> $output_file") || die "open($output_file): $!\n"; }
+else
+  { open (OUT, ">&STDOUT")        || die "dup2(STDOUT, OUT): $!\n";  }
+
+my $last_line = undef;
+my $last_date = undef;
+if (defined($sync_file))
+  {
+
+    if (defined ($last_line = parse_last_combined_line($sync_file)))
+      {
+	$last_date = $1 if
+	  $last_line =~ m!^
+			  (?:\d+[.]){3}\d+ \s       # IP
+			  -                \s       # blank
+			  -                \s       # blank
+			  \[ ( # Get date...
+			  \d+/[^/]+/\d+    # date
+			 )
+			  (:\d+){3} \s     # time
+			  [^]]+            # off
+			  \]              \s
+			  ".+"            \s       # req
+			  \d+             \s       # ret
+			  \d+             \s       # sz
+			  (".+")          \s       # ref
+			  (".+")          \s       # ua
+			  $!x;
+      }
+  }
+
+if (defined ($last_date) && $conf_fast_chk)
+  { # Check to see which files we need to look at
+
+    my @args = ();
+
+    $last_date =~ m!(\d+)/([^/]+)/(\d+)!;
+    my $last_year = $3;
+    my $last_mon  = $mon_map->{$2};
+    my $last_day  = $1;
+
+
+    print STDERR "DBG: last_date: $last_date\n" if ($dbg);
+    Date_Init();
+    $last_date = Date_SecsSince1970($last_mon, $last_day, $last_year,
+				    0, 0, 0);
+    print STDERR "DBG: last_date: $last_date\n" if ($dbg);
+  }
+else
+  { $last_date = undef; }
+
+# Doesn't work for stdin. ... screw it
+for my $fname (@ARGV)
+  {
+    my @st = stat $fname;
+
+    # If the last date is newer than the file mtime, this can't contain any of
+    # those dates...
+    if (defined ($last_date) && ($last_date > $st[9]))
+      {
+	print STDERR "DBG: skipping $fname\n" if ($dbg);
+	next;
+      }
+    $last_date = undef;
+
+    my @st_tm     = localtime($st[9]);
+    my $file_year = $st_tm[5] + 1900;
+    my $file_mon  = $st_tm[4] + 1;
+
+    my $fh = undef;
+    if ($fname =~ /[.]gz$/)
+      {
+	open ($fh, "gzip -dc $fname |") || die "gunzip($fname): $!";
+      }
+    elsif ($fname =~ /[.]bz2$/)
+      {
+	open ($fh, "bzip2 -dc $fname |") || die "bunzip2($fname): $!";
+      }
+    else
+      {
+	open ($fh, "<", $fname) || die "open($fname): $!";
+      }
+
+
+while (<$fh>)
+  {
+    my $cur_line = parse_syslog_line($_, $file_year, $file_mon);
+
     if (! defined($cur_line))
       { next; }
 
     if (defined ($last_line) && ($last_line eq $cur_line))
-      { $last_line = undef; }
+      { $last_line = undef; next; }
     if (defined ($last_line))
       { next; }
 
     OUT->print($cur_line);
   }
+
+  }
+
 
 __END__
 
@@ -201,7 +321,7 @@ Append output to this file instead of stdout.
 
 =head1 DESCRIPTION
 
-B<and-httpd-syslog2apache-http-log.pl> converts files from and-httpd syslog
+B<and-httpd-syslog2apache-http-log> converts files from and-httpd syslog
 format into apache-httpd combined log format. It can also be run from cron and
 told to "sync" with an output file.
 

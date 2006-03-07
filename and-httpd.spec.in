@@ -62,7 +62,7 @@ daemon.
 %package tools
 Summary: Tools to help with managing webserver data
 Group: Development/Tools
-Requires: scons, python, perl
+Requires: scons, python, perl, perl-File-Slurp
 
 %description tools
  Tools to help managing data under /var/www, including:
@@ -70,6 +70,8 @@ Requires: scons, python, perl
 . automatic directory indexer.
 . automatic gzip encoding generator.
 . automatic converter from and-httpd syslog to Apache-httpd combined log.
+. automatic status page generator.
+. HTML -> text converter.
 
 %prep
 %setup -q
@@ -129,11 +131,11 @@ fi
 %{_bindir}/
 %{_sysconfdir}/and-httpd/conf.d/README
 %{_sysconfdir}/init.d/and-httpd
-%{_sysconfdir}/cron.hourly/and-httpd_gzip
+%{_sysconfdir}/cron.hourly/and-httpd_*
 %config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
 %config(noreplace) %{_sysconfdir}/and-httpd/conf.d/_*.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
-%{wwwdir}/err/example.com/*
+%{wwwdir}/err/*
 %{wwwdir}/conf/*
 %{wwwdir}/conf_tmpl/*
 %{wwwdir}/html

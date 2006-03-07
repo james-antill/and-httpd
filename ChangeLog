@@ -1,3 +1,44 @@
+2006-03-07  James Antill  <james@and.org>
+
+	* and-httpd.spec.in: Add the perl-File-Slurp requires in.
+
+	* tools/and-httpd_logs: Fix typo for two digit years.
+
+	* tools/and-httpd.conf: Fix chrrot configuration.
+
+	* tools/and-httpd-status (prnt_tail): Fix inter. proc. communication
+	events.
+
+	* tools/status: Fix configuration for multiple networks.
+
+2006-03-06  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.7
+
+2006-03-02  James Antill  <james@and.org>
+
+	* src/mime_types.c (mime_types_match): Add optimization on extension
+	matching (Ie. html => text/html).
+
+	* src/httpd.c (http_parse_quality): Add simple opt. to quality parsing.
+
+2006-02-28  James Antill  <james@and.org>
+
+	* src/evnt.c (evnt_init): Put the logic in for socket flag inheritance,
+	and global system TCP_NODELAY config.
+	(evnt_fd_set_nagle): Add function to change nagle/TCP_NODELAY.
+
+2006-02-23  James Antill  <james@and.org>
+
+	* tools/and-httpd.conf: Remove url-remove-query and add 
+	allow-HTTP/0.9 false to strictness section.
+
+
+2006-02-22  James Antill  <james@and.org>
+
+	* src/httpd_conf_main.h (HTTPD_CONF_ALLOW_HTTP_0_9): Config. for
+	HTTP/0.9 being allowed or not.
+
 2006-02-21  James Antill  <james@and.org>
 
 	* tools/and-httpd.conf: Explain syslog facility.

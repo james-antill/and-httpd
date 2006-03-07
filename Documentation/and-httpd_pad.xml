@@ -33,10 +33,10 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>and-httpd</Program_Name>
-    <Program_Version>0.99.6</Program_Version>
-    <Program_Release_Month>11</Program_Release_Month>
-    <Program_Release_Day>29</Program_Release_Day>
-    <Program_Release_Year>2005</Program_Release_Year>
+    <Program_Version>0.99.7</Program_Version>
+    <Program_Release_Month>03</Program_Release_Month>
+    <Program_Release_Day>06</Program_Release_Day>
+    <Program_Release_Year>2006</Program_Release_Year>
     <Program_Cost_Dollars>0</Program_Cost_Dollars>
     <Program_Cost_Other_Code>USD</Program_Cost_Other_Code>
     <Program_Cost_Other/>
@@ -45,7 +45,7 @@
     <Program_Install_Support>Install and Uninstall</Program_Install_Support>
     <Program_OS_Support>Linux,Unix</Program_OS_Support>
     <Program_Language>English</Program_Language>
-    <Program_Change_Info> Bug fixes, added native conf.d support. Make syslog date generation native. Added w3c like ",tools". Seperate out index redirect into a conf.d file.</Program_Change_Info>
+    <Program_Change_Info> IO limiting. Status page. Optimizations. Added multi step configuration of strings and numbers. Added [else] test for matches.</Program_Change_Info>
     <Program_System_Requirements/>
     <Program_Specific_Category>Webserver</Program_Specific_Category>
     <Program_Categories/>
@@ -54,12 +54,12 @@
     <Includes_DirectX>N</Includes_DirectX>
     <File_Info>
       <Filename_Generic>and-httpd</Filename_Generic>
-      <Filename_Versioned>and-httpd-0.99.6</Filename_Versioned>
-      <Filename_Previous>and-httpd-0.99.5</Filename_Previous>
-      <Filename_Long>and-httpd-0.99.6.tar.gz</Filename_Long>
-      <File_Size_Bytes>646847</File_Size_Bytes>
-      <File_Size_K>63168</File_Size_K>
-      <File_Size_MB>0.61</File_Size_MB>
+      <Filename_Versioned>and-httpd-0.99.7</Filename_Versioned>
+      <Filename_Previous>and-httpd-0.99.6</Filename_Previous>
+      <Filename_Long>and-httpd-0.99.7.tar.gz</Filename_Long>
+      <File_Size_Bytes>678361</File_Size_Bytes>
+      <File_Size_K>662.46</File_Size_K>
+      <File_Size_MB>0.64</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -69,10 +69,10 @@
     <English>
       <Keywords>http httpd webserver secure</Keywords>
       <Char_Desc_45>Secure, simple and fast HTTP server.</Char_Desc_45>
-      <Char_Desc_80>Secure (has a $500 security guarantee), simple and fast HTTP server.</Char_Desc_80>
-      <Char_Desc_250>Secure, simple and fast HTTP server, maps URLs to files in a number of ways. Has a $500 security guarantee.</Char_Desc_250>
-      <Char_Desc_450>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $500 "security guarantee" against remote attacks.</Char_Desc_450>
-      <Char_Desc_2000>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $500 "security guarantee" against remote attacks.
+      <Char_Desc_80>Secure (has a $2,000 security guarantee), simple and fast HTTP server.</Char_Desc_80>
+      <Char_Desc_250>Secure, simple and fast HTTP server, maps URLs to files in a number of ways. Has a $2,000 security guarantee.</Char_Desc_250>
+      <Char_Desc_450>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $2,000 "security guarantee" against remote attacks.</Char_Desc_450>
+      <Char_Desc_2000>And-httpd is an HTTP server that maps URLs to files. In other words, in can take an incoming URL and map it to a file in a number of ways (for example, according to content type or language). It cannot do CGI or other kinds of code execution. It cannot even dynamically create directory listings (although it comes with external tools to do so). It currently has a $2,000 "security guarantee" against remote attacks.
 </Char_Desc_2000>
     </English>
   </Program_Descriptions>
@@ -85,9 +85,9 @@
       <Application_XML_File_URL>http://www.and.org/and-httpd/and-httpd_pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.6/and-httpd-0.99.6.tar.gz</Primary_Download_URL>
-      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.6/and-httpd-0.99.6.tar.gz</Secondary_Download_URL>
-      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.6/</Additional_Download_URL_1>
+      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.7/and-httpd-0.99.7.tar.gz</Primary_Download_URL>
+      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.7/and-httpd-0.99.7.tar.gz</Secondary_Download_URL>
+      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.7/</Additional_Download_URL_1>
     </Download_URLs>
   </Web_Info>
   <Permissions>

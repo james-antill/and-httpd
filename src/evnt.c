@@ -44,6 +44,23 @@
 
 #include <sys/sendfile.h>
 
+/* FIXME: Should do better autoconf checks... */
+#ifdef __linux__
+/* Linux doesn't let TCP_NODELAY be config., like Solaris ... and maybe *BSD?
+ * and doesn't inherit socket flags from accept() like *BSD */
+# define HAVE_TCP_NODELAY_CONFIG FALSE
+#else
+# define HAVE_TCP_NODELAY_CONFIG TRUE
+#endif
+
+#ifdef __BSD__
+/* Linux doesn't inherit socket flags from accept() like *BSD ...
+ * and maybe Solaris? */
+# define HAVE_SOCK_FLAGS_INHERIT TRUE
+#else
+# define HAVE_SOCK_FLAGS_INHERIT FALSE
+#endif
+
 #define EVNT__POLL_FLGS(x)                                              \
  ((((x) & (POLLIN | POLLOUT)) == (POLLIN | POLLOUT)) ? "(POLLIN | POLLOUT)" : \
   (((x) &  POLLIN)                                   ? "(POLLIN)"           : \
@@ -111,6 +128,13 @@ struct sock_fprog
 #define EX_UTILS_NO_USE_IO_FD 1
 #include "ex_utils.h"
 
+#ifdef HAVE_TCP_CORK
+# define USE_TCP_CORK TRUE
+#else
+# define USE_TCP_CORK FALSE
+# define TCP_CORK 0
+#endif
+
 #include "evnt.h"
 
 #include "mk.h"
@@ -133,6 +157,10 @@ static struct Evnt *q_send_recv = NULL; /* recv + send */
 static Vlg *vlg = NULL;
 
 static unsigned int evnt__num = 0;
+
+/* things can move from recv -> send_recv with a timeout,
+ * so they look like the end of events NULL */
+static unsigned int evnt__scan_ready_moved_send_zero_fds = 0;
 
 /* this should be more configurable... */
 static unsigned int evnt__accept_limit = 4;
@@ -168,6 +196,21 @@ void evnt_fd__set_nonblock(int fd, int val)
   
   if (fcntl(fd, F_SETFL, flags) == -1)
     vlg_err(vlg, EXIT_FAILURE, "%s\n", __func__);
+}
+
+static int evnt_fd__set_nodelay(int fd, int val)
+{
+  return (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val)) != -1);
+}
+
+static int evnt_fd__set_cork(int fd, int val)
+{
+  return (setsockopt(fd, IPPROTO_TCP, TCP_CORK, &val, sizeof(val)) != -1);
+}
+
+static int evnt_fd__set_reuse(int fd, int val)
+{
+  return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != -1);
 }
 
 void evnt_add(struct Evnt **que, struct Evnt *node)
@@ -428,7 +471,8 @@ int evnt_cb_func_shutdown_r(struct Evnt *evnt)
   return (!!evnt->io_w->len);
 }
 
-static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
+static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref,
+                     struct Evnt *from_evnt)
 {
   ASSERT(ref);
   
@@ -443,8 +487,7 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
 
   evnt->flag_q_pkt_move  = FALSE;
 
-  /* FIXME: need group settings, default no nagle but cork */
-  evnt->flag_io_nagle    = evnt_opt_nagle;
+  evnt->flag_io_nagle    = FALSE;
   evnt->flag_io_cork     = FALSE;
 
   evnt->flag_io_filter   = FALSE;
@@ -496,11 +539,22 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref)
 
   evnt->sa_ref = vstr_ref_add(ref);
   evnt->acpt_sa_ref = NULL;
-  
-  evnt_fd__set_nonblock(fd, TRUE);
 
   if (!(evnt->ind = evnt_poll_add(evnt, fd)))
     goto poll_add_fail;
+
+  /* FIXME: need group settings */
+  if (HAVE_SOCK_FLAGS_INHERIT && from_evnt &&
+      (from_evnt->flag_io_nagle == evnt_opt_nagle))
+    evnt->flag_io_nagle = evnt_opt_nagle;
+  else if (HAVE_TCP_NODELAY_CONFIG || !evnt_opt_nagle)
+  {
+    evnt_fd__set_nodelay(fd, !evnt->flag_io_nagle);
+    evnt->flag_io_nagle = evnt_opt_nagle;
+  }
+
+  if (!HAVE_SOCK_FLAGS_INHERIT || !from_evnt)
+    evnt_fd__set_nonblock(fd, TRUE);
 
   return (TRUE);
 
@@ -602,16 +656,6 @@ static void evnt__uninit(struct Evnt *evnt)
               evnt->tm_o, evnt->tm_l_r, evnt->tm_l_w);
 }
 
-static int evnt_fd__set_nodelay(int fd, int val)
-{
-  return (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val)) != -1);
-}
-
-static int evnt_fd__set_reuse(int fd, int val)
-{
-  return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != -1);
-}
-
 static void evnt__fd_close_noerrno(int fd)
 {
   int saved_errno = errno;
@@ -652,12 +696,9 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
   saddr->sin_port = htons(port);
   saddr->sin_addr.s_addr = inet_addr(ipv4_string);
 
-  if (!evnt_init(evnt, fd, ref))
+  if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
-  
-  if (!evnt->flag_io_nagle)
-    evnt_fd__set_nodelay(fd, TRUE);
   
   ASSERT(port && (saddr->sin_addr.s_addr != htonl(INADDR_ANY)));
   
@@ -710,7 +751,7 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
   saddr->sun_family = AF_LOCAL;
   memcpy(saddr->sun_path, fname, len);
   
-  if (!evnt_init(evnt, fd, ref))
+  if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
   
@@ -741,11 +782,8 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
 
 int evnt_make_acpt_ref(struct Evnt *evnt, int fd, Vstr_ref *sa)
 {
-  if (!evnt_init(evnt, fd, sa))
+  if (!evnt_init(evnt, fd, sa, NULL))
     return (FALSE);
-  
-  if (!evnt->flag_io_nagle)
-    evnt_fd__set_nodelay(fd, TRUE);
 
   evnt->flag_q_recv = TRUE;
   return (evnt__make_end(&q_recv, evnt, POLLIN));
@@ -808,7 +846,7 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   
   saddr->sin_port = htons(server_port);
 
-  if (!evnt_init(evnt, fd, ref))
+  if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
 
   if (!evnt_fd__set_reuse(fd, TRUE))
@@ -867,7 +905,7 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   saddr->sun_family = AF_LOCAL;
   memcpy(saddr->sun_path, fname, len);
 
-  if (!evnt_init(evnt, fd, ref))
+  if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
 
   unlink(fname);
@@ -907,7 +945,7 @@ int evnt_make_custom(struct Evnt *evnt, int fd, Vstr_ref *sa, int flags)
   
   EVNT__UPDATE_TV();
 
-  if (!evnt_init(evnt, fd, sa))
+  if (!evnt_init(evnt, fd, sa, NULL))
   {
     evnt__fd_close_noerrno(fd);
     return (FALSE);
@@ -1557,6 +1595,8 @@ static void evnt__send_fin(struct Evnt *evnt)
       evnt_del(&q_recv, evnt), evnt->flag_q_recv = FALSE;
     evnt_add(&q_send_recv, evnt); evnt->flag_q_send_recv = TRUE;
     if (!evnt->io_r_shutdown && !evnt->tm_l_r) pflags |= POLLIN;
+    if (!pflags)
+      ++evnt__scan_ready_moved_send_zero_fds;
     evnt_wait_cntl_add(evnt, pflags);
   }
 }
@@ -1846,11 +1886,14 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
   scan = q_connect;
   while (scan && ready)
   {
-    struct Evnt *scan_next = scan->next;
+    struct Evnt *scan_next = NULL;
     int done = FALSE;
     int revents = 0;
 
     ASSERT(evnt__valid(scan));
+    
+    if (!scan->flag_q_connect)
+      break;
     
     revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
     SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
@@ -1858,6 +1901,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (scan->flag_q_closed)
     {
       done = !!revents;
+      scan_next = scan->next;
       goto next_connect;
     }
     
@@ -1879,6 +1923,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
         errno = ern;
         vlg_warn(vlg, "connect(): %m\n");
 
+        scan_next = scan->next;
         evnt__close_now(scan);
       }
       else
@@ -1888,13 +1933,17 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
         evnt_wait_cntl_del(scan, POLLOUT);
 
         if (!scan->cbs->cb_func_connect(scan))
+        {
+          scan_next = scan->next;
           evnt__close_now(scan);
+        }
       }
       goto next_connect;
     }
     ASSERT(!done);
     if (evnt_poll_direct_enabled()) break;
 
+    scan_next = scan->next;
    next_connect:
     if (done)
       --ready;
@@ -1906,11 +1955,14 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
   while (scan && ready)
   { /* Papers have suggested that preferring read over accept is better
      * -- edge triggering needs to requeue on non failure */
-    struct Evnt *scan_next = scan->next;
+    struct Evnt *scan_next = NULL;
     int done = FALSE;
     int revents = 0;
 
     ASSERT(evnt__valid(scan));
+    
+    if (!scan->flag_q_accept)
+      break;
     
     revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
     SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
@@ -1918,6 +1970,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (scan->flag_q_closed)
     {
       done = !!revents;
+      scan_next = scan->next;
       goto next_accept;
     }
     
@@ -1926,6 +1979,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     { /* done first as it's an error with the accept fd, whereas accept
        * generates new fds */
       done = TRUE;
+      scan_next = scan->next;
       evnt__close_now(scan);
       goto next_accept;
     }
@@ -1952,6 +2006,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
                                               (struct sockaddr *) &sa, len)))
         {
           close(fd);
+          scan_next = scan->next;
           goto next_accept;
         }
 
@@ -1971,11 +2026,14 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
           break;
       }
       
+      scan_next = scan->next;
       goto next_accept;
     }
     ASSERT(!done);
     if (evnt_poll_direct_enabled()) break;
     
+    scan_next = scan->next;
+      
    next_accept:
     if (done)
       --ready;
@@ -1983,14 +2041,18 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     scan = scan_next;
   }  
 
+  evnt__scan_ready_moved_send_zero_fds = 0;
   scan = q_recv;
   while (scan && ready)
   {
-    struct Evnt *scan_next = scan->next;
+    struct Evnt *scan_next = NULL;
     int done = FALSE;
     int revents = 0;
     
     ASSERT(evnt__valid(scan));
+
+    if (!scan->flag_q_recv)
+      break;
     
     revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
     SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
@@ -1998,6 +2060,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (scan->flag_q_closed)
     {
       done = !!revents;
+      scan_next = scan->next;
       goto next_recv;
     }
     
@@ -2005,7 +2068,11 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     {
       done = TRUE;
       if (!scan->cbs->cb_func_recv(scan))
+      {
+        scan_next = scan->next;
         evnt__close_now(scan);
+        goto next_recv;
+      }
     }
 
     if (!done && (revents & bad_poll_flags))
@@ -2013,9 +2080,15 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
       done = TRUE;
       if (scan->io_r_shutdown || scan->io_w_shutdown ||
           !scan->cbs->cb_func_shutdown_r(scan))
+      {
+        scan_next = scan->next;
         evnt__close_now(scan);
+        goto next_recv;
+      }
     }
 
+    scan_next = scan->next;
+    
    next_recv:
     if (!done && evnt_poll_direct_enabled()) break;
 
@@ -2024,15 +2097,18 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     
     scan = scan_next;
   }
-
+  
   scan = q_send_recv;
   while (scan && ready)
   {
-    struct Evnt *scan_next = scan->next;
+    struct Evnt *scan_next = NULL;
     int done = FALSE;
     int revents = 0;
     
     ASSERT(evnt__valid(scan));
+    
+    if (!scan->flag_q_send_recv)
+      break;
     
     revents = SOCKET_POLL_INDICATOR(scan->ind)->revents;
     SOCKET_POLL_INDICATOR(scan->ind)->revents = 0;
@@ -2040,6 +2116,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     if (scan->flag_q_closed)
     {
       done = !!revents;
+      scan_next = scan->next;
       goto next_send;
     }
     
@@ -2048,6 +2125,7 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
       done = TRUE;
       if (!scan->cbs->cb_func_recv(scan))
       {
+        scan_next = scan->next;
         evnt__close_now(scan);
         goto next_send;
       }
@@ -2057,22 +2135,37 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     {
       done = TRUE; /* need groups so we can do direct send here */
       if (!evnt_send_add(scan, TRUE, max_sz))
+      {
+        scan_next = scan->next;
         evnt__close_now(scan);
+        goto next_send;
+      }
     }
 
     if (!done && (revents & bad_poll_flags))
     {
       done = TRUE;
       if (scan->io_r_shutdown || !scan->cbs->cb_func_shutdown_r(scan))
+      {
+        scan_next = scan->next;
         evnt__close_now(scan);
+        goto next_send;
+      }
     }
 
+    scan_next = scan->next;
+
    next_send:
-    if (!done && evnt_poll_direct_enabled()) break;
-
-    if (done)
-      --ready;
-
+    if (!done && evnt__scan_ready_moved_send_zero_fds)
+      --evnt__scan_ready_moved_send_zero_fds;      
+    else
+    {
+      if (!done && evnt_poll_direct_enabled()) break;
+      
+      if (done)
+        --ready;
+    }
+    
     scan = scan_next;
   }
 
@@ -2083,6 +2176,9 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
     int done = FALSE;
 
     ASSERT(evnt__valid(scan));
+    
+    if (!scan->flag_q_none)
+      break;
     
     if (scan->flag_q_closed)
       goto next_none;
@@ -2102,14 +2198,14 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
    next_none:
     if (done)
       --ready;
-
+    
     scan = scan_next;
   }
 
   if (q_closed)
     evnt_scan_q_close();
-  else if (ready)
-    vlg_abort(vlg, "ready = %d\n", ready);
+  else if (ready) /* FIXME: needs a different approach */
+    vlg_warn(vlg, "ready = %d\n", ready);
 }
 
 void evnt_scan_send_fds(void)
@@ -2258,12 +2354,20 @@ struct Evnt *evnt_queue(const char *qname)
   return (NULL);
 }
 
-#ifdef HAVE_TCP_CORK
-# define USE_TCP_CORK 1
-#else
-# define USE_TCP_CORK 0
-# define TCP_CORK 0
-#endif
+void evnt_fd_set_nagle(struct Evnt *evnt, int val)
+{
+  ASSERT(evnt__valid(evnt));
+
+  val = !!val;
+
+  if (evnt->flag_io_nagle == val)
+    return;
+  
+  if (!evnt_fd__set_nodelay(evnt_fd(evnt), !val))
+    return;
+  
+  evnt->flag_io_nagle = val;
+}
 
 void evnt_fd_set_cork(struct Evnt *evnt, int val)
 { /* assume it can't work for set and fail for unset */
@@ -2271,20 +2375,19 @@ void evnt_fd_set_cork(struct Evnt *evnt, int val)
 
   if (!USE_TCP_CORK)
     return;
+
+  val = !!val;
   
-  if (!evnt->flag_io_cork == !val)
+  if (evnt->flag_io_cork == val)
     return;
 
-  if (!evnt->flag_io_nagle) /* flags can't be combined ... stupid */
-  {
-    evnt_fd__set_nodelay(evnt_fd(evnt), FALSE);
-    evnt->flag_io_nagle = TRUE;
-  }
-  
-  if (setsockopt(evnt_fd(evnt), IPPROTO_TCP, TCP_CORK, &val, sizeof(val)) == -1)
+  if (val) /* flags can't be combined ... stupid */
+    evnt_fd_set_nagle(evnt, TRUE);
+
+  if (!evnt_fd__set_cork(evnt_fd(evnt), val))
     return;
   
-  evnt->flag_io_cork = !!val;
+  evnt->flag_io_cork = val;
 }
 
 static void evnt__free_base_noerrno(Vstr_base *s1)

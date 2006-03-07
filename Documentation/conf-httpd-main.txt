@@ -41,6 +41,7 @@ org.and.httpd-conf-main-1.0
 .... hostname | host
 ..... canonize | make-canonical
 ..... validation
+.... allow-HTTP/0.9
 .... allow-dot-directory | allow-dot-dir | allow-.-dir
 .... allow-encoded-slash | allow-enc-/
 .... allow-encoded-dot | allow-enc-.
@@ -48,6 +49,7 @@ org.and.httpd-conf-main-1.0
 .... URL | url
 ..... remove-fragment
 ..... remove-query
+... text-plain-redirect
 ... encoded-content-replacement
 ... keep-alive
 ... keep-alive-1.0

@@ -4,6 +4,16 @@
 #define EX_UTILS_NO_FUNCS 1
 #include "ex_utils.h"
 
+#include "mk.h"
+
+#if COMPILE_DEBUG
+# define MIME_TYPES__INIT_SECT_SZ 2
+# define MIME_TYPES__INIT_TYPE_SZ 2
+#else
+# define MIME_TYPES__INIT_SECT_SZ 128
+# define MIME_TYPES__INIT_TYPE_SZ  64
+#endif
+
 static Vstr_sect_node *mime_types__srch(Mime_types_data *mime,
                                         const Vstr_base *fname,
                                         size_t pos, size_t len)
@@ -27,6 +37,31 @@ static Vstr_sect_node *mime_types__srch(Mime_types_data *mime,
   }
 
   return (NULL);
+}
+
+static void mime_type__type_add(Mime_types_data *mime, unsigned char type)
+{
+  MALLOC_CHECK_SZ_MEM(mime->types, mime->type_sz);
+  
+  ASSERT(mime->type_num <= mime->type_sz);
+
+  if (mime->type_num >= mime->type_sz)
+  {
+    unsigned char *tmp = NULL;
+    unsigned int sz    = mime->type_sz  * 2;
+
+    if (!MV(mime->types, tmp, sz))
+    {
+      mime->ents->malloc_bad = TRUE;
+      return;
+    }
+    
+    mime->type_sz = sz;
+  }
+  
+  mime->types[mime->type_num++] = type;
+  
+  ASSERT(mime->type_num <= mime->type_sz);
 }
 
 int mime_types_load_simple(Mime_types *pmime, const char *fname)
@@ -84,6 +119,7 @@ int mime_types_load_simple(Mime_types *pmime, const char *fname)
       size_t spos = 0;
       size_t slen = 0;
       Vstr_sect_node *old_sext = NULL;
+      unsigned char type = MIME_TYPES_TYPE_END;
       
       if (!sct)
       {
@@ -97,11 +133,14 @@ int mime_types_load_simple(Mime_types *pmime, const char *fname)
 
       if (vstr_export_chr(data, sext->pos) != '.')
       {
+        if (!vstr_srch_chr_fwd(data, sext->pos + 1, sext->len - 1, '.'))
+          type = MIME_TYPES_TYPE_EXT1;
+
         vstr_add_cstr_buf(mime->ent_data, mime->ent_data->len, ".");
         spos = mime->ent_data->len;
         slen = sext->len + 1;
       }
-      else
+      else 
       { /* chop the . off and use everything else */
         sext->len--; sext->pos++;
         spos = mime->ent_data->len + 1;
@@ -116,6 +155,7 @@ int mime_types_load_simple(Mime_types *pmime, const char *fname)
         old_sext->len = 0;
 
       vstr_sects_add(mime->ents, spos, slen);
+      mime_type__type_add(mime, type);
       sects->num--;
     }
   }
@@ -155,6 +195,7 @@ static void mime_types__filedata_free(Vstr_ref *ref)
   
   vstr_free_base(mime->ent_data); mime->ent_data = NULL;
   vstr_sects_free(mime->ents);    mime->ents     = NULL;
+  F(mime->types);                 mime->types    = NULL;
   
   (*mime->pref_func)(ref);
 }
@@ -174,9 +215,15 @@ int mime_types_init(Mime_types *pmime,
   if (!(mime->ent_data = vstr_make_base(NULL)))
     goto ent_data_malloc_fail;
   
-  if (!(mime->ents = vstr_sects_make(128)))
+  if (!(mime->ents = vstr_sects_make(MIME_TYPES__INIT_SECT_SZ)))
     goto ents_malloc_fail;
 
+  if (!(mime->types = MK(MIME_TYPES__INIT_TYPE_SZ)))
+    goto types_malloc_fail;
+
+  mime->type_sz  = MIME_TYPES__INIT_TYPE_SZ;
+  mime->type_num = 0;
+  
   /* make reference do the right thing... */
   mime->pref_func  = pmime->ref->func;
   pmime->ref->func = mime_types__filedata_free;
@@ -187,6 +234,8 @@ int mime_types_init(Mime_types *pmime,
   
   return (TRUE);
 
+ types_malloc_fail:
+  vstr_sects_free(mime->ents);
  ents_malloc_fail:
   vstr_free_base(mime->ent_data);
  ent_data_malloc_fail:
@@ -201,18 +250,32 @@ int mime_types_match(const Mime_types *pmime,
 {
   const Mime_types_data *mime = NULL;
   unsigned int num = 0;
-
+  size_t pos_ext1 = 0;
+  size_t len_ext1 = 0;
+  size_t tmp = 0;
+  
   ASSERT(pmime && pmime->ref && (pmime->ref->ref >= 1));
   ASSERT(ret_vs1 && ret_pos && ret_len);
-
+  
   mime = pmime->ref->ptr;
+  
+  MALLOC_CHECK_SZ_MEM(mime->types, mime->type_sz);
+
+  /* find extension */
+  tmp = vstr_srch_chr_rev(fname, pos, len, '.');
+  if ((pos_ext1 = tmp))
+    len_ext1 = len - (pos_ext1 - pos);
+  
   while (num++ < mime->ents->num)
   {
     size_t ctpos = VSTR_SECTS_NUM(mime->ents, num)->pos;
     size_t ctlen = VSTR_SECTS_NUM(mime->ents, num)->len;
     size_t epos  = 0;
     size_t elen  = 0;
-
+    unsigned char type = mime->types[num / 2];
+    
+    ASSERT(mime->type_num <= mime->type_sz);
+    ASSERT(mime->type_num >  (num / 2));
     ASSERT(num < mime->ents->num);
     ++num;
     epos  = VSTR_SECTS_NUM(mime->ents, num)->pos;
@@ -221,12 +284,31 @@ int mime_types_match(const Mime_types *pmime,
     if (!elen || (elen > len))
       continue;
 
-    if (vstr_cmp_eod_eq(fname, pos, len, mime->ent_data, epos, elen))
+    switch (type)
     {
-      *ret_vs1 = mime->ent_data;
-      *ret_pos = ctpos;
-      *ret_len = ctlen;
-      return (TRUE);
+      case MIME_TYPES_TYPE_EXT1:
+        if (vstr_cmp_eq(fname, pos_ext1, len_ext1, mime->ent_data, epos, elen))
+        {
+          *ret_vs1 = mime->ent_data;
+          *ret_pos = ctpos;
+          *ret_len = ctlen;
+          return (TRUE);
+        }
+        ASSERT(!vstr_cmp_eod_eq(fname, pos, len, mime->ent_data, epos, elen));
+        break;
+        
+      case MIME_TYPES_TYPE_EXT2:
+      case MIME_TYPES_TYPE_EXT3:
+      case MIME_TYPES_TYPE_END:
+        if (vstr_cmp_eod_eq(fname, pos, len, mime->ent_data, epos, elen))
+        {
+          *ret_vs1 = mime->ent_data;
+          *ret_pos = ctpos;
+          *ret_len = ctlen;
+          return (TRUE);
+        }
+
+        ASSERT_NO_SWITCH_DEF();
     }
   }
 

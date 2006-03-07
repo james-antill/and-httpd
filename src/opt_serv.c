@@ -246,7 +246,7 @@ static int opt_serv__conf_main_policy_d1(Opt_serv_policy_opts *opts,
     else if (OPT_SERV_SYM_EQ("idle"))
       OPT_SERV_X_UINT(opts->idle_timeout);
     else if (OPT_SERV_SYM_EQ("total"))
-      OPT_SERV_X_UINT(dummy);
+      OPT_SERV_X_SINGLE_UINT(dummy);
   
     CONF_SC_MAKE_CLIST_END();
   }
@@ -397,14 +397,14 @@ static int opt_serv__match_init_tst_d1(struct Opt_serv_opts *opts,
            OPT_SERV_SYM_EQ("uid=="))
   {
     unsigned int dummy = 0;
-    OPT_SERV_X_UINT(dummy);
+    OPT_SERV_X_SINGLE_UINT(dummy);
     *matches = (dummy == getuid());
   }
   else if (OPT_SERV_SYM_EQ("euid-eq") ||
            OPT_SERV_SYM_EQ("euid=="))
   {
     unsigned int dummy = 0;
-    OPT_SERV_X_UINT(dummy);
+    OPT_SERV_X_SINGLE_UINT(dummy);
     *matches = (dummy == geteuid());
   }
 
@@ -495,12 +495,18 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     opts->drop_privs = val;
     CONF_SC_MAKE_CLIST_MID(depth, clist);
 
-    else if (OPT_SERV_SYM_EQ("uid"))      OPT_SERV_X_UINT(opts->priv_uid);
-    else if (OPT_SERV_SYM_EQ("usrname"))  OPT_SERV_X_VSTR(opts,opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("username")) OPT_SERV_X_VSTR(opts,opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("gid"))      OPT_SERV_X_UINT(opts->priv_gid);
-    else if (OPT_SERV_SYM_EQ("grpname"))  OPT_SERV_X_VSTR(opts,opts->vpriv_gid);
-    else if (OPT_SERV_SYM_EQ("groupname"))OPT_SERV_X_VSTR(opts,opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("uid"))
+      OPT_SERV_X_SINGLE_UINT(opts->priv_uid);
+    else if (OPT_SERV_SYM_EQ("usrname"))
+      OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("username"))
+      OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
+    else if (OPT_SERV_SYM_EQ("gid"))
+      OPT_SERV_X_SINGLE_UINT(opts->priv_gid);
+    else if (OPT_SERV_SYM_EQ("grpname"))
+      OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
+    else if (OPT_SERV_SYM_EQ("groupname"))
+      OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
     else if (OPT_SERV_SYM_EQ("keep-CAP_FOWNER") ||
              OPT_SERV_SYM_EQ("keep-cap-fowner"))
       OPT_SERV_X_TOGGLE(opts->keep_cap_fowner);
@@ -584,11 +590,9 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
   }
   else if (OPT_SERV_SYM_EQ("logging"))
   {
-    OPT_SERV_X_SINGLE_VSTR(conf->tmp);
-
-    if (0) { }
+    CONF_SC_MAKE_CLIST_BEG(logging_main, clist);
     
-    else if (OPT_SERV__TMP_EQ("syslog"))
+    else if (OPT_SERV_SYM_EQ("syslog"))
     {
       CONF_SC_MAKE_CLIST_BEG(logging_syslog, clist);
       else if (OPT_SERV_SYM_EQ("facility"))
@@ -606,7 +610,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
         {
           unsigned int num = 0;
           
-          OPT_SERV_X_UINT(num);
+          OPT_SERV_X_SINGLE_UINT(num);
           switch (num)
           {
             default: return (FALSE);
@@ -641,8 +645,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       CONF_SC_MAKE_CLIST_END();
     }
     
-    else
-      return (FALSE);
+    CONF_SC_MAKE_CLIST_END();
   }
   else if (OPT_SERV_SYM_EQ("resource-limits") ||
            OPT_SERV_SYM_EQ("rlimit"))
@@ -1394,6 +1397,128 @@ int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
   return (opt_serv__sc_make_str(opts, conf, token, s1, 1, s1->len, TRUE));
 }
 
+static int opt_serv__build_uintmax(Conf_parse *conf, Conf_token *token,
+                                   uintmax_t num, uintmax_t *ret)
+{
+  ASSERT(ret);
+  
+  OPT_SERV_X_SYM_UINTMAX_BEG(*ret);
+
+  else if (OPT_SERV_SYM_EQ("<num>")) *ret = num;
+
+  OPT_SERV_X_SYM_NUM_END();
+  
+  return (TRUE);
+}
+  
+int opt_serv_sc_make_uintmax(Conf_parse *conf, Conf_token *token,
+                             uintmax_t *num)
+{
+  OPT_SERV_X_SYM_UINTMAX_BEG(*num);
+
+  else if (OPT_SERV_SYM_EQ("assign") || OPT_SERV_SYM_EQ("="))
+  {
+    if (!opt_serv__build_uintmax(conf, token, *num, num))
+      return (FALSE);
+  }
+  else if (OPT_SERV_SYM_EQ("add") || OPT_SERV_SYM_EQ("+="))
+  {
+    uintmax_t tmp = 0;
+    
+    if (!opt_serv__build_uintmax(conf, token, *num, &tmp))
+      return (FALSE);
+
+    if ((tmp + *num) < tmp)
+      return (FALSE);
+    
+    *num += tmp;
+  }
+  else if (OPT_SERV_SYM_EQ("remove") || OPT_SERV_SYM_EQ("-="))
+  {
+    uintmax_t tmp = 0;
+    
+    if (!opt_serv__build_uintmax(conf, token, *num, &tmp))
+      return (FALSE);
+
+    if (tmp > *num)
+      return (FALSE);
+    
+    *num -= tmp;
+  }
+  else if (OPT_SERV_SYM_EQ("multiply") || OPT_SERV_SYM_EQ("*="))
+  {
+    uintmax_t tmp = 0;
+    
+    if (!opt_serv__build_uintmax(conf, token, *num, &tmp))
+      return (FALSE);
+
+    /* FIXME: this doesn't actually work, but it's better than nothing */
+    if ((tmp * *num) < tmp)
+      return (FALSE);
+    
+    *num *= tmp;
+  }
+  else if (OPT_SERV_SYM_EQ("divide") || OPT_SERV_SYM_EQ("/="))
+  {
+    uintmax_t tmp = 0;
+    
+    if (!opt_serv__build_uintmax(conf, token, *num, &tmp))
+      return (FALSE);
+
+    if (!tmp)
+      return (FALSE);
+    
+    *num /= tmp;
+  }
+  else if (OPT_SERV_SYM_EQ("modulus") || OPT_SERV_SYM_EQ("%="))
+  {
+    uintmax_t tmp = 0;
+    
+    if (!opt_serv__build_uintmax(conf, token, *num, &tmp))
+      return (FALSE);
+
+    if (!tmp)
+      return (FALSE);
+    
+    *num %= tmp;
+  }
+  
+  OPT_SERV_X_SYM_NUM_END();
+
+  return (TRUE);  
+}
+
+int opt_serv_sc_make_uint(Conf_parse *conf, Conf_token *token,
+                          unsigned int *num)
+{
+
+  uintmax_t tmp = *num;
+
+  if (!opt_serv_sc_make_uintmax(conf, token, &tmp))
+    return (FALSE);
+
+  if (tmp > UINT_MAX)
+    return (FALSE);
+  *num = tmp;
+
+  return (TRUE);
+}
+
+int opt_serv_sc_make_ulong(Conf_parse *conf, Conf_token *token,
+                           unsigned long *num)
+{
+
+  uintmax_t tmp = *num;
+
+  if (!opt_serv_sc_make_uintmax(conf, token, &tmp))
+    return (FALSE);
+
+  if (tmp > ULONG_MAX)
+    return (FALSE);
+  *num = tmp;
+
+  return (TRUE);
+}
 
 #ifndef CONF_FULL_STATIC
 void opt_serv_sc_resolve_uid(struct Opt_serv_opts *opts,
