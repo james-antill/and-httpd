@@ -1,3 +1,29 @@
+2006-03-28  James Antill  <james@and.org>
+
+	* Documentation/and-httpd.html: Add the uLibc binary and mailing lists.
+
+	* README: Update with info. about the dependancies etc.
+
+2006-03-17  James Antill  <james@and.org>
+
+	* src/httpd_policy.h (HTTPD_POLICY__EI): Cleanup extern inline
+	functions and work around netinet extern vars.
+
+	* src/opt_policy.h (OPT_POLICY__EI): Cleanup extern inline
+	functions and work around netinet extern vars.
+
+	* src/and-httpd.c (PROC_CNTL_KEEPCAPS): Fix autoconf code for when
+	libcap isn't present.
+
+	* src/malloc-check.h (MALLOC_CHECK_STORE): Use seperate name, so timer_q
+	can be linked statically.
+
+	* src/malloc-check.h (MALLOC_CHECK_DECL): Don't declare anything
+	external when debugging isn't enabled.
+
+	* configure.in (socket_poll): Error if not present.
+	(timer_q): Error if not present.
+
 2006-03-07  James Antill  <james@and.org>
 
 	* and-httpd.spec.in: Add the perl-File-Slurp requires in.

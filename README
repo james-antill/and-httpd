@@ -1,7 +1,11 @@
- This is a HTTPD server, it requires Vstr: http://www.and.org/vstr
+ And-httpd is an HTTP server that maps URLs to files, it requires:
+           Vstr: http://www.and.org/vstr/
+        Timer q: http://www.and.org/timer_q/
+    Socket poll: http://www.and.org/socket_poll/
 
  It aims to be fast and secure, if used properly (and by default), but
-also easy to use.
+also easy to use. It currently has a $2000 "security guarantee" against
+remote attacks.
 
  It is Licensed under the LGPL, see the COPYING file for details.
 

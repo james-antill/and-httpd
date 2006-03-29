@@ -169,7 +169,7 @@ if $PKG_CONFIG  --atleast-version=1.0.7 timer_q ; then
   AC_SUBST(TIMER_Q_CFLAGS)
   AC_SUBST(TIMER_Q_LDLIBS)
 else
-  AM_CONDITIONAL(TIMER_Q_AVAIL, false)
+  AC_MSG_ERROR([*** Timer_q is required. See http://www.and.org/timer_q/])
 fi
 
 if $PKG_CONFIG --atleast-version=1.0.7 timer_q-debug ; then
@@ -189,7 +189,7 @@ if $PKG_CONFIG --exists socket_poll ; then
   AC_SUBST(SOCKET_POLL_CFLAGS)
   AC_SUBST(SOCKET_POLL_LDLIBS)
 else
-  AM_CONDITIONAL(SOCKET_POLL_AVAIL, false)
+  AC_MSG_ERROR([*** Socket_poll is required. See http://www.and.org/socket_poll/])
 fi
 
 WARNS=""

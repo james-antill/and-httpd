@@ -9,6 +9,5 @@
 #define HAVE_INLINE 1
 #undef  OPT_POLICY_COMPILE_INLINE
 #define OPT_POLICY_COMPILE_INLINE 1
-#define extern /* nothing */
-#define inline /* nothing */
+#define OPT_POLICY__EI /* nothing */
 #include "opt_policy.h"

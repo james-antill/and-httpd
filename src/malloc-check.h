@@ -46,13 +46,8 @@ typedef struct Malloc_check_store
 #endif
 
 #ifndef MALLOC_CHECK_STORE
-#define MALLOC_CHECK_STORE malloc_check__store
+#define MALLOC_CHECK_STORE malloc_check__app_store
 #endif
-
-extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
-
-#define MALLOC_CHECK_DECL()                                     \
-    Malloc_check_store MALLOC_CHECK_STORE = {0, 0, 0, NULL}
 
 /* NOTE: don't reset fail nums */
 #define MALLOC_CHECK_REINIT()                         \
@@ -72,6 +67,9 @@ extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
 #endif
 
 #if !(USE_MALLOC_CHECK)
+#define MALLOC_CHECK_DECL()                                     \
+  static Malloc_check_store MALLOC_CHECK_STORE = {0, 0, 0, NULL}
+
 # define MALLOC_CHECK_MEM(x) (1)
 # define MALLOC_CHECK_SZ_MEM(x, y) (1)
 # define MALLOC_CHECK_EMPTY() /* nothing */
@@ -86,6 +84,11 @@ extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
 #else
 
 #include <stdio.h>
+
+extern Malloc_check_store MALLOC_CHECK__ATTR_H() MALLOC_CHECK_STORE;
+
+#define MALLOC_CHECK_DECL()                                     \
+    Malloc_check_store MALLOC_CHECK_STORE = {0, 0, 0, NULL}
 
 # define MALLOC_CHECK_MEM(x)  malloc_check_mem(x)
 # define MALLOC_CHECK_SZ_MEM(x, y)  malloc_check_sz_mem(x, y)

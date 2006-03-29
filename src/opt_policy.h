@@ -55,11 +55,15 @@ extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 # define OPT_POLICY__ASSERT(x)
 #endif
 
+#ifndef OPT_POLICY__EI
+# define OPT_POLICY__EI extern inline
+#endif
+
 #define OPT_POLICY__TRUE  1
 #define OPT_POLICY__FALSE 0
 
-extern inline int opt_policy_copy(Opt_serv_policy_opts *dst,
-                                  const Opt_serv_policy_opts *src)
+OPT_POLICY__EI int opt_policy_copy(Opt_serv_policy_opts *dst,
+                                   const Opt_serv_policy_opts *src)
 {
   memcpy(&dst->io_limit,   &src->io_limit,   sizeof(struct Evnt_limit));
   memcpy(&dst->io_nslimit, &src->io_nslimit, sizeof(struct Evnt_limit));
@@ -73,9 +77,9 @@ extern inline int opt_policy_copy(Opt_serv_policy_opts *dst,
   return (OPT_POLICY__TRUE);
 }
 
-extern inline Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *beg_opts,
-                                                    const Conf_parse *conf,
-                                                    Conf_token *token)
+OPT_POLICY__EI Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *beg_opts,
+                                                     const Conf_parse *conf,
+                                                     Conf_token *token)
 {
   const Vstr_sect_node *val = conf_token_value(token);
   Opt_serv_policy_opts *opts = NULL;

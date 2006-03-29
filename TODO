@@ -48,9 +48,22 @@
 
 http://www.sans.org/top20/#u2
 
+        strverscmp() on uLibc
+        and-httpd-syslog-grep is broken, as is the default _logs cron
+        copying policy values ... Ie. for post <limited> copying from default?
+          applying a policy config. to multiple policies?
+        mod_rssindex - make_index outputs atom?
+        fix hostname. problem (ie. Host: www.and.org.:8008)
+        conf
+         stat() ... so right paren can be a generic:
+              if ! stat(fname): fname -= ')'; redirect;
+              dito. '.'
+           Harder to do in async manner.
+
         include a default start page?
          ,tools explanation
          README for scons and tools etc.
+
 	man pages
         tst zsync
 	static app.
@@ -63,8 +76,6 @@ http://www.sans.org/top20/#u2
 	 userdirs? - problem due to getpwnam() braindamage
           Have async vars that are processed before match-request/req_conf
           which can then be used in file alteration etc.
-         stat() ... so right paren can be a generic:
-              if ! stat(fname): fname -= ')'; redirect;
          getgroups before setgroups?
          Allow "macros", so you can say turn "extra speed" on etc.
           ACL lists for ipv4-etc.

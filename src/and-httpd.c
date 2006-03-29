@@ -62,11 +62,9 @@ MALLOC_CHECK_DECL();
 #include "httpd_policy.h"
 
 
-/* need prctl.h from evnt.h */
-#ifdef PR_SET_KEEPCAPS
-# ifdef HAVE_SYS_CAPABILITY_H
-#  include <sys/capability.h>
-# endif
+/* we get prctl.h from evnt.h */
+#if defined(HAVE_SYS_CAPABILITY_H) && defined(PR_SET_KEEPCAPS)
+# include <sys/capability.h>
 # define PROC_CNTL_KEEPCAPS(x1) prctl(PR_SET_KEEPCAPS, x1, 0, 0, 0)
 #else
 # define PROC_CNTL_KEEPCAPS(x1) (errno = ENOSYS, -1)

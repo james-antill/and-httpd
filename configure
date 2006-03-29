@@ -21237,16 +21237,9 @@ fi
 
 
 else
-
-
-if false; then
-  TIMER_Q_AVAIL_TRUE=
-  TIMER_Q_AVAIL_FALSE='#'
-else
-  TIMER_Q_AVAIL_TRUE='#'
-  TIMER_Q_AVAIL_FALSE=
-fi
-
+  { { echo "$as_me:$LINENO: error: *** Timer_q is required. See http://www.and.org/timer_q/" >&5
+echo "$as_me: error: *** Timer_q is required. See http://www.and.org/timer_q/" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 
 if $PKG_CONFIG --atleast-version=1.0.7 timer_q-debug ; then
@@ -21293,16 +21286,9 @@ fi
 
 
 else
-
-
-if false; then
-  SOCKET_POLL_AVAIL_TRUE=
-  SOCKET_POLL_AVAIL_FALSE='#'
-else
-  SOCKET_POLL_AVAIL_TRUE='#'
-  SOCKET_POLL_AVAIL_FALSE=
-fi
-
+  { { echo "$as_me:$LINENO: error: *** Socket_poll is required. See http://www.and.org/socket_poll/" >&5
+echo "$as_me: error: *** Socket_poll is required. See http://www.and.org/socket_poll/" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 
 WARNS=""
@@ -32050,13 +32036,6 @@ echo "$as_me: error: conditional \"TIMER_Q_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${TIMER_Q_AVAIL_TRUE}" && test -z "${TIMER_Q_AVAIL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"TIMER_Q_AVAIL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"TIMER_Q_AVAIL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${TIMER_Q_DBG_AVAIL_TRUE}" && test -z "${TIMER_Q_DBG_AVAIL_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -32068,13 +32047,6 @@ if test -z "${TIMER_Q_DBG_AVAIL_TRUE}" && test -z "${TIMER_Q_DBG_AVAIL_FALSE}"; 
   { { echo "$as_me:$LINENO: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"TIMER_Q_DBG_AVAIL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${SOCKET_POLL_AVAIL_TRUE}" && test -z "${SOCKET_POLL_AVAIL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"SOCKET_POLL_AVAIL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"SOCKET_POLL_AVAIL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi

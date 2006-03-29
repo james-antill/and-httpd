@@ -135,11 +135,15 @@ extern int httpd_policy_copy(Opt_serv_policy_opts *,
 # define HTTPD_POLICY__ASSERT(x)
 #endif
 
+#ifndef HTTPD_POLICY__EI
+# define HTTPD_POLICY__EI extern inline
+#endif
+
 #define HTTPD_POLICY__TRUE  1
 #define HTTPD_POLICY__FALSE 0
 
-extern inline void httpd_policy_change_con(struct Con *con,
-                                           const Httpd_policy_opts *policy)
+HTTPD_POLICY__EI void httpd_policy_change_con(struct Con *con,
+                                              const Httpd_policy_opts *policy)
 { /* BEG: should be in opt_policy_change_con() */
   con->evnt->flag_insta_close = policy->s->use_insta_close;
   
@@ -152,8 +156,9 @@ extern inline void httpd_policy_change_con(struct Con *con,
   con->policy            = policy;
 }
 
-extern inline void httpd_policy_change_req(struct Con *con, Httpd_req_data *req,
-                                           const Httpd_policy_opts *policy)
+HTTPD_POLICY__EI void httpd_policy_change_req(struct Con *con,
+                                              Httpd_req_data *req,
+                                              const Httpd_policy_opts *policy)
 {
   con->evnt->flag_insta_close = policy->s->use_insta_close;
     
@@ -173,17 +178,17 @@ extern inline void httpd_policy_change_req(struct Con *con, Httpd_req_data *req,
   req->policy                = policy;
 }
 
-extern inline int httpd_policy_path_eq(const Vstr_base *s1,
-                                       const Vstr_base *s2,
-                                       size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_path_eq(const Vstr_base *s1,
+                                          const Vstr_base *s2,
+                                          size_t *p2, size_t *l2)
 {
   return (vstr_cmp_eq(s1, 1, s1->len, s2, *p2, *l2));
 }
 
 /* if the s1 is equal to the begining of s2 */
-extern inline int httpd_policy_path_beg_eq(const Vstr_base *s1,
-                                           const Vstr_base *s2,
-                                           size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_path_beg_eq(const Vstr_base *s1,
+                                              const Vstr_base *s2,
+                                              size_t *p2, size_t *l2)
 {
   if (*l2 > s1->len)
     *l2 = s1->len;
@@ -191,9 +196,9 @@ extern inline int httpd_policy_path_beg_eq(const Vstr_base *s1,
 }
 
 /* if the s1 is equal to the end of s2 */
-extern inline int httpd_policy_path_end_eq(const Vstr_base *s1,
-                                           const Vstr_base *s2,
-                                           size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_path_end_eq(const Vstr_base *s1,
+                                              const Vstr_base *s2,
+                                              size_t *p2, size_t *l2)
 {
   if (*l2 > s1->len)
   {
@@ -203,8 +208,8 @@ extern inline int httpd_policy_path_end_eq(const Vstr_base *s1,
   return (vstr_cmp_eq(s1, 1, s1->len, s2, *p2, *l2));
 }
 
-extern inline void httpd_policy_path_mod_name(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_name(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = vstr_srch_chr_rev(s1, *pos, *len, '/');
 
@@ -215,8 +220,8 @@ extern inline void httpd_policy_path_mod_name(const Vstr_base *s1,
   *pos += vstr_sc_posdiff(*pos, srch);
 }
 
-extern inline void httpd_policy_path_mod_dirn(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_dirn(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = vstr_srch_chr_rev(s1, *pos, *len, '/');
 
@@ -226,8 +231,8 @@ extern inline void httpd_policy_path_mod_dirn(const Vstr_base *s1,
     *len = 0;
 }
 
-extern inline void httpd_policy_path_mod_extn(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_extn(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = 0;
   
@@ -245,8 +250,8 @@ extern inline void httpd_policy_path_mod_extn(const Vstr_base *s1,
   }
 }
 
-extern inline void httpd_policy_path_mod_exts(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_exts(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = 0;
   
@@ -264,8 +269,8 @@ extern inline void httpd_policy_path_mod_exts(const Vstr_base *s1,
   }
 }
 
-extern inline void httpd_policy_path_mod_bwen(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_bwen(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = 0;
 
@@ -275,8 +280,8 @@ extern inline void httpd_policy_path_mod_bwen(const Vstr_base *s1,
     *len = vstr_sc_posdiff(*pos, srch) - 1; /* don't include '.' */
 }
 
-extern inline void httpd_policy_path_mod_bwes(const Vstr_base *s1,
-                                              size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_path_mod_bwes(const Vstr_base *s1,
+                                                 size_t *pos, size_t *len)
 {
   size_t srch = 0;
 
@@ -286,11 +291,11 @@ extern inline void httpd_policy_path_mod_bwes(const Vstr_base *s1,
     *len = vstr_sc_posdiff(*pos, srch) - 1; /* don't include '.' */
 }
 
-extern inline int httpd_policy_path_lim_eq(const Vstr_base *s1,
-                                           size_t *pos, size_t *len,
-                                           unsigned int lim,
-                                           size_t vhost_prefix_len,
-                                           Vstr_ref *ref)
+HTTPD_POLICY__EI int httpd_policy_path_lim_eq(const Vstr_base *s1,
+                                              size_t *pos, size_t *len,
+                                              unsigned int lim,
+                                              size_t vhost_prefix_len,
+                                              Vstr_ref *ref)
 {
   const Httpd_policy_path *srch = NULL;
 
@@ -419,18 +424,18 @@ static inline int httpd_policy__uri_eq(const Vstr_base *s1,
   return (!l1);
 }
 
-extern inline int httpd_policy_uri_eq(const Vstr_base *s1,
-                                      const Vstr_base *s2,
-                                      size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_uri_eq(const Vstr_base *s1,
+                                         const Vstr_base *s2,
+                                         size_t *p2, size_t *l2)
 {
   size_t tmp = 0;
   return (httpd_policy__uri_eq(s1, s2, *p2, *l2, &tmp) && !tmp);
 }
 
 /* if the s1 is equal to the begining of s2 */
-extern inline int httpd_policy_uri_beg_eq(const Vstr_base *s1,
-                                          const Vstr_base *s2,
-                                          size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_uri_beg_eq(const Vstr_base *s1,
+                                             const Vstr_base *s2,
+                                             size_t *p2, size_t *l2)
 {
   size_t tmp = 0;
 
@@ -443,9 +448,9 @@ extern inline int httpd_policy_uri_beg_eq(const Vstr_base *s1,
 }
 
 /* if the s1 is equal to the end of s2 */
-extern inline int httpd_policy_uri_end_eq(const Vstr_base *s1,
-                                          const Vstr_base *s2,
-                                          size_t *p2, size_t *l2)
+HTTPD_POLICY__EI int httpd_policy_uri_end_eq(const Vstr_base *s1,
+                                             const Vstr_base *s2,
+                                             size_t *p2, size_t *l2)
 {
   if (!vstr_srch_chr_fwd(s2, *p2, *l2, '%'))
   {
@@ -474,8 +479,8 @@ extern inline int httpd_policy_uri_end_eq(const Vstr_base *s1,
   return (HTTPD_POLICY__FALSE);
 }
 
-extern inline void httpd_policy_uri_mod_name(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_name(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = vstr_srch_chr_rev(s1, *pos, *len, '/');
   size_t srch2 = vstr_srch_case_cstr_buf_rev(s1, *pos, *len, "%2f");
@@ -490,8 +495,8 @@ extern inline void httpd_policy_uri_mod_name(const Vstr_base *s1,
   *pos += vstr_sc_posdiff(*pos, srch1);
 }
 
-extern inline void httpd_policy_uri_mod_dirn(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_dirn(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = vstr_srch_chr_rev(s1, *pos, *len, '/');
   size_t srch2 = vstr_srch_case_cstr_buf_rev(s1, *pos, *len, "%2f");
@@ -508,8 +513,8 @@ extern inline void httpd_policy_uri_mod_dirn(const Vstr_base *s1,
   *len = vstr_sc_posdiff(*pos, srch1);
 }
 
-extern inline void httpd_policy_uri_mod_extn(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_extn(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
@@ -534,8 +539,8 @@ extern inline void httpd_policy_uri_mod_extn(const Vstr_base *s1,
   }
 }
 
-extern inline void httpd_policy_uri_mod_exts(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_exts(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
@@ -560,8 +565,8 @@ extern inline void httpd_policy_uri_mod_exts(const Vstr_base *s1,
   }
 }
 
-extern inline void httpd_policy_uri_mod_bwen(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_bwen(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
@@ -582,8 +587,8 @@ extern inline void httpd_policy_uri_mod_bwen(const Vstr_base *s1,
     *len = vstr_sc_posdiff(*pos, srch1) - num; /* don't include '.' */
 }
 
-extern inline void httpd_policy_uri_mod_bwes(const Vstr_base *s1,
-                                             size_t *pos, size_t *len)
+HTTPD_POLICY__EI void httpd_policy_uri_mod_bwes(const Vstr_base *s1,
+                                                size_t *pos, size_t *len)
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
@@ -604,10 +609,10 @@ extern inline void httpd_policy_uri_mod_bwes(const Vstr_base *s1,
     *len = vstr_sc_posdiff(*pos, srch1) - num; /* don't include '.' */
 }
 
-extern inline int httpd_policy_uri_lim_eq(const Vstr_base *s1,
-                                          size_t *pos, size_t *len,
-                                          unsigned int lim, int slash_dot_safe,
-                                          Vstr_ref *ref)
+HTTPD_POLICY__EI int httpd_policy_uri_lim_eq(const Vstr_base *s1,
+                                             size_t *pos, size_t *len,
+                                             unsigned int lim,
+                                             int slash_dot_safe, Vstr_ref *ref)
 {
   const Httpd_policy_path *srch = NULL;
   
@@ -710,7 +715,7 @@ extern inline int httpd_policy_uri_lim_eq(const Vstr_base *s1,
   return (HTTPD_POLICY__FALSE);
 }
 
-extern inline int httpd_policy_path_req2lim(unsigned int type)
+HTTPD_POLICY__EI int httpd_policy_path_req2lim(unsigned int type)
 {
   unsigned int lim = HTTPD_POLICY_PATH_LIM_NONE;
   
@@ -747,10 +752,11 @@ extern inline int httpd_policy_path_req2lim(unsigned int type)
   return (lim);
 }
 
-extern inline int httpd_policy_ipv4_make(struct Con *con, Httpd_req_data *req,
-                                         Conf_parse *conf, Conf_token *token,
-                                         unsigned int type,
-                                         struct sockaddr *sa, int *matches)
+HTTPD_POLICY__EI int httpd_policy_ipv4_make(struct Con *con,
+                                            Httpd_req_data *req,
+                                            Conf_parse *conf, Conf_token *token,
+                                            unsigned int type,
+                                            struct sockaddr *sa, int *matches)
 {
   HTTPD_POLICY__ASSERT(con);
   
@@ -765,9 +771,10 @@ extern inline int httpd_policy_ipv4_make(struct Con *con, Httpd_req_data *req,
   return (opt_policy_ipv4_make(conf, token, type, sa, matches));
 }
 
-extern inline int httpd_policy_ipv4_cidr_eq(struct Con *con,Httpd_req_data *req,
-                                            Opt_policy_ipv4 *ipv4,
-                                            struct sockaddr *sa)
+HTTPD_POLICY__EI int httpd_policy_ipv4_cidr_eq(struct Con *con,
+                                               Httpd_req_data *req,
+                                               Opt_policy_ipv4 *ipv4,
+                                               struct sockaddr *sa)
 {
   HTTPD_POLICY__ASSERT(con);
   
