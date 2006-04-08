@@ -1,0 +1,38 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/A">X</A><SCRIPT>...</SCRIPT>,VALIDATE
+
+http://foo.example.com/A">X</A><SCRIPT>...</SCRIPT>,VALIDATE
+HTTP/1.1 404 Not Found
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Content-Type: text/html
+Content-Length: 324
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>404 Not Found</title>
+  </head>
+  <body>
+    <h1>404 Not Found</h1>
+    <p>The document requested was not found.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo/1.2.3
+Last-Modified:
+Connection: close
+Content-Type: text/plain
+Content-Length: 62
+Location: http://foo.example.com/a">x</a><script>...</script>,validate
+
+http://foo.example.com/a">x</a><script>...</script>,validate

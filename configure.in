@@ -341,9 +341,13 @@ AC_CHECK_FUNCS(stpcpy, AC_DEFINE(HAVE_STPCPY),)
 AC_CHECK_FUNCS(strncmp, AC_DEFINE(HAVE_STRNCMP),)
 AC_CHECK_FUNCS(strcasecmp, AC_DEFINE(HAVE_STRCASECMP),)
 AC_CHECK_FUNCS(strncasecmp, AC_DEFINE(HAVE_STRNCASECMP),)
+AC_CHECK_FUNCS(strverscmp, AC_DEFINE(HAVE_STRVERSCMP),)
 AC_CHECK_FUNCS(strnlen, AC_DEFINE(HAVE_STRNLEN),)
 AC_CHECK_FUNCS(asprintf, AC_DEFINE(HAVE_ASPRINTF),)
+
+AC_CHECK_FUNCS(strerror, AC_DEFINE(HAVE_STRERROR),)
 AC_CHECK_FUNCS(strerror_r, AC_DEFINE(HAVE_STRERROR_R),)
+AC_CHECK_FUNCS(strsignal, AC_DEFINE(HAVE_STRSIGNAL),)
 
 # Other functions...
 AC_CHECK_FUNCS(mmap64, AC_DEFINE(HAVE_MMAP64),)
@@ -425,27 +429,6 @@ AC_MSG_RESULT($local_cv_has_offsetof)
 case x$local_cv_has_offsetof in
 xyes) AC_DEFINE(HAVE_OFFSETOF) ;;
 xno) AC_MSG_WARN(Trying local offsetof -- it might not work though)
-esac
-
-AC_MSG_CHECKING(for an implementation of strerror)
-AC_CACHE_VAL(local_cv_has_strerror,[
-AC_TRY_RUN([
-#include <stddef.h>
-#include <stdlib.h>
-#include <errno.h>
-const char *msg = NULL;
-
-int main() {
- msg = strerror(0);
- return (0);
-}],
-local_cv_has_strerror=yes,
-local_cv_has_strerror=no,
-)])
-AC_MSG_RESULT($local_cv_has_strerror)
-case x$local_cv_has_strerror in
-xyes) AC_DEFINE(HAVE_STRERROR) ;;
-xno) AC_MSG_WARN(You won't get errno error messages.)
 esac
 
 AC_MSG_CHECKING(for an implementation of va_copy())

@@ -90,11 +90,18 @@
 
 #undef HAVE_STRNCASECMP
 
+#undef HAVE_STRVERSCMP
+
 #undef HAVE_STRNLEN
 
 #undef HAVE_ASPRINTF
 
+
+#undef HAVE_STRERROR
+
 #undef HAVE_STRERROR_R
+
+#undef HAVE_STRSIGNAL
 
 
 #undef HAVE_OPEN64
@@ -112,8 +119,6 @@
 #undef HAVE_DIFFTIME
 
 #undef HAVE_SIGACTION
-
-#undef HAVE_STRERROR
 
 
 #undef HAVE_INET_NTOP

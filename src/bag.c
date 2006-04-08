@@ -7,7 +7,7 @@
 #define EX_UTILS_NO_FUNCS 1
 #include "ex_utils.h"
 
-#ifndef __GLIBC__ /* hack */
+#ifndef HAVE_STRVERSCMP
 # define strverscmp(x, y) strcmp(x, y)
 #endif
 

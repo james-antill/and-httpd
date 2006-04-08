@@ -672,6 +672,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
         vstr_ref_del(ref);
         return (FALSE);
       }
+      req->vhost_prefix_len = 0;
     }
     if (!httpd__build_path(con, req, conf, token,
                            req->fname, 1, req->fname->len,

@@ -152,7 +152,7 @@
     152. <Symbol> = 503
   153. [Circular bracket list]
     154. <Symbol> = match-request
-    155. <Quoted string (single, RAW)> = lowercase path
+    155. <Quoted string (single, RAW)> = lowercase rel path
     156. [Square bracket list]
       157. <Symbol> = path-beg
       158. <Symbol> = /virt/tst_11/lowercase-path/
@@ -172,7 +172,7 @@
     172. <Symbol> = <permanent-redirect>
   173. [Circular bracket list]
     174. <Symbol> = match-request
-    175. <Quoted string (single, RAW)> = uppercase path
+    175. <Quoted string (single, RAW)> = uppercase abs path
     176. [Square bracket list]
       177. <Symbol> = path-beg
       178. <Symbol> = /virt/tst_11/uppercase-path/
@@ -192,7 +192,7 @@
     192. <Symbol> = <permanent-redirect>
   193. [Circular bracket list]
     194. <Symbol> = match-request
-    195. <Quoted string (single, RAW)> = lowercase ext
+    195. <Quoted string (single, RAW)> = lowercase rel ext
     196. [Square bracket list]
       197. <Symbol> = path-beg
       198. <Symbol> = /virt/tst_11/lowercase-ext/
@@ -215,7 +215,7 @@
     215. <Symbol> = <permanent-redirect>
   216. [Circular bracket list]
     217. <Symbol> = match-request
-    218. <Quoted string (single, RAW)> = uppercase ext
+    218. <Quoted string (single, RAW)> = uppercase abs ext
     219. [Square bracket list]
       220. <Symbol> = path-beg
       221. <Symbol> = /virt/tst_11/uppercase-ext/
@@ -238,7 +238,7 @@
     238. <Symbol> = <permanent-redirect>
   239. [Circular bracket list]
     240. <Symbol> = match-request
-    241. <Quoted string (single, RAW)> = lowercase exts
+    241. <Quoted string (single, RAW)> = lowercase rel exts
     242. [Square bracket list]
       243. <Symbol> = path-beg
       244. <Symbol> = /virt/tst_11/lowercase-exts/
@@ -261,7 +261,7 @@
     261. <Symbol> = <permanent-redirect>
   262. [Circular bracket list]
     263. <Symbol> = match-request
-    264. <Quoted string (single, RAW)> = uppercase exts
+    264. <Quoted string (single, RAW)> = uppercase abs exts
     265. [Square bracket list]
       266. <Symbol> = path-beg
       267. <Symbol> = /virt/tst_11/uppercase-exts/
@@ -282,46 +282,71 @@
       282. <Symbol> = <extensions>
     283. <Symbol> = return
     284. <Symbol> = <permanent-redirect>
-  285. <Symbol> = match-request
-  286. <Quoted string (single, RAW)> = vary static all
-  287. [Square bracket list]
-    288. <Symbol> = path-eq
-    289. <Quoted string (single, RAW)> = /virt/tst_11/vary static all
-  290. <Symbol> = org.and.httpd-conf-req-1.0
-  291. [Circular bracket list]
-    292. <Symbol> = match-request
-    293. [Square bracket list]
-      294. <Symbol> = hostname-eq
-      295. <Symbol> = alfkjadlfjaslkfj
-    296. <Symbol> = sym-not-exist
-  297. <Symbol> = Vary:_Accept
-  298. <Symbol> = true
-  299. <Symbol> = Vary:_Accept-Charset
-  300. <Symbol> = true
-  301. <Symbol> = Vary:_Accept-Encoding
-  302. <Symbol> = true
-  303. <Symbol> = Vary:_Accept-Language
-  304. <Symbol> = true
-  305. <Symbol> = Vary:_Referrer
-  306. <Symbol> = true
-  307. <Symbol> = Vary:_User-Agent
-  308. <Symbol> = true
-  309. <Symbol> = Vary:_If-Modified-Since
-  310. <Symbol> = true
-  311. <Symbol> = Vary:_If-Unmodified-Since
-  312. <Symbol> = true
-  313. <Symbol> = Vary:_If-Range
-  314. <Symbol> = true
-  315. <Symbol> = Vary:_If-Match
-  316. <Symbol> = true
-  317. <Symbol> = Vary:_If-None-Match
-  318. <Symbol> = true
-  319. <Symbol> = Content-Type:
-  320. <Symbol> = text/plain
-  321. <Symbol> = filename
-  322. [Square bracket list]
-    323. <Symbol> = limit
-    324. <Symbol> = path
-  325. <Symbol> = /index.html
-  326. <Symbol> = return
-  327. <Symbol> = <gone>
+  285. [Circular bracket list]
+    286. <Symbol> = match-request
+    287. <Quoted string (single, RAW)> = lowercase maybe abs path
+    288. [Square bracket list]
+      289. <Symbol> = path-beg
+      290. <Symbol> = /virt/tst_11/lowercase-abs-maybe-path/
+      291. <Symbol> = !
+      292. <Symbol> = path==
+      293. <Symbol> = =
+      294. <Symbol> = <lowercase>
+      295. <Symbol> = <path>
+    296. <Symbol> = org.and.httpd-conf-req-1.0
+    297. <Symbol> = Location:
+    298. [Square bracket list]
+      299. <Symbol> = limit
+      300. <Symbol> = <path>-beg
+      301. <Symbol> = /virt/tst_11/lowercase-abs-maybe-path
+    302. <Quoted string (single, RAW)> = 
+    303. <Symbol> = Location:
+    304. [Circular bracket list]
+      305. <Symbol> = =
+      306. <Symbol> = <lowercase>
+      307. <Symbol> = <Location:>
+    308. <Symbol> = return
+    309. <Symbol> = <permanent-redirect>
+  310. <Symbol> = match-request
+  311. <Quoted string (single, RAW)> = vary static all
+  312. [Square bracket list]
+    313. <Symbol> = path-eq
+    314. <Quoted string (single, RAW)> = /virt/tst_11/vary static all
+  315. <Symbol> = org.and.httpd-conf-req-1.0
+  316. [Circular bracket list]
+    317. <Symbol> = match-request
+    318. [Square bracket list]
+      319. <Symbol> = hostname-eq
+      320. <Symbol> = alfkjadlfjaslkfj
+    321. <Symbol> = sym-not-exist
+  322. <Symbol> = Vary:_Accept
+  323. <Symbol> = true
+  324. <Symbol> = Vary:_Accept-Charset
+  325. <Symbol> = true
+  326. <Symbol> = Vary:_Accept-Encoding
+  327. <Symbol> = true
+  328. <Symbol> = Vary:_Accept-Language
+  329. <Symbol> = true
+  330. <Symbol> = Vary:_Referrer
+  331. <Symbol> = true
+  332. <Symbol> = Vary:_User-Agent
+  333. <Symbol> = true
+  334. <Symbol> = Vary:_If-Modified-Since
+  335. <Symbol> = true
+  336. <Symbol> = Vary:_If-Unmodified-Since
+  337. <Symbol> = true
+  338. <Symbol> = Vary:_If-Range
+  339. <Symbol> = true
+  340. <Symbol> = Vary:_If-Match
+  341. <Symbol> = true
+  342. <Symbol> = Vary:_If-None-Match
+  343. <Symbol> = true
+  344. <Symbol> = Content-Type:
+  345. <Symbol> = text/plain
+  346. <Symbol> = filename
+  347. [Square bracket list]
+    348. <Symbol> = limit
+    349. <Symbol> = path
+  350. <Symbol> = /index.html
+  351. <Symbol> = return
+  352. <Symbol> = <gone>

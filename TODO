@@ -48,7 +48,8 @@
 
 http://www.sans.org/top20/#u2
 
-        strverscmp() on uLibc
+	mime.types is different, giving application/x-gunzip types for .gz on
+         some distros. Breaks unit tests.
         and-httpd-syslog-grep is broken, as is the default _logs cron
         copying policy values ... Ie. for post <limited> copying from default?
           applying a policy config. to multiple policies?
@@ -59,6 +60,7 @@ http://www.sans.org/top20/#u2
               if ! stat(fname): fname -= ')'; redirect;
               dito. '.'
            Harder to do in async manner.
+            match-response for 404s could do this?
 
         include a default start page?
          ,tools explanation

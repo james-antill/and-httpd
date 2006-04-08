@@ -8,12 +8,12 @@ elif [ -r ./scripts ]; then
        bex=./src
 elif [ -r ../scripts ]; then
 # In build dir or source dir/examples
-if [ -r examples ]; then
+if [ -r src ]; then
 # In build dir
-       sex=./tst
-       bex=../src
+       sex=../tst
+       bex=./src
 else
-# In source dir/examples
+# In source dir/src
        sex=../tst
        bex=.
 fi
@@ -25,6 +25,12 @@ else
  echo "No scripts dir"
  exit 1;
 fi
+
+if [ "x$1" = "x" ] || [ "x$2" = "x" ]; then
+  echo " Format: $0 <tst-name> <num>"
+  exit 1
+fi
+
 prefix=$1
 num=$2
 

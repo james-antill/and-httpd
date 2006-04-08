@@ -254,10 +254,27 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
       return (FALSE);
     *used_policy = TRUE;
   }
-  else if (OPT_SERV_SYM_EQ("<file-path>") || OPT_SERV_SYM_EQ("<path>") ||
-           OPT_SERV_SYM_EQ("<Location:>"))
+  else if (OPT_SERV_SYM_EQ("<path>") ||
+           (!req->direct_uri      && OPT_SERV_SYM_EQ("<file-path>")) ||
+           (!req->direct_filename && OPT_SERV_SYM_EQ("<Location:>")))
   {
     *used_req = TRUE;
+    
+    if (!req->vhost_prefix_len || (req->vhost_prefix_len >= req->fname->len))
+      HTTPD_APP_REF_ALLVSTR(conf->tmp, req->fname);
+    else
+    {
+      size_t pos = req->vhost_prefix_len + 1;
+      size_t len = vstr_sc_posdiff(pos, req->fname->len);
+      
+      HTTPD_APP_REF_VSTR(conf->tmp, req->fname, pos, len);
+    }
+  }
+  else if (OPT_SERV_SYM_EQ("<path-full>") ||
+           (!req->direct_uri      && OPT_SERV_SYM_EQ("<file-path-full>")))
+  { /* includes virtual host data, if it's there */
+    *used_req = TRUE;
+    
     HTTPD_APP_REF_ALLVSTR(conf->tmp, req->fname);
   }
   else if (OPT_SERV_SYM_EQ("<url-path>"))

@@ -21,8 +21,7 @@
 # include <sys/types.h>
 #endif
 
-/* need better way to test for this */
-#ifndef __GLIBC__
+#ifndef HAVE_STRSIGNAL
 # define strsignal(x) ""
 #endif
 

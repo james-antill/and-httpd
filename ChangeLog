@@ -1,3 +1,32 @@
+2006-04-08  James Antill  <james@and.org>
+
+	* src/opt_serv.c (strsignal): Explicit test for strsignal() to avoid
+	uLibcx like braindamage.
+
+	* src/httpd_policy.c (httpd_policy__build_path): <file-path> can only be
+	used when not in Location: processing, <Location:> can only be used when
+	not in filename processing.
+	(httpd_policy__build_path): Add path-full/file-path-full which includes
+	vhost data (the later can only be used when not in Location: processing.
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Blank vhost_prefix_len when
+	dealing moving to url-path in Location: processing.
+
+	* src/httpd.c (http__safe_html_url): Escape " < and > in URLs so XSS
+	isn't possible if any client is stupid enough to show the HTML for
+	permenant redirects.
+
+	* src/bag.c (strverscmp): Do explicit test, due to uLibc.
+
+2006-04-02  James Antill  <james@and.org>
+
+	* scripts/diff_ex_tst.sh: Add -a for the gzip "binary" files.
+
+2006-03-29  James Antill  <james@and.org>
+
+	* src/httpd.c (http_fin_err_req): Make sure noone can do XSS stuff in
+	the html redirect html.
+
 2006-03-28  James Antill  <james@and.org>
 
 	* Documentation/and-httpd.html: Add the uLibc binary and mailing lists.

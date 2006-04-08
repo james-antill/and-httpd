@@ -771,7 +771,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
   else
   { /* spend time doing path/name/extn/bnwe */
     Vstr_ref *ref = NULL;
-    unsigned int type = HTTPD_POLICY_REQ_PATH_BEG;
+    unsigned int type = 0;
     unsigned int lim  = 0;
     size_t pos = 1;
     size_t len = req->fname->len;
@@ -825,6 +825,8 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
       return (opt_serv_sc_tst(conf, token, matches, prev_match,
                               httpd__match_request_tst_op_d1, data));
     }
+
+    ASSERT(type);
     
     if (!httpd_policy_path_make(con, req, conf, token, type, &ref))
     {

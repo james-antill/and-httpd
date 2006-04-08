@@ -1422,6 +1422,56 @@ static void httpd_serv_file_sects_none(struct Con *con, Httpd_req_data *req,
   req->fs_len   = f_stat->st_size;
 }
                                       
+/* if the attacker gives a user a URL like:
+   http://example.com/">x</a><script>...</script>
+ * and we're redirecting everything for example.com to www.example.com
+ * that'll get output, with html redirects, as:
+ <a href="http://example.com/">x</a><script>...</script>">here</a>
+ * ...browsers probably can't be relied upon to not do the stupid thing so
+ * we escape ' " < > ... ' is just because. None of them mean anything special
+ * in URLs so we should be fine */
+static unsigned int http__safe_html_url(Vstr_base *loc)
+{
+  static const char unsafe[] = "'\"<>";
+  size_t pos = 1;
+  size_t len = loc->len;
+  size_t chrs = 0;
+  unsigned int ret = 0;
+  
+  ASSERT(loc->len);
+  
+  while ((chrs = vstr_cspn_cstr_chrs_fwd(loc, pos, len, unsafe)) != len)
+  {
+    const char *safe = "...";
+    
+    ++ret;
+    
+    pos += chrs;
+    switch (vstr_export_chr(loc, pos))
+    {
+      case '"':  safe = "%22"; break;
+      case '\'': safe = "%27"; break;
+      case '<':  safe = "%3c"; break;
+      case '>':  safe = "%3e";
+        ASSERT_NO_SWITCH_DEF();
+    }
+
+    ASSERT(strlen(safe) == 3);
+    if (!vstr_sub_buf(loc, pos, 1, safe, 3))
+      return (0);
+
+    if (pos == len)
+      break;
+
+    pos += 3;
+    len = vstr_sc_posdiff(pos, loc->len);
+  }
+  
+  ASSERT(vstr_cspn_cstr_chrs_fwd(loc, 1, loc->len, unsafe) == loc->len);
+
+  return (ret);
+}
+
 static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
 {
   Vstr_base *out = con->evnt->io_w;
@@ -1587,19 +1637,61 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
   if (!cust_err_msg)
     req->content_type_vs1 = NULL;
 
+  if (!req->policy->use_text_plain_redirect)
+    switch (req->error_code)
+    { /* make sure browsers don't allow XSS */
+      case 301:
+      {
+        unsigned int repl = http__safe_html_url(req->fname);
+        
+        ASSERT((req->error_len + (repl * 2)) == CONF_MSG_LEN_301(req->fname));
+          
+        req->error_len = CONF_MSG_LEN_301(req->fname);
+      }
+      break;
+      
+      case 302:
+      {
+        unsigned int repl = http__safe_html_url(req->fname);
+        
+        ASSERT((req->error_len + (repl * 2)) == CONF_MSG_LEN_302(req->fname));
+          
+        req->error_len = CONF_MSG_LEN_302(req->fname);
+      }
+      break;
+      
+      case 303:
+      {
+        unsigned int repl = http__safe_html_url(req->fname);
+        
+        ASSERT((req->error_len + (repl * 2)) == CONF_MSG_LEN_303(req->fname));
+          
+        req->error_len = CONF_MSG_LEN_303(req->fname);
+      }
+      break;
+      
+      case 307:
+      {
+        unsigned int repl = http__safe_html_url(req->fname);
+        
+        ASSERT((req->error_len + (repl * 2)) == CONF_MSG_LEN_307(req->fname));
+          
+        req->error_len = CONF_MSG_LEN_307(req->fname);
+      }
+      break;      
+    }
+
   if (!req->ver_0_9)
   { /* use_range is dealt with inside */
     const char *content_type = "text/html";
     
     switch (req->error_code)
     {
-      case 301:
-      case 302:
-      case 303:
-      case 307:
+      case 301: case 302: case 303: case 307:
         if (req->policy->use_text_plain_redirect)
           content_type = "text/plain";
-        break;
+        else /* make sure browsers don't allow XSS */
+          http__safe_html_url(req->fname);
     }
 
     http_app_def_hdrs(con, req, req->error_code, req->error_line,
@@ -1617,13 +1709,15 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     if ((req->error_code == 405) || (req->error_code == 501))
       HTTP_APP_HDR_CONST_CSTR(out, "Allow", "GET, HEAD, OPTIONS, TRACE");
     
-    if ((req->error_code == 301) || (req->error_code == 302) ||
-        (req->error_code == 303) || (req->error_code == 307))
-    { /* make sure we haven't screwed up and allowed response splitting */
-      Vstr_base *loc = req->fname;
-      
-      http_app_hdr_vstr(out, "Location",
-                        loc, 1, loc->len, VSTR_TYPE_ADD_ALL_BUF);
+    switch (req->error_code)
+    {
+      case 301: case 302: case 303: case 307:
+      { /* make sure we haven't screwed up and allowed response splitting */
+        Vstr_base *loc = req->fname;
+        
+        http_app_hdr_vstr(out, "Location",
+                          loc, 1, loc->len, VSTR_TYPE_ADD_ALL_BUF);
+      }
     }
     
     if (req->user_return_error_code || cust_err_msg)

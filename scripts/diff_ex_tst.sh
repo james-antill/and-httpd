@@ -8,12 +8,12 @@ elif [ -r ./scripts ]; then
        bex=./src
 elif [ -r ../scripts ]; then
 # In build dir or source dir/examples
-if [ -r examples ]; then
+if [ -r src ]; then
 # In build dir
-       sex=./tst
-       bex=../src
+       sex=../tst
+       bex=./src
 else
-# In source dir/examples
+# In source dir/src
        sex=../tst
        bex=.
 fi
@@ -34,5 +34,5 @@ fi
 prefix=$1
 num=$2
 
-diff -u ${sex}/ex_${prefix}_out_$num ${bex}/ex_${prefix}_tmp_$num 
+diff -au ${sex}/ex_${prefix}_out_$num ${bex}/ex_${prefix}_tmp_$num 
 

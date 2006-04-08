@@ -1,0 +1,61 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: and-httpd/0.99.7
+Last-Modified:
+Content-Type: text/html
+Content-Length: 474
+Location: http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/uppercase-path/a%22%3ex%3c/a%3e%3cSCRIPT%3e...%3c/script%3e
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/uppercase-path/a%22%3ex%3c/a%3e%3cSCRIPT%3e...%3c/script%3e">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: and-httpd/0.99.7
+Last-Modified:
+Content-Type: text/html
+Content-Length: 484
+Location: http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/lowercase-abs-maybe-path/a%22%3ex%3c/a%3e%3cscript%3e...%3c/script%3e
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/lowercase-abs-maybe-path/a%22%3ex%3c/a%3e%3cscript%3e...%3c/script%3e">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: and-httpd/0.99.7
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 484
+Location: http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/lowercase-abs-maybe-path/a%22%3ex%3c/a%3e%3cSCRIPT%3e...%3c/script%3e
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/lowercase-abs-maybe-path/a%22%3ex%3c/a%3e%3cSCRIPT%3e...%3c/script%3e">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
