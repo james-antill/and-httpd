@@ -268,31 +268,58 @@ Opt_serv_policy_opts *opt_policy_sc_conf_make(Opt_serv_opts *opts,
 
 unsigned int opt_policy_sc_conf_parse(Opt_serv_opts *opts,
                                       const Conf_parse *conf, Conf_token *token,
-                                      Opt_serv_policy_opts **ret_popts)
+                                      Opt_serv_policy_opts **ret_popts,
+                                      Conf_token **ntoken)
 {
   Opt_serv_policy_opts *popts = NULL;
   unsigned int cur_depth = token->depth_num;
   Conf_token save;
   const Vstr_sect_node *pv = NULL;
   int created_now = FALSE;
+  static Conf_token policy_list_save;
   
-  ASSERT(opts && opts->def_policy && ret_popts);
+  ASSERT(opts && opts->def_policy && ret_popts && ntoken);
 
   *ret_popts = NULL;
-  
-  /* name first */
-  CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-  
+
+  if (*ntoken)
+  { /* comming back for the next name... */
+    ASSERT(*ntoken == &policy_list_save);
+
+    *token = **ntoken;
+  }
+  else
+  {
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, 0);
+
+    if (token->type == CONF_TOKEN_TYPE_CLIST)
+    { /* have a list of policy names... */
+      CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, 0);
+
+      *ntoken  = &policy_list_save;
+      **ntoken = *token;
+    }
+  }
+    
   if (!(pv = conf_token_value(token)))
     return (0);
-      
+  
   if (!(popts = opt_policy_find(opts, conf, token)))
   {
     if (!(popts = opt_policy_sc_conf_make(opts, conf, token, pv)))
       return (0);
     created_now = TRUE;
   }
-
+  
+  if (*ntoken)
+  {
+    unsigned int depth = (*ntoken)->depth_num;
+    if (!conf_parse_token(conf, *ntoken) || (depth != (*ntoken)->depth_num))
+      *ntoken = NULL;
+    if (!conf_parse_end_token(conf, token, token->depth_num))
+      return (0);
+  }
+  
   save = *token;
   if (!conf_parse_token(conf, token) || (token->depth_num < cur_depth))
     return (cur_depth);

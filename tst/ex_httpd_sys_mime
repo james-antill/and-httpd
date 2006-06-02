@@ -1,0 +1,14 @@
+# This is a simple version of /etc/mime.types on my box:
+
+bad/bar				html
+application/activemessage
+application/andrew-inset        ez
+application/applefile
+application/octet-stream        bin dms lha lzh exe class so dll img iso
+application/x-gtar              gtar
+application/x-gzip              gz tgz
+text/css                        css
+text/html                       html htm
+text/parityfec
+text/plain                      asc txt
+text/rfc822-headers

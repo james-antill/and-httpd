@@ -464,7 +464,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CFLAGS CPPFLAGS LDFLAGS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CCAS CCASFLAGS build build_cpu build_vendor build_os host host_cpu host_vendor host_os EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LIBTOOL_DEPS TRUE_PATH GZIP_PATH BZIP2_PATH SENDMAIL_PATH MAKE_PATH ETAGS_PATH SED_PATH PERL_PATH PERL_USR_BIN_AVAIL_TRUE PERL_USR_BIN_AVAIL_FALSE TAR_PATH CHMOD_PATH PKG_CONFIG VSTR_AVAIL_TRUE VSTR_AVAIL_FALSE VSTR_CFLAGS VSTR_LDLIBS VSTR_DBG_AVAIL_TRUE VSTR_DBG_AVAIL_FALSE VSTR_DBG_CFLAGS VSTR_DBG_LDLIBS TIMER_Q_AVAIL_TRUE TIMER_Q_AVAIL_FALSE TIMER_Q_CFLAGS TIMER_Q_LDLIBS TIMER_Q_DBG_AVAIL_TRUE TIMER_Q_DBG_AVAIL_FALSE TIMER_Q_DBG_CFLAGS TIMER_Q_DBG_LDLIBS SOCKET_POLL_AVAIL_TRUE SOCKET_POLL_AVAIL_FALSE SOCKET_POLL_CFLAGS SOCKET_POLL_LDLIBS NDEBUG_TRUE NDEBUG_FALSE WARNS DBG_VSTR_TRUE DBG_VSTR_FALSE DBG_TIMER_Q_TRUE DBG_TIMER_Q_FALSE LIBCAP_AVAIL_TRUE LIBCAP_AVAIL_FALSE ALLOCA MALLINFO_AVAIL_TRUE MALLINFO_AVAIL_FALSE HAVE_LINKER_MAIN_RELOCATE_TRUE HAVE_LINKER_MAIN_RELOCATE_FALSE LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS CFLAGS CPPFLAGS LDFLAGS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CC ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CCAS CCASFLAGS build build_cpu build_vendor build_os host host_cpu host_vendor host_os EGREP LN_S ECHO AR ac_ct_AR RANLIB ac_ct_RANLIB CPP CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL LIBTOOL_DEPS TRUE_PATH GZIP_PATH BZIP2_PATH SENDMAIL_PATH MAKE_PATH ETAGS_PATH SED_PATH BASH_PATH PERL_PATH PERL_USR_BIN_AVAIL_TRUE PERL_USR_BIN_AVAIL_FALSE TAR_PATH CHMOD_PATH PKG_CONFIG VSTR_AVAIL_TRUE VSTR_AVAIL_FALSE VSTR_CFLAGS VSTR_LDLIBS VSTR_DBG_AVAIL_TRUE VSTR_DBG_AVAIL_FALSE VSTR_DBG_CFLAGS VSTR_DBG_LDLIBS TIMER_Q_AVAIL_TRUE TIMER_Q_AVAIL_FALSE TIMER_Q_CFLAGS TIMER_Q_LDLIBS TIMER_Q_DBG_AVAIL_TRUE TIMER_Q_DBG_AVAIL_FALSE TIMER_Q_DBG_CFLAGS TIMER_Q_DBG_LDLIBS SOCKET_POLL_AVAIL_TRUE SOCKET_POLL_AVAIL_FALSE SOCKET_POLL_CFLAGS SOCKET_POLL_LDLIBS NDEBUG_TRUE NDEBUG_FALSE WARNS DBG_VSTR_TRUE DBG_VSTR_FALSE DBG_TIMER_Q_TRUE DBG_TIMER_Q_FALSE LIBCAP_AVAIL_TRUE LIBCAP_AVAIL_FALSE ALLOCA MALLINFO_AVAIL_TRUE MALLINFO_AVAIL_FALSE HAVE_LINKER_MAIN_RELOCATE_TRUE HAVE_LINKER_MAIN_RELOCATE_FALSE LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1538,7 +1538,7 @@ echo "${ECHO_T}${T_MD}Initial phase:${T_ME}" >&6
 
 
 
-VERSION=0.99.7
+VERSION=0.99.8
 PACKAGE=and-httpd
 
 am__api_version="1.9"
@@ -20967,6 +20967,48 @@ echo "${ECHO_T}no" >&6
 fi
 
 
+# Extract the first word of "bash", so it can be a program name with args.
+set dummy bash; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_BASH_PATH+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $BASH_PATH in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_BASH_PATH="$BASH_PATH" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+as_dummy="$PATH:/usr/bin:/bin:/usr/local/bin:/usr/local/perl:/usr/gnu/bin:/usr/local/gnu/bin:/opt/gnu/bin"
+for as_dir in $as_dummy
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_BASH_PATH="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  test -z "$ac_cv_path_BASH_PATH" && ac_cv_path_BASH_PATH="$TRUE_PATH"
+  ;;
+esac
+fi
+BASH_PATH=$ac_cv_path_BASH_PATH
+
+if test -n "$BASH_PATH"; then
+  echo "$as_me:$LINENO: result: $BASH_PATH" >&5
+echo "${ECHO_T}$BASH_PATH" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+
 # Extract the first word of "perl", so it can be a program name with args.
 set dummy perl; ac_word=$2
 echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -33005,6 +33047,7 @@ s,@SENDMAIL_PATH@,$SENDMAIL_PATH,;t t
 s,@MAKE_PATH@,$MAKE_PATH,;t t
 s,@ETAGS_PATH@,$ETAGS_PATH,;t t
 s,@SED_PATH@,$SED_PATH,;t t
+s,@BASH_PATH@,$BASH_PATH,;t t
 s,@PERL_PATH@,$PERL_PATH,;t t
 s,@PERL_USR_BIN_AVAIL_TRUE@,$PERL_USR_BIN_AVAIL_TRUE,;t t
 s,@PERL_USR_BIN_AVAIL_FALSE@,$PERL_USR_BIN_AVAIL_FALSE,;t t

@@ -13,4 +13,4 @@ fi
 
 
 CFLAGS="-O2 -march=i386 -mtune=i686" \
-  $c $@ && make clean && make check
+  $c --prefix=/usr --localstatedir=/var $@ && make clean && make check

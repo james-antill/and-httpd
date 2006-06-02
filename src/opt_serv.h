@@ -366,43 +366,82 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 
 /* take either a number or one of a few symbols, allow clist around symbols */
 #define OPT_SERV_X_SYM__NUM_BEG(x)                                      \
-      if ((ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                        \
-          !(pv = conf_token_value(token)))                              \
-        CONF_SC_TOGGLE_CLIST_VAR(clist_num);                            \
-      if (!(pv = conf_token_value(token)))                              \
-        return (FALSE);                                                 \
-                                                                        \
       if (!ern)                                                         \
         (x) = val;                                                      \
       else                                                              \
       {                                                                 \
+        const Vstr_sect_node *pv = NULL;                                \
+        int clist_num = FALSE;                                          \
+                                                                        \
+        if ((ern == CONF_SC_TYPE_RET_ERR_PARSE) &&                      \
+            !(pv = conf_token_value(token)))                            \
+          CONF_SC_TOGGLE_CLIST_VAR(clist_num);                          \
+        if (ern && !(pv = conf_token_value(token)))                     \
+          return (FALSE);                                               \
+                                                                        \
         if (0) do { } while (FALSE)
     
-#define OPT_SERV_X_SYM_UINT_BEG(x) do {                                 \
-      const Vstr_sect_node *pv = NULL;                                  \
+#define OPT_SERV_X_SYM_SINGLE_UINT_BEG(x) do {                          \
       unsigned int val = 0;                                             \
       int ern = 0;                                                      \
-      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_uint(conf, token, &val);                \
       OPT_SERV_X_SYM__NUM_BEG(x)
 
-#define OPT_SERV_X_SYM_ULONG_BEG(x) do {                                \
-      const Vstr_sect_node *pv = NULL;                                  \
+#define OPT_SERV_X_SYM_UINT_BEG(x) do {                                 \
+      unsigned int val = (x);                                           \
+      int ern = CONF_SC_TYPE_RET_OK;                                    \
+      Conf_token save;                                                  \
+                                                                        \
+      save = *token;                                                    \
+      if (!opt_serv_sc_make_uint(conf, token, &val))                    \
+      {                                                                 \
+        ern = CONF_SC_TYPE_RET_ERR_PARSE;                               \
+        *token = save;                                                  \
+        conf_parse_token(conf, token);                                  \
+      }                                                                 \
+      OPT_SERV_X_SYM__NUM_BEG(x)
+
+#define OPT_SERV_X_SYM_SINGLE_ULONG_BEG(x) do {                         \
       unsigned long val = 0;                                            \
       int ern = 0;                                                      \
-      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_ulong(conf, token, &val);               \
       OPT_SERV_X_SYM__NUM_BEG(x)
 
-#define OPT_SERV_X_SYM_UINTMAX_BEG(x) do {                              \
-      const Vstr_sect_node *pv = NULL;                                  \
+#define OPT_SERV_X_SYM_ULONG_BEG(x) do {                                \
+      unsigned long val = (x);                                          \
+      int ern = CONF_SC_TYPE_RET_OK;                                    \
+      Conf_token save;                                                  \
+                                                                        \
+      save = *token;                                                    \
+      if (!opt_serv_sc_make_ulong(conf, token, &val))                   \
+      {                                                                 \
+        ern = CONF_SC_TYPE_RET_ERR_PARSE;                               \
+        *token = save;                                                  \
+        conf_parse_token(conf, token);                                  \
+      }                                                                 \
+      OPT_SERV_X_SYM__NUM_BEG(x)
+
+#define OPT_SERV_X_SYM_SINGLE_UINTMAX_BEG(x) do {                       \
       uintmax_t val = 0;                                                \
       int ern = 0;                                                      \
-      int clist_num = FALSE;                                            \
                                                                         \
       ern = conf_sc_token_parse_uintmax(conf, token, &val);             \
+      OPT_SERV_X_SYM__NUM_BEG(x)
+
+#define OPT_SERV_X_SYM_UINTMAX_BEG(x) do {                              \
+      uintmax_t val = (x);                                              \
+      int ern = CONF_SC_TYPE_RET_OK;                                    \
+      Conf_token save;                                                  \
+                                                                        \
+      save = *token;                                                    \
+      if (!opt_serv_sc_make_uintmax(conf, token, &val))                 \
+      {                                                                 \
+        ern = CONF_SC_TYPE_RET_ERR_PARSE;                               \
+        *token = save;                                                  \
+        conf_parse_token(conf, token);                                  \
+      }                                                                 \
       OPT_SERV_X_SYM__NUM_BEG(x)
 
 #define OPT_SERV_X_SYM_NUM_END()                                        \

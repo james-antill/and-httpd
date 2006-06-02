@@ -120,8 +120,8 @@ static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
   return (vstr_add_cstr_buf(s1, pos, env_data));
 }
 
-#ifdef CONF_FULL_STATIC
-# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) TRUE
+#ifdef CONF_FULL_STATIC /* just ignore it, if using full-static */
+# define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE)
 #else
 static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
                                       Conf_parse *conf, Conf_token *token)
@@ -306,18 +306,26 @@ static int opt_serv__conf_main_policy(Opt_serv_opts *opts,
                                       Conf_parse *conf, Conf_token *token)
 {
   Opt_serv_policy_opts *popts = NULL;
-  unsigned int cur_depth = opt_policy_sc_conf_parse(opts, conf, token, &popts);
-  int clist = FALSE;
+  Conf_token *ntoken = NULL;
+  unsigned int cur_depth = opt_policy_sc_conf_parse(opts, conf, token,
+                                                    &popts, &ntoken);
   
   if (!cur_depth)
     return (FALSE);
   
-  CONF_SC_MAKE_CLIST_MID(cur_depth, clist);
-  
-  else if (opt_serv__conf_main_policy_d1(popts, conf, token, clist))
-  { }
-
-  CONF_SC_MAKE_CLIST_END();
+  do
+  {
+    int clist = FALSE;
+    
+    CONF_SC_MAKE_CLIST_MID(cur_depth, clist);
+    
+    else if (opt_serv__conf_main_policy_d1(popts, conf, token, clist))
+    { }
+    
+    CONF_SC_MAKE_CLIST_END();
+  } while (ntoken &&
+           (cur_depth = opt_policy_sc_conf_parse(opts, conf, token,
+                                                 &popts, &ntoken)));
   
   return (TRUE);
 }
@@ -448,8 +456,6 @@ int opt_serv_match_init(struct Opt_serv_opts *opts,
       OPT_SERV_X_SYM_ULONG_BEG(x);                                      \
       else if (OPT_SERV_SYM_EQ("<infinity>"))  (x) = RLIM_INFINITY;     \
       else if (OPT_SERV_SYM_EQ("<unlimited>")) (x) = RLIM_INFINITY;     \
-      else if (OPT_SERV_SYM_EQ("<none>"))      (x) = 0;                 \
-      else if (OPT_SERV_SYM_EQ("<zero>"))      (x) = 0;                 \
       else if (OPT_SERV_SYM_EQ("<default>"))   (y) = FALSE;             \
       OPT_SERV_X_SYM_NUM_END();                                         \
     } while (FALSE)
@@ -496,15 +502,13 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
 
     else if (OPT_SERV_SYM_EQ("uid"))
       OPT_SERV_X_SINGLE_UINT(opts->priv_uid);
-    else if (OPT_SERV_SYM_EQ("usrname"))
-      OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
-    else if (OPT_SERV_SYM_EQ("username"))
+    else if (OPT_SERV_SYM_EQ("usrname") ||
+             OPT_SERV_SYM_EQ("username"))
       OPT_SERV_X_VSTR(opts, opts->vpriv_uid);
     else if (OPT_SERV_SYM_EQ("gid"))
       OPT_SERV_X_SINGLE_UINT(opts->priv_gid);
-    else if (OPT_SERV_SYM_EQ("grpname"))
-      OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
-    else if (OPT_SERV_SYM_EQ("groupname"))
+    else if (OPT_SERV_SYM_EQ("grpname") ||
+             OPT_SERV_SYM_EQ("groupname"))
       OPT_SERV_X_VSTR(opts, opts->vpriv_gid);
     else if (OPT_SERV_SYM_EQ("keep-CAP_FOWNER") ||
              OPT_SERV_SYM_EQ("keep-cap-fowner"))
@@ -551,41 +555,18 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
   else if (OPT_SERV_SYM_EQ("processes") ||
            OPT_SERV_SYM_EQ("procs"))
   {
-    unsigned int opt__val = 0;
-    unsigned int ret = conf_sc_token_parse_uint(conf, token, &opt__val);
+    OPT_SERV_X_SYM_UINT_BEG(opts->num_procs);
     
-    if (ret == CONF_SC_TYPE_RET_ERR_PARSE)
-    {
-      const Vstr_sect_node *pv = NULL;
-      long sc_val = -1;
-      
-      if (!(pv = conf_token_value(token)))
-        return (FALSE);
-      if (0) { }
-      else if (vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-number-processors-configured>") ||
-               vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-num-procs-configured>") ||
-               vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-num-procs-conf>"))
-        sc_val = sysconf(_SC_NPROCESSORS_CONF);
-      else if (vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-number-processors-online>") ||
-               vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-num-procs-online>") ||
-               vstr_cmp_cstr_eq(conf->data, pv->pos, pv->len,
-                                "<sysconf-num-procs-onln>"))
-        sc_val = sysconf(_SC_NPROCESSORS_ONLN);
-      else      
-        return (FALSE);
-      if (sc_val == -1)
-        sc_val = 1;
-      opt__val = sc_val;  
-    }
-    else if (ret)
-      return (FALSE);
+    else if (OPT_SERV_SYM_EQ("<sysconf-number-processors-configured>") ||
+             OPT_SERV_SYM_EQ("<sysconf-num-procs-configured>") ||
+             OPT_SERV_SYM_EQ("<sysconf-num-procs-conf>"))
+      opts->num_procs = sysconf(_SC_NPROCESSORS_CONF);
+    else if (OPT_SERV_SYM_EQ("<sysconf-number-processors-online>") ||
+             OPT_SERV_SYM_EQ("<sysconf-num-procs-online>") ||
+             OPT_SERV_SYM_EQ("<sysconf-num-procs-onln>"))
+      opts->num_procs = sysconf(_SC_NPROCESSORS_ONLN);
     
-    opts->num_procs = opt__val;
+    OPT_SERV_X_SYM_NUM_END();    
   }
   else if (OPT_SERV_SYM_EQ("logging"))
   {
@@ -1295,12 +1276,14 @@ static int opt_serv__build_str(struct Opt_serv_opts *
     
     if (0) { }
     
-    else if (OPT_SERV_SYM_EQ("ENV") || OPT_SERV_SYM_EQ("ENVIRONMENT"))
+    else if (OPT_SERV_SYM_EQ("ENV")   || OPT_SERV_SYM_EQ("ENVIRONMENT") ||
+             OPT_SERV_SYM_EQ("<ENV>") || OPT_SERV_SYM_EQ("<ENVIRONMENT>"))
     {
       if (!opt_serv_sc_append_env(conf->tmp, conf->tmp->len, conf, token))
         return (FALSE);
     }
-    else if (doing_init && OPT_SERV_SYM_EQ("HOME"))
+    else if (doing_init &&
+             (OPT_SERV_SYM_EQ("HOME") || OPT_SERV_SYM_EQ("<HOME>")))
     {
       if (!OPT_SERV_SC_APPEND_HOMEDIR(conf->tmp, conf->tmp->len, conf, token))
         return (FALSE);
@@ -1342,6 +1325,10 @@ static int opt_serv__sc_make_str(struct Opt_serv_opts *opts,
 
   if (0) { }
   
+  else if (OPT_SERV_SYM_EQ("<none>") || OPT_SERV_SYM_EQ("<empty>"))
+  {
+    return (vstr_del(s1, pos, len));
+  }
   else if (OPT_SERV_SYM_EQ("assign") || OPT_SERV_SYM_EQ("="))
   {
     if (!opt_serv__build_str(opts, conf, token, doing_init))
@@ -1401,7 +1388,7 @@ static int opt_serv__build_uintmax(Conf_parse *conf, Conf_token *token,
 {
   ASSERT(ret);
   
-  OPT_SERV_X_SYM_UINTMAX_BEG(*ret);
+  OPT_SERV_X_SYM_SINGLE_UINTMAX_BEG(*ret);
 
   else if (OPT_SERV_SYM_EQ("<num>")) *ret = num;
 
@@ -1409,12 +1396,19 @@ static int opt_serv__build_uintmax(Conf_parse *conf, Conf_token *token,
   
   return (TRUE);
 }
-  
+
 int opt_serv_sc_make_uintmax(Conf_parse *conf, Conf_token *token,
                              uintmax_t *num)
 {
-  OPT_SERV_X_SYM_UINTMAX_BEG(*num);
+  OPT_SERV_X_SYM_SINGLE_UINTMAX_BEG(*num);
 
+  else if (OPT_SERV_SYM_EQ("none")   || OPT_SERV_SYM_EQ("zero")   ||
+           OPT_SERV_SYM_EQ("NONE")   || OPT_SERV_SYM_EQ("ZERO")   ||
+           OPT_SERV_SYM_EQ("<none>") || OPT_SERV_SYM_EQ("<zero>") ||
+           OPT_SERV_SYM_EQ("<NONE>") || OPT_SERV_SYM_EQ("<ZERO>"))
+  {
+    *num = 0;
+  }
   else if (OPT_SERV_SYM_EQ("assign") || OPT_SERV_SYM_EQ("="))
   {
     if (!opt_serv__build_uintmax(conf, token, *num, num))
@@ -1527,10 +1521,22 @@ void opt_serv_sc_resolve_uid(struct Opt_serv_opts *opts,
   const char *name  = NULL;
   struct passwd *pw = NULL;
   
-  OPT_SC_EXPORT_CSTR(name, opts->vpriv_uid, FALSE, "privilage uid");
+  OPT_SC_EXPORT_CSTR(name, opts->vpriv_uid, TRUE, "privilage uid");
   
-  if (name && (pw = getpwnam(name)))
-    opts->priv_uid = pw->pw_uid;
+  if (!(pw = getpwnam(name)))
+  {
+    Vstr_base *s1 = vstr_make_base(NULL);
+    const char *msg = NULL;
+    
+    if (s1 &&
+        vstr_add_fmt(s1, s1->len, " Username -- %s -- can't be found.\n",
+                     name) &&
+        (msg = vstr_export_cstr_ptr(s1, 1, s1->len)))
+      usage(program_name, EXIT_FAILURE, msg);
+    usage(program_name, EXIT_FAILURE, " Username can't be found.\n");
+  }
+  
+  opts->priv_uid = pw->pw_uid;
 }
 
 void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
@@ -1542,8 +1548,20 @@ void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
   
   OPT_SC_EXPORT_CSTR(name, opts->vpriv_gid, FALSE, "privilage gid");
   
-  if (name && (gr = getgrnam(name)))
-    opts->priv_gid = gr->gr_gid;
+  if ((gr = getgrnam(name)))
+  {
+    Vstr_base *s1 = vstr_make_base(NULL);
+    const char *msg = NULL;
+    
+    if (s1 &&
+        vstr_add_fmt(s1, s1->len, " Groupname -- %s -- can't be found.\n",
+                     name) &&
+        (msg = vstr_export_cstr_ptr(s1, 1, s1->len)))
+      usage(program_name, EXIT_FAILURE, msg);
+    usage(program_name, EXIT_FAILURE, " Groupname can't be found.\n");
+  }
+
+  opts->priv_gid = gr->gr_gid;
 }
 #endif
 
@@ -1552,36 +1570,44 @@ void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
 # _D_EXACT_NAMLEN(x) strlen((x)->d_name)
 #endif
 
+#define OPT_SERV_DIR_CHR_(x, y) ((*x)->d_name[y] == '_')
 static int opt_serv__sort_conf_files(const void *passed_a, const void *passed_b)
 {
   const struct dirent * const *a = passed_a;
   const struct dirent * const *b = passed_b;
-
-  /* treat leading _ as system conf.d files and process those first...
-   * Ie. if a is _y and b is x, then (a is < b), hence return -1 */
-  if (((*a)->d_name[0] == '_') != ((*b)->d_name[0] == '_'))
-    return (((*b)->d_name[0] == '_') - ((*a)->d_name[0] == '_'));
+  unsigned int scan = 0;
   
-  return strcmp((*a)->d_name, (*b)->d_name);
+  /* treat any leading '_'s as system conf.d files and process those first...
+   * Ie. if a is _y  and b is  x, then (a is < b), hence return -1
+         if a is __y and b is _x, then (a is < b), hence return -1 */
+  if (OPT_SERV_DIR_CHR_(a, scan) || OPT_SERV_DIR_CHR_(b, scan))
+  {
+    while (OPT_SERV_DIR_CHR_(a, scan) == OPT_SERV_DIR_CHR_(b, scan))
+      ++scan;
+
+    if (OPT_SERV_DIR_CHR_(a, scan) || OPT_SERV_DIR_CHR_(b, scan))
+      return (OPT_SERV_DIR_CHR_(a, scan) - OPT_SERV_DIR_CHR_(b, scan));
+  }
+  
+  return (strcmp((*a)->d_name, (*b)->d_name)); /* the rest is POSIX */
 }
 
 /* filter to files that:
  * 1. _don't_ start with a '.'
  * 1. _do_    end   with a ".conf"
  */
-#define CSTR_EQ(x, y) (!strcmp(x, y))
 static int opt_serv__filt_conf_files(const struct dirent *dent)
 {
   size_t len = _D_EXACT_NAMLEN(dent);
   
   ASSERT(!dent->d_name[len]);
   
-  if (dent->d_name[0] == '.')
+  if (dent->d_name[0] == '.') /* filters . .. _and_ .foo.conf */
     return (FALSE);
   
   if (len < strlen("a.conf"))
     return (FALSE);
-  if (!CSTR_EQ(dent->d_name + len - strlen(".conf"), ".conf"))
+  if (!CSTREQ(dent->d_name + len - strlen(".conf"), ".conf"))
     return (FALSE);
   
   return (TRUE);
@@ -1593,7 +1619,6 @@ int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
   struct dirent **dents = NULL;
   int num = -1;
   int scan = 0;
-  int ends_with_slash = FALSE;
   int ret = TRUE;
   Vstr_base *bld = vstr_make_base(s1->conf);
 
@@ -1609,9 +1634,6 @@ int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
     goto fail;
   }
 
-  if (dir[strlen(dir) - 1] == '/')
-    ends_with_slash = TRUE;
-  
   num = scandir(dir, &dents,
                 opt_serv__filt_conf_files, opt_serv__sort_conf_files);
   if (num == -1)
@@ -1630,8 +1652,7 @@ int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
       
       vstr_del(bld, 1, bld->len);
       vstr_add_cstr_ptr(bld, bld->len, dir);
-      if (!ends_with_slash)
-        vstr_add_cstr_ptr(bld, bld->len, "/");
+      vstr_add_cstr_ptr(bld, bld->len, "/");
       vstr_add_ptr(bld, bld->len, dent->d_name, _D_EXACT_NAMLEN(dent));
 
       if (bld->conf->malloc_bad)

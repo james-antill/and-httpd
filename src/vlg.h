@@ -54,49 +54,49 @@ extern int  vlg_sc_fmt_add_all(Vstr_conf *);
 extern void vlg_sc_bind_mount(const char *);
 
 extern void vlg_vabort(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 extern void vlg_verr(Vlg *, int, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(3, 0);
+   COMPILE_ATTR_FMT(3, 0);
 extern void vlg_vwarn(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 extern void vlg_vinfo(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 extern void vlg_vdbg1(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 extern void vlg_vdbg2(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 extern void vlg_vdbg3(Vlg *, const char *fmt, va_list )
-   VSTR__COMPILE_ATTR_FMT(2, 0);
+   COMPILE_ATTR_FMT(2, 0);
 
 extern void vlg_abort(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_err(Vlg *, int, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(3, 4);
+      COMPILE_ATTR_FMT(3, 4);
 extern void vlg_warn(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_info(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_dbg1(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_dbg2(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_dbg3(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 
 extern void vlg_sig_abort(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_sig_err(Vlg *, int, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(3, 4);
+      COMPILE_ATTR_FMT(3, 4);
 extern void vlg_sig_warn(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_sig_info(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_sig_dbg1(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_sig_dbg2(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 extern void vlg_sig_dbg3(Vlg *, const char *fmt, ... )
-      VSTR__COMPILE_ATTR_FMT(2, 3);
+      COMPILE_ATTR_FMT(2, 3);
 
 #ifndef VLG_COMPILE_INLINE
 # if ! COMPILE_DEBUG

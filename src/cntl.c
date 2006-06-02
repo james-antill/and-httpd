@@ -447,17 +447,27 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
 
 static void cntl__cb_func_acpt_free(struct Evnt *evnt)
 {
-  struct Acpt_listener *acpt_listener = (struct Acpt_listener *)evnt;
-  struct Acpt_data *acpt_data = acpt_listener->ref->ptr;
-
+  Acpt_cntl_listener *acpt_listener = (Acpt_cntl_listener *)evnt;
+  Acpt_data *acpt_data = acpt_listener->s->ref->ptr;
+  Vstr_base *fname = acpt_listener->fname;
+  const char *fname_cstr = NULL;
+  
   evnt_vlg_stats_info(evnt, "ACCEPT CNTL FREE");
   
   ASSERT(acpt_cntl_evnt == evnt);
   acpt_cntl_evnt = NULL;
+
+  ASSERT(acpt_listener->fname);
   
   acpt_data->evnt = NULL;
-  vstr_ref_del(acpt_listener->ref);
+  vstr_ref_del(acpt_listener->s->ref);
   F(acpt_listener);
+  
+  if (!(fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len)))
+    vlg_warn(vlg, "export cntl file($<vstr.all:%p>): %m\n", fname);
+  else if (unlink(fname_cstr) == -1)
+    vlg_warn(vlg, "unlink cntl file($<vstr.all:%p>): %m\n", fname);
+  vstr_free_base(fname);
   
   evnt_acpt_close_all();
   
@@ -516,14 +526,16 @@ static void cntl__sc_serv_make_acpt_data_cb(Vstr_ref *ref)
   free(ref);
 }
 
-void cntl_make_file(Vlg *passed_vlg, const char *fname)
+void cntl_make_file(Vlg *passed_vlg, const Vstr_base *fname)
 {
   Acpt_listener *acpt_listener = NULL;
+  Acpt_cntl_listener *acpt_cntl_listener = NULL;
   Acpt_data *acpt_data = NULL;
   struct Evnt *evnt = NULL;
   Vstr_ref *ref = NULL;
   unsigned int q_listen_len = 8;
-
+  const char *fname_cstr = NULL;
+  
   ASSERT(!vlg && passed_vlg);
 
   vlg = passed_vlg;
@@ -531,22 +543,33 @@ void cntl_make_file(Vlg *passed_vlg, const char *fname)
   ASSERT(fname);
   ASSERT(!acpt_cntl_evnt);
     
-  if (!(acpt_listener = MK(sizeof(Acpt_listener))))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname));
+  if (!(fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len)))
+    vlg_err(vlg, EXIT_FAILURE, "cntl file($<vstr.all:%p>): %m\n", fname);
+
+  if (!(acpt_cntl_listener = MK(sizeof(Acpt_cntl_listener))))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname_cstr));
+  acpt_cntl_listener->fname = NULL;
+  acpt_listener = acpt_cntl_listener->s;
   acpt_listener->max_connections = 0;
   evnt = acpt_listener->evnt;
   
+  if (!(acpt_cntl_listener->fname = vstr_dup_vstr(fname->conf,
+                                                  fname, 1, fname->len,
+                                                  VSTR_TYPE_ADD_DEF)))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname_cstr));
+  
   if (!(acpt_data = MK(sizeof(Acpt_data))))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname));
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname_cstr));
   acpt_data->evnt = NULL;
   acpt_data->sa   = NULL;
   
   if (!(ref = vstr_ref_make_ptr(acpt_data, cntl__sc_serv_make_acpt_data_cb)))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "make_bind(%s): %m\n", fname));
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "make_bind(%s): %m\n", fname_cstr));
   acpt_listener->ref = ref;
-  
-  if (!evnt_make_bind_local(evnt, fname, q_listen_len))
-    vlg_err(vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname);
+
+  /* cp vstr for name */
+  if (!evnt_make_bind_local(evnt, fname_cstr, q_listen_len))
+    vlg_err(vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname_cstr);
   acpt_data->evnt = evnt;
   acpt_data->sa   = vstr_ref_add(evnt->sa_ref);
 
@@ -558,16 +581,18 @@ void cntl_make_file(Vlg *passed_vlg, const char *fname)
 
 static void cntl__cb_func_cntl_acpt_free(struct Evnt *evnt)
 {
-  struct Acpt_listener *acpt_listener = (struct Acpt_listener *)evnt;
-  struct Acpt_data *acpt_data = acpt_listener->ref->ptr;
+  Acpt_cntl_listener *acpt_listener = (Acpt_cntl_listener *)evnt;
+  Acpt_data *acpt_data = acpt_listener->s->ref->ptr;
 
   evnt_vlg_stats_info(evnt, "CHILD CNTL FREE");
   
   ASSERT(acpt_cntl_evnt == evnt);
   acpt_cntl_evnt = NULL;
   
+  ASSERT(!acpt_listener->fname);
+  
   acpt_data->evnt = NULL;
-  vstr_ref_del(acpt_listener->ref);
+  vstr_ref_del(acpt_listener->s->ref);
   F(acpt_listener);
   
   evnt_acpt_close_all();
@@ -593,6 +618,7 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
   if (acpt_cntl_evnt)
   {
     int old_fd = SOCKET_POLL_INDICATOR(acpt_cntl_evnt->ind)->fd;
+    Acpt_cntl_listener *acpt_listener = (Acpt_cntl_listener *)acpt_cntl_evnt;
     
     ASSERT(vlg       == passed_vlg);
 
@@ -603,6 +629,9 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
     
     acpt_cntl_evnt->cbs->cb_func_recv = cntl__cb_func_recv;
     acpt_cntl_evnt->cbs->cb_func_free = cntl__cb_func_cntl_acpt_free;
+
+    vstr_free_base(acpt_listener->fname);
+    acpt_listener->fname = NULL;
     
     if (allow_pdeathsig && (PROC_CNTL_PDEATHSIG(SIGCHLD) == -1))
       vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_PDEATHSIG", "SIGCHLD");

@@ -51,6 +51,14 @@
     } while (FALSE)
 #endif
 
+/* help the programmers with the double negatives all the time */
+#define CSTREQ(x, y) (!strcmp(x, y))
+
+/* values, values, values */
+#define min_t(T, a, b) ((((T)(a)) > ((T)(b))) ? (a) : (b))
+#define max_t(T, a, b) ((((T)(a)) < ((T)(b))) ? (a) : (b))
+
+
 /* Simple getopt code... */
 #define EX_UTILS_GETOPT_NUM(name, var) \
     else if (!strncmp("--" name "=", argv[count], strlen("--" name "=")) || \

@@ -11,5 +11,6 @@ else
   exit 1;
 fi
 
-CFLAGS="-O2 -march=i386 -mcpu=i686 -pg" $c && \
+CFLAGS="-O2 -march=i386 -mcpu=i686 -pg" \
+ $c --prefix=/usr --localstatedir=/var && \
  make clean && make check

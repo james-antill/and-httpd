@@ -227,6 +227,30 @@ sub run_tst
 #    sub_tst(\&sub_run_pipe_tst, $prefix, {cmd => $cmd, opts => $opts});
   }
 
+sub run_err_tst
+  {
+    my $cmd    = shift;
+    my $prefix = shift || $cmd;
+    my $opts   = shift || "";
+
+    sub sub_run_err_tst
+      {
+	my $io_r = shift;
+	my $io_w = shift;
+	my $xtra = shift;
+
+	my $cmd  = $xtra->{cmd};
+	my $opts = $xtra->{opts};
+
+	open(TMP, ">&STDERR")    || failure("Can't dup stderr.");
+	open(STDERR, ">> $io_w") || failure("Can't dup stderr.");
+	system("./${cmd} $opts -- $io_r > $io_w");
+	open(STDERR, ">&TMP")    || failure("Can't dup stderr.");
+      }
+
+    sub_tst(\&sub_run_err_tst, $prefix, {cmd => $cmd, opts => $opts});
+  }
+
 sub run_simple_tst
   {
     my $cmd    = shift;

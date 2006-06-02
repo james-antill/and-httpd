@@ -274,6 +274,8 @@ EOL
 
 my $cntl = shift || "/var/run/and-httpd.cntl";
 
+exit(0) if ( ! -r $cntl); # If not running, output nothing
+
 my $sock = IO::Socket::UNIX->new(Peer     => $cntl,
 				 Type     => SOCK_STREAM);
 

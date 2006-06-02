@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     else if (!strcmp("--version", argv[count]))
     { /* print version and exit */
       vstr_add_fmt(s1, 0, "%s", "\
-jdir_list 1.0.0\n\
+and-dir_list 1.0.0\n\
 Written by James Antill\n\
 \n\
 Uses Vstr string library.\n\
@@ -77,8 +77,8 @@ Uses Vstr string library.\n\
     else if (!strcmp("--help", argv[count]))
     { /* print version and exit */
       vstr_add_fmt(s1, 0, "%s", "\
-Usage: jdir_list <DIRECTORY>...\n\
-   or: jdir_list OPTION\n\
+Usage: and-dir_list <DIRECTORY>...\n\
+   or: and-dir_list OPTION\n\
 Output filenames.\n\
 \n\
       --help     Display this help and exit\n\

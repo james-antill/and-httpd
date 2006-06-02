@@ -119,6 +119,8 @@ typedef struct Httpd_req_data
  unsigned int content_enc_identity;
  unsigned int content_enc_gzip;
  unsigned int content_enc_bzip2;
+
+ unsigned short http_host_port;
  
  unsigned int ver_0_9 : 1;
  unsigned int ver_1_1 : 1;
@@ -268,6 +270,10 @@ extern int httpd_valid_url_filename(Vstr_base *, size_t, size_t);
 extern int httpd_init_default_hostname(Opt_serv_policy_opts *);
 extern int httpd_sc_add_default_hostname(struct Con *, Httpd_req_data *,
                                          Vstr_base *, size_t);
+extern int httpd_sc_add_req_hostname(struct Con *, Httpd_req_data *,
+                                     Vstr_base *, size_t);
+extern int httpd_sc_add_hostname(struct Con *, Httpd_req_data *,
+                                 Vstr_base *, size_t);
 
 extern int httpd_canon_path(Vstr_base *);
 extern int httpd_canon_dir_path(Vstr_base *);

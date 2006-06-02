@@ -6,21 +6,32 @@ use FileHandle;
 use Getopt::Long;
 use Pod::Usage;
 
+use Date::Manip;
+
 my $dbg = 0;
 my $man = 0;
 my $help = 0;
 
-my $output_file = undef;
-my $input_file  = undef;
+my $output_file  = undef;
+my $skip_missing = undef;
+my $skip_before  = undef;
+my $skip_year    = undef;
+my $skip_match   = undef;
+my $input_file   = undef;
 
 pod2usage(0) if !
-GetOptions ("output|o=s"  => \$output_file,
-	    "debug!"      => \$dbg,
+GetOptions ("output|o=s"      => \$output_file,
+	    "debug!"          => \$dbg,
+	    "skip-missing!"   => \$skip_missing,
+	    "skip-year!"      => \$skip_year,
+	    "skip-match!"     => \$skip_match,
+	    "skip-before|s=s" => \$skip_before,
 	    "help|?"      => \$help,
 	    "man"         => \$man);
 pod2usage(-exitstatus => 0, -verbose => 1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
+pod2usage(0) if @ARGV < 2; # Must include at least a regexp match and a file
 
 sub grep_syslog_and_httpd_line
   {
@@ -28,15 +39,16 @@ sub grep_syslog_and_httpd_line
 
     return undef # Match syslog line...
       unless /^
-	      \w+           \s # Month
-	      (?:\d\d|\s\d)     \s # Day
-	      \d+:\d+:\d+   \s # Time
-	      \w+           \s # Logging host
-	      (?:j|and-)httpd      # It's the and-httpd server
-	      \[ \d+ \]        # Pid of web server
-	      :                # MSG Seperator...
+	      (?: (\d{4,})      \s )? # Year?
+	      (\w+)             \s    # Month
+	      (?:\d\d|\s\d)     \s    # Day
+	      \d+:\d+:\d+       \s    # Time
+	      \w+               \s    # Logging host
+	      (?:j|and-)httpd         # It's the and-httpd server
+	      \[ \d+ \]               # Pid of web server
+	      :                       # MSG Seperator...
 	      .*$/x;
-    return $_;
+    return { line => $_, year => $1, month => $2 };
   }
 
 if (defined($output_file))
@@ -46,11 +58,35 @@ else
 
 
 # Doesn't work for stdin. also doesn't work for more than one arg. ... screw it
-my $fname = undef;
+my $last_fname = undef;
 
-for $fname (@ARGV)
+my $match = shift @ARGV;
+
+my $last_date = undef;
+if (defined ($skip_before))
+  {
+    Date_Init();
+    $last_date = UnixDate(ParseDate($skip_before), "%s");
+  }
+
+my $mon_map = {"Jan" => 1, "Feb" =>  2, "Mar" =>  3, "Apr" =>  4,
+	       "May" => 5, "Jun" =>  6, "Jul" =>  7, "Aug" =>  8,
+	       "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12};
+
+for my $fname (@ARGV)
   {
     my $fh = undef;
+
+    next if ($skip_missing && ! -r $fname);
+
+    if (defined ($last_date))
+      {
+	my @st = stat _;
+
+	# If the last date is newer than the file mtime, skip it
+	next if ($last_date > $st[9]);
+      }
+
     if ($fname =~ /[.]gz$/)
       {
 	open ($fh, "gzip -dc $fname |") || die "gunzip($fname): $!";
@@ -66,17 +102,37 @@ for $fname (@ARGV)
 
     while (<$fh>)
       {
-	my $cur_line = grep_syslog_and_httpd_line($_);
+	my $ld = grep_syslog_and_httpd_line($_);
 	
-	next if (!defined ($cur_line));
-	
-	OUT->print($cur_line);
+	next if (!defined ($ld));
+
+	next if (! $skip_match && ! /$match/);
+
+	if ($skip_year || defined($ld->{year}))
+	  {
+	    OUT->print($ld->{line});
+	  }
+	else
+	  {
+	    my @st = stat $fname;
+	    my @st_tm     = localtime($st[9]);
+	    my $file_year = $st_tm[5] + 1900;
+	    my $file_mon  = $st_tm[4] + 1;
+
+	    if (exists $mon_map->{$ld->{month}} &&
+		($mon_map->{$ld->{month}} < $file_mon))
+	      { $file_year--; }
+
+	    OUT->print($file_year . " " . $ld->{line});
+	  }
+
+	$last_fname = $fname;
       }
   }
 
-if (defined($output_file) && defined($fname))
+if (defined($output_file) && defined($last_fname))
   {
-    my @st = stat $fname;
+    my @st = stat $last_fname;
     my $atime = time;
     my $mtime = $st[9];
 
@@ -88,16 +144,21 @@ __END__
 
 =head1 NAME
 
-and-httpd-syslog-grep - Show all syslog lines for and-httpd
+and-httpd-syslog-grep - Show all syslog lines for and-httpd and a match
 
 =head1 SYNOPSIS
 
-and-httpd-syslog-grep [options] <and-httpd files...>
+and-httpd-syslog-grep [options] <regexp> <and-httpd files...>
 
  Options:
   --help -?         brief help message
   --man             full documentation
   --output -o       Append output to this file instead of stdout
+  --skip-missing    Skip any files that don't exist
+  --skip-match      Skip regexp matching
+  --skip-year       Skip adding year to front of lines
+  --skip-before     Skip mtime's before this
+  --debug           Output debug messages
 
 =head1 OPTIONS
 
@@ -111,13 +172,28 @@ Print a brief help message and exits.
 
 Prints the manual page and exits.
 
-=item B<--sync-file>
-
-Only add enteries after last one in specified file.
-
 =item B<--output>
 
 Append output to this file instead of stdout.
+
+=item B<--skip-missing>
+
+Skip any files that don't exist (default is to die).
+
+=item B<--skip-match>
+
+Skip regexp matching. The program will still "grep" for just the and-httpd
+lines in the logfile, but will output all of them.
+
+=item B<--skip-year>
+
+Skip adding year to front of lines. Normally you'd want this as syslog
+format doesn't include the year in the date. This program will accept it's own
+input (Ie. this option isn't needed to stop a second year from being added).
+
+=item B<--skip-before>
+
+Skip any files that were last modified before this date/time.
 
 =back
 
@@ -125,8 +201,8 @@ Append output to this file instead of stdout.
 =head1 DESCRIPTION
 
 B<and-httpd-syslog-grep> does the equivalent of a grep on the input file
-for and-httpd, it is somewhat better though ... and will save modification
-times when an output file is used.
+for and-httpd and a regexp, it is somewhat better though ... and will save
+modification time of the last matching input file when an output file is used.
 
 
 =cut

@@ -117,6 +117,7 @@ static void http__clear_hdrs(struct Httpd_req_data *req)
   HTTP__HDR_SET(req, authorization,       0, 0);
   HTTP__HDR_SET(req, expect,              0, 0);
   HTTP__HDR_SET(req, host,                0, 0);
+  req->http_host_port = 80;
   HTTP__HDR_SET(req, if_modified_since,   0, 0);
   HTTP__HDR_SET(req, if_range,            0, 0);
   HTTP__HDR_SET(req, if_unmodified_since, 0, 0);
@@ -873,7 +874,7 @@ static int http_parse_quality(Vstr_base *data,
   size_t pos = *passed_pos;
   size_t len = *passed_len;
   int lead_zero = FALSE;
-  unsigned int num_len = 0;
+  size_t num_len = 0;
   unsigned int parse_flags = VSTR_FLAG02(PARSE_NUM, NO_BEG_PM, NO_NEGATIVE);  
   
   ASSERT(val);
@@ -1343,6 +1344,146 @@ static void http_prepend_doc_root(Vstr_base *fname, Httpd_req_data *req)
   vstr_add_vstr(fname, 0, dir, 1, dir->len - 1, VSTR_TYPE_ADD_BUF_REF);
 }
 
+/* characters valid in a hostname -- these are also safe unencoded in a URL */
+#define HTTPD__VALID_CSTR_CHRS_HOSTNAME     \
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"            \
+    "abcdefghijklmnopqrstuvwxyz"            \
+    "0123456789"                            \
+    ".-_"
+/* characters that are valid in a part of a URL _and_ in a file basename ...
+ * without encoding */
+#define HTTPD__VALID_CSTR_CHRS_URL_FILENAME \
+    "!$,:=~" HTTPD__VALID_CSTR_CHRS_HOSTNAME
+
+static unsigned short
+httpd__parse_host_port(Vstr_base *s1, size_t pos, size_t len)
+{
+  unsigned int num_flags = 10 | (VSTR_FLAG_PARSE_NUM_NO_BEG_PM |
+                                 VSTR_FLAG_PARSE_NUM_OVERFLOW);
+  size_t num_len = 0;
+  unsigned short port = 0;
+  
+  ASSERT(vstr_export_chr(s1, pos) == ':');
+  
+  len -= 1; pos += 1; /* skip the ':' */
+  port = vstr_parse_ushort(s1, pos, len, num_flags, &num_len, NULL);
+  
+  if (!port || (num_len != len))
+    return (0);
+
+  return (port);
+}
+
+int httpd_valid_url_filename(Vstr_base *s1, size_t pos, size_t len)
+{
+  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_URL_FILENAME;
+  return (vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr) == len);
+}
+
+static unsigned short
+httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len, int allow_port)
+{
+  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_HOSTNAME;
+  size_t tmp = 0;
+  
+   /* this is also checked via /./ path checking */
+  if (vstr_cmp_cstr_eq(s1, pos, len, "."))
+    return (0);
+  
+  if (vstr_srch_cstr_buf_fwd(s1, pos, len, ".."))
+    return (0); /* example..com */
+
+  if (VPREFIX(s1, pos, len, ".")) return (0); /* .example.com  */
+
+  /* this is always removed in httpd_serv_add_vhost */
+  assert(!VSUFFIX(s1, pos, len, "."));        /*  example.com. */
+  
+  tmp = vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr);
+  if (tmp == len)
+    return (80);
+
+  if (!allow_port)
+    return (0);
+  
+  len -= tmp; pos += tmp;
+  if (vstr_export_chr(s1, pos) == ':') /* here both before and after port rm */
+    return (httpd__parse_host_port(s1, pos, len));
+  
+  return (0);
+}
+
+static int httpd__chk_vhost(const Httpd_policy_opts *popts,
+                            Vstr_base *lfn, size_t pos, size_t len)
+{
+  const char *vhost = NULL;
+  struct stat64 v_stat[1];
+  const Vstr_base *def_hname = popts->default_hostname;
+  int ret = -1;
+  
+  ASSERT(pos);
+
+  if (popts->use_internal_host_chk)
+  {
+    if (!httpd__valid_hostname(lfn, pos, len, TRUE))
+      return (FALSE);
+  }
+  
+  if (!popts->use_host_chk)
+    return (TRUE);
+  
+  if (vstr_cmp_eq(lfn, pos, len, def_hname, 1, def_hname->len))
+    return (TRUE); /* don't do lots of work for nothing */
+
+  vstr_add_vstr(lfn, pos - 1, 
+		popts->document_root, 1, popts->document_root->len,
+                VSTR_TYPE_ADD_BUF_PTR);
+  len += popts->document_root->len;
+  
+  if (lfn->conf->malloc_bad || !(vhost = vstr_export_cstr_ptr(lfn, pos, len)))
+    return (TRUE); /* dealt with as errmem_req() later */
+  
+  ret = stat64(vhost, v_stat);
+  vstr_del(lfn, pos, popts->document_root->len);
+
+  if (ret == -1)
+    return (FALSE);
+
+  if (!S_ISDIR(v_stat->st_mode))
+    return (FALSE);
+  
+  return (TRUE);
+}
+
+static int http_add_vhost(struct Con *con, Httpd_req_data *req,
+                          Vstr_base *s1, size_t pos, int chk)
+{
+  size_t tmp = s1->len;
+  
+  httpd_sc_add_hostname(con, req, s1, pos);
+  
+  if (!req->http_hdrs->hdr_host->len)
+    return (TRUE); /* don't bother checking valid vhost for default */
+
+  tmp = s1->len - tmp; /* length of added data */
+  if (chk && !s1->conf->malloc_bad &&
+      !httpd__chk_vhost(req->policy, s1, pos + 1, tmp))
+  {
+    if (req->policy->use_host_err_400) /* rfc2616 5.2 */
+      HTTPD_ERR_MSG_RET(req, 400, "Hostname not local", FALSE);
+    else
+    { /* what everything else does ... *sigh* */
+      if (s1->conf->malloc_bad)
+        return (TRUE);
+      
+      req->http_hdrs->hdr_host->len = 0;
+      vstr_del(s1, pos + 1, tmp);
+      httpd_sc_add_default_hostname(con, req, s1, pos);
+    }
+  }
+
+  return (TRUE);
+}
+
 static void http_app_err_file(struct Con *con, Httpd_req_data *req,
                               Vstr_base *fname, size_t *vhost_prefix_len)
 {
@@ -1359,18 +1500,10 @@ static void http_app_err_file(struct Con *con, Httpd_req_data *req,
   
   if (req->policy->use_vhosts_name)
   {
-    Vstr_base *data = con->evnt->io_r;
-    Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
-    size_t tmp = fname->len;
-    
-    if (!h_h->len)
-      httpd_sc_add_default_hostname(con, req, fname, fname->len);
-    else if (vstr_add_vstr(fname, fname->len, data,
-                           h_h->pos, h_h->len, VSTR_TYPE_ADD_DEF))
-      vstr_conv_lowercase(fname, tmp, h_h->len);
+    http_add_vhost(con, req, fname, fname->len, FALSE);
     vstr_add_cstr_ptr(fname, fname->len, "/");
   }
-
+  
   /* FIXME: This kind of looks like a hack, we tell the rest of the code that
    * the err req dir and any vhost info. is all part of the
    * "non-path prefix" basically so = does the right thing with limits.
@@ -1839,18 +1972,50 @@ int httpd_sc_add_default_hostname(struct Con *con,
 {
   const Httpd_policy_opts *opts = req->policy;
   const Vstr_base *d_h = opts->default_hostname;
-  struct sockaddr_in *sinv4 = EVNT_ACPT_SA_IN4(con->evnt);
   int ret = FALSE;
   
   ret = vstr_add_vstr(lfn, pos, d_h, 1, d_h->len, VSTR_TYPE_ADD_DEF);
 
-  ASSERT(sinv4->sin_family == AF_INET);
-  
-  if (ret && req->policy->add_def_port && (ntohs(sinv4->sin_port) != 80))
-    ret = vstr_add_fmt(lfn, pos + d_h->len, ":%hu", ntohs(sinv4->sin_port));
+  if (ret && req->policy->add_def_port)
+  { /* FIXME: ipv6 */
+    struct sockaddr_in *sinv4 = EVNT_ACPT_SA_IN4(con->evnt);
+
+    ASSERT(sinv4->sin_family == AF_INET);
+
+    if (ntohs(sinv4->sin_port) != 80)
+      ret = vstr_add_fmt(lfn, pos + d_h->len, ":%hu", ntohs(sinv4->sin_port));
+  }
 
   return (ret);
 }
+
+int httpd_sc_add_req_hostname(struct Con *con, Httpd_req_data *req,
+                              Vstr_base *s1, size_t pos)
+{
+  Vstr_base *http_data = con->evnt->io_r;
+  Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
+  
+  ASSERT(h_h->len);
+
+  if (vstr_add_vstr(s1, pos, http_data, h_h->pos, h_h->len, VSTR_TYPE_ADD_DEF))
+  {
+    if (req->http_host_port != 80) /* if port 80, ignore it */
+      vstr_add_sysfmt(s1, pos + h_h->len, ":%hu", req->http_host_port);
+    vstr_conv_lowercase(s1, pos + 1, h_h->len);
+  }
+
+  return (!!s1->conf->malloc_bad);
+}
+
+int httpd_sc_add_hostname(struct Con *con, Httpd_req_data *req,
+                          Vstr_base *s1, size_t pos)
+{
+  if (req->http_hdrs->hdr_host->len)
+    return (httpd_sc_add_req_hostname(con, req, s1, pos));
+
+  return (httpd_sc_add_default_hostname(con, req, s1, pos));
+}
+
 
 static void httpd_sc_add_default_filename(Httpd_req_data *req, Vstr_base *fname)
 {
@@ -1898,7 +2063,6 @@ void httpd_req_absolute_uri(struct Con *con, Httpd_req_data *req,
                             Vstr_base *lfn, size_t pos, size_t len)
 {
   Vstr_base *data = con->evnt->io_r;
-  Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
   size_t apos = pos - 1;
   size_t alen = lfn->len;
   int has_schema   = TRUE;
@@ -1939,11 +2103,7 @@ void httpd_req_absolute_uri(struct Con *con, Httpd_req_data *req,
     vstr_add_cstr_buf(lfn, apos, "http://");
     apos += lfn->len - alen;
     alen = lfn->len;
-    if (!h_h->len)
-      httpd_sc_add_default_hostname(con, req, lfn, apos);
-    else
-      vstr_add_vstr(lfn, apos,
-                    data, h_h->pos, h_h->len, VSTR_TYPE_ADD_ALL_BUF);
+    httpd_sc_add_hostname(con, req, lfn, apos);
     apos += lfn->len - alen;
   }
     
@@ -2973,15 +3133,11 @@ static int http_parse_host(struct Con *con, struct Httpd_req_data *req)
        * or if it's an "invalid" port number (Ie. == 0 || > 65535) */
       len -= tmp - pos; pos = tmp;
 
-      /* if it's port 80, pretend it's not there */
-      if (VEQ(data, pos, len, ":80") || VEQ(data, pos, len, ":"))
-        req->http_hdrs->hdr_host->len -= len;
-      else
-      {
-        len -= 1; pos += 1; /* skip the ':' */
-        if (vstr_spn_cstr_chrs_fwd(data, pos, len, "0123456789") != len)
-          HTTPD_ERR_MSG_RET(req, 400, "Port is not a number", FALSE);
-      }
+      if (!VEQ(data, pos, len, ":"))
+        if (!(req->http_host_port = httpd__parse_host_port(data, pos, len)))
+          HTTPD_ERR_MSG_RET(req, 400, "Port is not a valid number", FALSE);
+        
+      req->http_hdrs->hdr_host->len -= len;
     }
   }
 
@@ -3837,62 +3993,13 @@ int http_req_op_trace(struct Con *con, Httpd_req_data *req)
   return (http_fin_req(con, req));
 }
 
-/* characters valid in a hostname -- these are also safe unencoded in a URL */
-#define HTTPD__VALID_CSTR_CHRS_HOSTNAME     \
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"            \
-    "abcdefghijklmnopqrstuvwxyz"            \
-    "0123456789"                            \
-    ".-_"
-/* characters that are valid in a part of a URL _and_ in a file basename ...
- * without encoding */
-#define HTTPD__VALID_CSTR_CHRS_URL_FILENAME \
-    "!$,:=~" HTTPD__VALID_CSTR_CHRS_HOSTNAME
-
-static int httpd__valid_hostname(Vstr_base *s1, size_t pos, size_t len)
-{
-  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_HOSTNAME;
-  size_t tmp = 0;
-  
-   /* this is also checked via /./ path checking */
-  if (vstr_cmp_cstr_eq(s1, pos, len, "."))
-    return (FALSE);
-  
-  if (vstr_srch_cstr_buf_fwd(s1, pos, len, ".."))
-    return (FALSE); /* example..com */
-
-  /* canonical host affects these too */
-  if (VPREFIX(s1, pos, len, ".")) return (FALSE); /* .example.com  */
-  if (VSUFFIX(s1, pos, len, ".")) return (FALSE); /*  example.com. */
-  /* FIXME: can't easily do suffix dots due to port numbers */
-  
-  tmp = vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr);
-  if (tmp == len)
-    return (TRUE);
-
-  len -= tmp; pos += tmp;
-  if (vstr_export_chr(s1, pos) == ':') /* port, checks in http_parse_host() */
-  {
-    len -= 1; pos += 1;
-    ASSERT(len && (vstr_spn_cstr_chrs_fwd(s1, pos, len, "0123456789") == len));
-    return (TRUE);
-  }
-  
-  return (FALSE);
-}
-
-int httpd_valid_url_filename(Vstr_base *s1, size_t pos, size_t len)
-{
-  static const char cstr[] = HTTPD__VALID_CSTR_CHRS_URL_FILENAME;
-  return (vstr_spn_cstr_chrs_fwd(s1, pos, len, cstr) == len);
-}
-
 int httpd_init_default_hostname(Opt_serv_policy_opts *sopts)
 {
   Httpd_policy_opts *popts = (Httpd_policy_opts *)sopts;
   Vstr_base *nhn = popts->default_hostname;
   Vstr_base *chn = NULL;
-
-  if (!httpd__valid_hostname(nhn, 1, nhn->len))
+  
+  if (!httpd__valid_hostname(nhn, 1, nhn->len, FALSE))
     vstr_del(nhn, 1, nhn->len);
 
   if (nhn->len)
@@ -3912,48 +4019,6 @@ int httpd_init_default_hostname(Opt_serv_policy_opts *sopts)
   return (!nhn->conf->malloc_bad);
 }
 
-static int httpd__chk_vhost(const Httpd_policy_opts *popts,
-                            Vstr_base *lfn, size_t pos, size_t len)
-{
-  const char *vhost = NULL;
-  struct stat64 v_stat[1];
-  const Vstr_base *def_hname = popts->default_hostname;
-  int ret = -1;
-  
-  ASSERT(pos);
-
-  if (popts->use_internal_host_chk)
-  {
-    if (!httpd__valid_hostname(lfn, pos, len))
-      return (FALSE);
-  }
-  
-  if (!popts->use_host_chk)
-    return (TRUE);
-  
-  if (vstr_cmp_eq(lfn, pos, len, def_hname, 1, def_hname->len))
-    return (TRUE); /* don't do lots of work for nothing */
-
-  vstr_add_vstr(lfn, pos - 1, 
-		popts->document_root, 1, popts->document_root->len,
-                VSTR_TYPE_ADD_BUF_PTR);
-  len += popts->document_root->len;
-  
-  if (lfn->conf->malloc_bad || !(vhost = vstr_export_cstr_ptr(lfn, pos, len)))
-    return (TRUE); /* dealt with as errmem_req() later */
-  
-  ret = stat64(vhost, v_stat);
-  vstr_del(lfn, pos, popts->document_root->len);
-
-  if (ret == -1)
-    return (FALSE);
-
-  if (!S_ISDIR(v_stat->st_mode))
-    return (FALSE);
-  
-  return (TRUE);
-}
-
 static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
 {
   Vstr_base *data = con->evnt->io_r;
@@ -3962,50 +4027,34 @@ static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
   size_t h_h_pos = h_h->pos;
   size_t h_h_len = h_h->len;
   size_t orig_len = 0;
+  size_t dots = 0;  
+  
+  /* a lot of clients will pass example.com. for example.com ... fix them
+   * this can happen more than one time Eg. "wget www.and.org.." */
+  if (h_h_len)
+  {
+    dots = vstr_spn_cstr_chrs_rev(data, h_h_pos, h_h_len, ".");
+    if (dots == h_h_len)
+      h_h_len = 1; /* give 400s to hostname "." */
+    else
+      h_h_len -= dots;
+  
+    if (h_h_len && req->policy->use_canonize_host)
+    {
+      if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
+      { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
+    }
+    h_h->pos = h_h_pos;
+    h_h->len = h_h_len;
+  }
   
   if (!req->policy->use_vhosts_name)
     return (TRUE);
 
-  if (h_h_len && req->policy->use_canonize_host)
-  {
-    size_t dots = 0;
-    
-    dots = vstr_spn_cstr_chrs_fwd(data, h_h_pos, h_h_len, ".");
-    h_h_len -= dots; h_h_pos += dots;
-    
-    if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
-    { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
-
-    /* FIXME: can't easily do suffix dots due to port numbers */
-    dots = vstr_spn_cstr_chrs_rev(data, h_h_pos, h_h_len, ".");
-    h_h_len -= dots;
-  }
-  h_h->pos = h_h_pos;
-  h_h->len = h_h_len;
-    
   orig_len = fname->len;
-  if (!h_h_len)
-    httpd_sc_add_default_hostname(con, req, fname, 0);
-  else if (vstr_add_vstr(fname, 0, data, /* add as buf's, for lowercase op */
-                         h_h_pos, h_h_len, VSTR_TYPE_ADD_DEF))
-  {
-    vstr_conv_lowercase(fname, 1, h_h_len);
-    
-    if (!httpd__chk_vhost(req->policy, fname, 1, h_h_len))
-    {
-      if (req->policy->use_host_err_400) /* rfc2616 5.2 */
-        HTTPD_ERR_MSG_RET(req, 400, "Hostname not local", FALSE);
-      else
-      { /* what everything else does ... *sigh* */
-        if (fname->conf->malloc_bad)
-          return (TRUE);
+  if (!http_add_vhost(con, req, fname, 0, TRUE))
+    return (FALSE);
 
-        h_h->len = 0;
-        vstr_del(fname, 1, h_h_len);
-        httpd_sc_add_default_hostname(con, req, fname, 0);
-      }  
-    }
-  }
   vstr_add_cstr_ptr(fname, 0, "/");
 
   req->vhost_prefix_len = (fname->len - orig_len);

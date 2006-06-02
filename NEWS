@@ -1,3 +1,10 @@
+0.99.8 - 2006-06-02
+ Cleanups for 64bit, status page on none-running server, configuration
+numbers, chroot, logging scripts and hostname parsing.
+ Add index page.
+ Fixes for static builds, uLibc builds and disallow possible XSS on redirects in
+HTML interpeters.
+
 0.99.7 - 2006-03-06
  IO limiting. Status page. Optimizations for CPU usage, bug fixes and
 code cleanups. Can turn the HTTP/0.9 protocol off. Syslog

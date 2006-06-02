@@ -11,6 +11,6 @@ else
   exit 1;
 fi
 
-CFLAGS='-DVSTR_COMPILE_INLINE=0' $c \
+CFLAGS='-DVSTR_COMPILE_INLINE=0' $c --prefix=/usr --localstatedir=/var \
  --enable-debug --enable-debug-vstr --enable-debug-timer_q $@ && \
     make clean && make check

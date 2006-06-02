@@ -759,8 +759,9 @@ HTTPD_POLICY__EI int httpd_policy_ipv4_make(struct Con *con,
                                             struct sockaddr *sa, int *matches)
 {
   HTTPD_POLICY__ASSERT(con);
+  HTTPD_POLICY__ASSERT((sa == CON_CEVNT_SA(con)) || (sa == CON_SEVNT_SA(con)));
   
-  if (sa == EVNT_SA(con->evnt))
+  if (sa == CON_CEVNT_SA(con))
   {
     if (req)
       req->vary_star = HTTPD_POLICY__TRUE;
@@ -777,6 +778,7 @@ HTTPD_POLICY__EI int httpd_policy_ipv4_cidr_eq(struct Con *con,
                                                struct sockaddr *sa)
 {
   HTTPD_POLICY__ASSERT(con);
+  HTTPD_POLICY__ASSERT((sa == CON_CEVNT_SA(con)) || (sa == CON_SEVNT_SA(con)));
   
   if (sa == EVNT_SA(con->evnt))
   {

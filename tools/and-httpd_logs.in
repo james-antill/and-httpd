@@ -1,30 +1,116 @@
-#! /bin/bash -e
+#! @BASH_PATH@ -e
+
+# This probably needs configuring, as all syslog implementations are different
+# comment out if broken and don't care.
+# exit 0;
+
+export LC_ALL=C # syslog time "should" be in C locale.
 
 # Confish.
-KEEP_FOR_X_DAYS=91 # 13 * 7 == quarter of a year
+LOGS_KEEP_FOR_X_DAYS=91 # 13 * 7 == quarter of a year
 
-input_logs="@localstatedir@/log/messages.1 @localstatedir@/log/messages"
-and_httpd_logs_dir=@localstatedir@/log/and-httpd
+prefix="@prefix@" # localstatedir can use it...
 
-dtd="`date +'%y-%m-%d'`"
-dtm="`date +'%y-%m-%d'`"
+# Want to include all old files depending on how syslog/logrotate is configured
+IN_LOG="@localstatedir@/log/messages" # Main syslog file
+
+if [  -r "@localstatedir@/log/syslog" ]; then
+  IN_LOG="@localstatedir@/log/syslog" # Main syslog file
+fi
+
+LOGS_END_NUM=100
+
+AND_HTTPD_LOGS_DIR=@localstatedir@/log/and-httpd
+
+# If you are using the logrotate dateext option...
+LOGS_DATEEXT=false
+
+if [ -r /etc/sysconfig/and-httpd ]; then
+  . /etc/sysconfig/and-httpd
+fi
+
+# Let them just configure $IN_LOGS if they want
+if [ "x$IN_LOGS" = "x" ]; then
+  IN_LOGS="$IN_LOG"
+
+  if $LOGS_DATEEXT; then
+    for i in $(seq 1 $LOGS_END_NUM); do
+      # Not as long, if you do weekly/monthly rotations
+      dt=`date --date "$i days ago" +'%Y%m%d'`
+      IN_LOGS="$IN_LOG.$dt.gz $IN_LOG.$dt $IN_LOGS" 
+    done
+  else
+    for i in $(seq 1 $LOGS_END_NUM); do
+      IN_LOGS="$IN_LOG.$i.gz $IN_LOG.$i $IN_LOGS" 
+    done
+  fi
+fi
+
+# filename suffix format
+dto="`date +'%F'`"    # "2005-12-01"
+pdto="`date --date='1 day ago' +'%F'`"
+
+# syslog format
+dtg="`date +'%b %e'`" # "Dec  1"
+pdtg="`date --date='1 day ago' +'%b %e'`"
 
 grep=@prefix@/share/and-httpd-@VERSION@-tools/and-httpd-syslog-grep
 comb=@prefix@/share/and-httpd-@VERSION@-tools/and-httpd-syslog2apache-httpd-combined-log
 
-# This needs configuring, as we can't out all the different syslog stuff atm.
-exit 0;
-
-if [ ! -d $and_httpd_logs_dir ]; then
-  mkdir -p $and_httpd_logs_dir
+if [ ! -d $AND_HTTPD_LOGS_DIR ]; then
+  mkdir -p $AND_HTTPD_LOGS_DIR
 fi
 
-touch          $and_httpd_logs_dir/and-httpd-$dtd
-$grep --output $and_httpd_logs_dir/and-httpd-$dtd $input_logs
+function grep_comb_log()
+{
+  if [ -r "$AND_HTTPD_LOGS_DIR/and-httpd-$2" ]; then
+    TMPFILE=`mktemp "$AND_HTTPD_LOGS_DIR/and-httpd-$2.XXXXXXXXXX"` || exit 1
+    usetmp=true
+  else
+    TMPFILE="$AND_HTTPD_LOGS_DIR/and-httpd-$2"
+    usetmp=false
+  fi
 
-$comb --fast-check --sync-file \
-               $and_httpd_logs_dir/combined-and-httpd-$dtm \
-      --output $and_httpd_logs_dir/combined-and-httpd-$dtm \
-               $and_httpd_logs_dir/and-httpd-${dtm}*
+  $grep --skip-before "$2 at 00:00:00" --skip-missing \
+        --output "$TMPFILE" "^$1" $IN_LOGS
 
-find $and_httpd_logs_dir -mtime "+$KEEP_FOR_X_DAYS" -print0 | xargs -0 rm -f
+  if $usetmp; then
+    if cmp -s "$TMPFILE" "$AND_HTTPD_LOGS_DIR/and-httpd-$2"; then
+      rm -f   "$TMPFILE"
+    else
+      mv      "$TMPFILE" "$AND_HTTPD_LOGS_DIR/and-httpd-$2"
+    fi
+  fi
+
+  $comb --fast-check \
+        --sync-file "$AND_HTTPD_LOGS_DIR/combined-and-httpd-$2" \
+        --output    "$AND_HTTPD_LOGS_DIR/combined-and-httpd-$2" \
+                    "$AND_HTTPD_LOGS_DIR/and-httpd-$2"
+}
+
+# Do arbitrary dates, mainly for testing...
+if [ "x$1" != "x" ]; then
+  dto=`date --date="$1" +'%F'`
+  dtg=`date --date="$1" +'%b %e'`
+
+  grep_comb_log "$dtg" "$dto"
+  exit 0
+fi
+
+if [ ! -r "$AND_HTTPD_LOGS_DIR/and-httpd-$dto" ]; then
+# If "todays" file doesn't exist, do yesterdays once more
+  grep_comb_log "$pdtg" "$pdto"
+
+  ln -sf "and-httpd-$dto" \
+         "$AND_HTTPD_LOGS_DIR/and-httpd"
+  ln -sf "combined-and-httpd-$dto" \
+         "$AND_HTTPD_LOGS_DIR/combined-and-httpd"
+fi
+
+grep_comb_log "$dtg" "$dto"
+
+if [ $LOGS_KEEP_FOR_X_DAYS -gt 0 ]; then
+  # Remove old log files...
+  find $AND_HTTPD_LOGS_DIR -mtime "+$LOGS_KEEP_FOR_X_DAYS" -print0 | \
+  xargs -0 rm -f
+fi

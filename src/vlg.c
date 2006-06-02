@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004, 2005  James Antill
+ *  Copyright (C) 2004, 2005, 2006  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -504,8 +504,23 @@ void vlg_sc_bind_mount(const char *chroot_dir)
   
   if (stat64(src, st_src) == -1)
     err(EXIT_FAILURE, "stat(%s)", src);
+  
   if (stat64(dst, st_dst) == -1)
-    err(EXIT_FAILURE, "stat(%s)", dst);
+  { /* if it fails, try creating the /dev/log chroot file... */
+    if ((dst = vstr_export_cstr_ptr(tmp, 1, tmp->len - strlen("/log"))))
+      mkdir(dst, 0700);
+
+    if ((dst = vstr_export_cstr_ptr(tmp, 1, tmp->len)))
+    {
+      int fd = open(dst, O_TRUNC | O_CREAT | O_EXCL, 0600);
+      if (fd != -1)
+        close(fd);
+    }
+
+    /* try again, and fail this time... */
+    if (stat64(dst, st_dst) == -1)
+      err(EXIT_FAILURE, "stat(%s)", dst);
+  }
   
   if ((st_src->st_ino != st_dst->st_ino) ||
       (st_src->st_dev != st_dst->st_dev))

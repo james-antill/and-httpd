@@ -4,10 +4,53 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <time.h>
+#include <sys/time.h>
+
+#define OUTPUT_TYPE_HTML 0
+#define OUTPUT_TYPE_ATOM 1
+
+static const char *output_fname = "-";
+static int output_fd = STDOUT_FILENO;
+static unsigned long output_num = 0;
+static int output_fmode = 0664; /* or 0644 as default ? -- umask */
+
+static unsigned int output_type = OUTPUT_TYPE_HTML;
 
 static const char *def_prefix = "";
 
 static const char *css_fname = "dir_list.css";
+
+static void ex__open_num(const char *xtra)
+{
+  int flags = O_WRONLY | O_CREAT | O_TRUNC | O_NOCTTY;
+  int fd = -1;
+
+  if (!xtra)
+    fd = EX_UTILS_OPEN(output_fname, flags, output_fmode);
+  else
+  { /* dead code, slideshow ? */
+    Vstr_base *fname = vstr_dup_cstr_ptr(NULL, output_fname);
+    const char *ptr = NULL;
+    int save_errno = 0;
+    
+    vstr_add_sysfmt(fname, fname->len, "-%lu%s", ++output_num, xtra);
+
+    if (fname->conf->malloc_bad ||
+        !(ptr = vstr_export_cstr_ptr(fname, 1, fname->len)))
+      errno = ENOMEM, err(EXIT_FAILURE, "open(%s)", output_fname);
+    
+    fd = EX_UTILS_OPEN(ptr, flags, output_fmode);
+    
+    save_errno = errno; vstr_free_base(fname); errno = save_errno;
+  }
+  
+  if (fd == -1)
+    err(EXIT_FAILURE, "open(%s)", output_fname);
+  io_fd_set_o_nonblock(fd);
+
+  output_fd = fd;
+}
 
 #define SUB_CODE(x) do {                                \
       if (!vstr_sub_cstr_buf(s1, pos, 1, x))            \
@@ -150,7 +193,7 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
     if (!type->pos)
       vstr_add_cstr_buf(s1, s1->len, " <td class=\"c3\"></td>");
     else
-    { /* FIXME: add option to skip for block devices etc. */
+    {
       val = vstr_parse_uintmax(s2, type->pos, type->len, 10, NULL, NULL);
       
       vstr_add_cstr_buf(s1, s1->len, " <td class=\"c3\">");
@@ -179,19 +222,50 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
 }
 
 static void ex_dir_list2html_process_limit(Vstr_base *s1, Vstr_base *s2,
-                                           int *parsed_header, int *row_num)
+                                           int *parsed_header, int *row_num,
+                                           int fd)
 {
   while (s2->len)
   { /* Finish processing read data (try writing if we need memory) */
     int proc_data = ex_dir_list2html_process(s1, s2, parsed_header, row_num);
 
-    if (!proc_data && (io_put(s1, STDOUT_FILENO) == IO_BLOCK))
-      io_block(-1, STDOUT_FILENO);
+    if (!proc_data && (io_put(s1, fd) == IO_BLOCK))
+      io_block(-1, fd);
   }
+}
+
+static const char *atom_time(time_t cur, char *ret, size_t sz)
+{
+  const struct tm *tm = gmtime(&cur);
+    
+  strftime(ret, sz, "%Y-%m-%dT%H:%M:%SZ", tm);
+
+  return (ret);
 }
 
 static void ex_dir_list2html_beg(Vstr_base *s1, const char *fname)
 {
+  char buf[1024];
+           
+  switch (output_type)
+  {
+    case OUTPUT_TYPE_ATOM:
+  vstr_add_fmt(s1, s1->len, "\
+<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
+\n\
+<!-- <?xml-stylesheet href=\"http://www.and.org/styles/atom.css\" type=\"text/css\"?> -->\n\
+<!-- <?xml-stylesheet href=\"http://www.and.org/styles/atom-to-html-0.2.xsl\" type=\"text/xsl\"?> -->\n\
+\n\
+<feed xmlns=\"http://www.w3.org/2005/Atom\">\n\
+\n\
+<title>Directory listing of %s</title>\n\
+\n\
+<updated>%s</updated>\n\
+", fname, atom_time(time(NULL), buf, sizeof(buf)));
+      break;
+      
+    case OUTPUT_TYPE_HTML:
+      
   /* DTD from: http://www.w3.org/QA/2002/04/valid-dtd-list.html */
   vstr_add_fmt(s1, s1->len, "\
 <!doctype html public \"-//W3C//DTD HTML 4.01//EN\"\n\
@@ -213,20 +287,34 @@ static void ex_dir_list2html_beg(Vstr_base *s1, const char *fname)
   \n\
   <tbody>\n\
 ", fname, css_fname, fname);
+
+    ASSERT_NO_SWITCH_DEF();
+  }
 }
 
 static void ex_dir_list2html_end(Vstr_base *s1)
 {
+  switch (output_type)
+  {
+    case OUTPUT_TYPE_ATOM:
+  vstr_add_cstr_buf(s1, s1->len, "\n\
+</feed>\n\
+");
+
+    case OUTPUT_TYPE_HTML:
   vstr_add_cstr_buf(s1, s1->len, "\n\
   </tbody>\n\
   </table>\n\
  </body>\n\
 </html>\n\
 ");
+
+    ASSERT_NO_SWITCH_DEF();
+  }
 }
 
-static void ex_dir_list2html_read_fd_write_stdout(Vstr_base *s1, Vstr_base *s2,
-                                                  int fd)
+static void ex_dir_list2html_read_fd_write_fd(Vstr_base *s1, Vstr_base *s2,
+                                              int rfd, int wfd)
 {
   int parsed_header[1] = {FALSE};
   int row_num[1] = {0};
@@ -234,19 +322,19 @@ static void ex_dir_list2html_read_fd_write_stdout(Vstr_base *s1, Vstr_base *s2,
   while (TRUE)
   {
     int io_w_state = IO_OK;
-    int io_r_state = io_get(s2, fd);
+    int io_r_state = io_get(s2, rfd);
 
     if (io_r_state == IO_EOF)
       break;
 
     ex_dir_list2html_process(s1, s2, parsed_header, row_num);
     
-    io_w_state = io_put(s1, STDOUT_FILENO);
+    io_w_state = io_put(s1, wfd);
 
-    io_limit(io_r_state, fd, io_w_state, STDOUT_FILENO, s1);    
+    io_limit(io_r_state, rfd, io_w_state, wfd, s1);
   }
   
-  ex_dir_list2html_process_limit(s1, s2, parsed_header, row_num);
+  ex_dir_list2html_process_limit(s1, s2, parsed_header, row_num, wfd);
 }
 
 int main(int argc, char *argv[])
@@ -255,6 +343,7 @@ int main(int argc, char *argv[])
   Vstr_base *s2 = ex_init(&s1); /* init the library etc. */
   int count = 1; /* skip the program name */
   const char *def_name = "&lt;stdin&gt;";
+  const char *output_tname = "html";
   
   if (!vstr_cntl_conf(s1->conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
       !vstr_sc_fmt_add_all(s1->conf))
@@ -274,10 +363,13 @@ int main(int argc, char *argv[])
     EX_UTILS_GETOPT_CSTR("css-filename", css_fname);
     EX_UTILS_GETOPT_CSTR("cssfilename",  css_fname);
     EX_UTILS_GETOPT_CSTR("name",         def_name);
+    /*    EX_UTILS_GETOPT_CSTR("output",       output_fname);
+          EX_UTILS_GETOPT_CSTR("style",        output_fname); */
+    EX_UTILS_GETOPT_NUM("filemode",      output_fmode);
     else if (!strcmp("--version", argv[count]))
     { /* print version and exit */
       vstr_add_fmt(s1, 0, "%s", "\
-jdir_list2html 1.0.0\n\
+and-dir_list2html 1.0.0\n\
 Written by James Antill\n\
 \n\
 Uses Vstr string library.\n\
@@ -286,33 +378,48 @@ Uses Vstr string library.\n\
     }
     else if (!strcmp("--help", argv[count]))
     { /* print version and exit */
+     usage:
       vstr_add_fmt(s1, 0, "%s", "\
-Usage: jdir_list2html [FILENAME]...\n\
-   or: jdir_list2html OPTION\n\
+Usage: and-dir_list2html [FILENAME]...\n\
+   or: and-dir_list2html OPTION\n\
 Output filenames.\n\
 \n\
-      --help         - Display this help and exit\n\
-      --version      - Output version information and exit\n\
+      --help         - Display this help and exit.\n\
+      --version      - Output version information and exit.\n\
       --css-filename - Location of css used HTML.\n\
-      --name         - Name to be used if input from stdin\n\
-      --prefix-path  - Prefix for href on each name in directory listing\n\
-      --             - Treat rest of cmd line as input filenames\n\
+      --name         - Name to be used if input from stdin.\n\
+      --prefix-path  - Prefix for href on each name in directory listing.\n\
+      --output       - Filename to output to, default is stdout.\n\
+      --filemode     - Mode to create output file with.\n\
+      --             - Treat rest of cmd line as input filenames.\n\
 \n\
 Report bugs to James Antill <james@and.org>.\n\
 ");
+      /*
+    --style         - Instead of a single page, output a slideshow of files.\n\
+        type = html | atom\n\
+      */
       goto out;
     }
     else
       break;
     ++count;
   }
+
+  if (0) { }
+  else if (CSTREQ(output_tname, "html"))      output_type = OUTPUT_TYPE_HTML;
+  else if (CSTREQ(output_tname, "atom"))      output_type = OUTPUT_TYPE_ATOM;
+  else goto usage;
+    
+  if (!CSTREQ(output_fname, "-"))
+    ex__open_num(NULL);
   
   /* if no arguments are given just do stdin to stdout */
   if (count >= argc)
   {
     io_fd_set_o_nonblock(STDIN_FILENO);
     ex_dir_list2html_beg(s1, def_name);
-    ex_dir_list2html_read_fd_write_stdout(s1, s2, STDIN_FILENO);
+    ex_dir_list2html_read_fd_write_fd(s1, s2, STDIN_FILENO, output_fd);
     ex_dir_list2html_end(s1);
   }
   
@@ -323,7 +430,7 @@ Report bugs to James Antill <james@and.org>.\n\
     int fd = io_open(argv[count]);
 
     ex_dir_list2html_beg(s1, argv[count]);
-    ex_dir_list2html_read_fd_write_stdout(s1, s2, fd);
+    ex_dir_list2html_read_fd_write_fd(s1, s2, fd, output_fd);
     ex_dir_list2html_end(s1);
 
     if (close(fd) == -1)
@@ -334,7 +441,7 @@ Report bugs to James Antill <james@and.org>.\n\
 
   /* output all remaining data */
  out:
-  io_put_all(s1, STDOUT_FILENO);
+  io_put_all(s1, output_fd);
 
   exit (ex_exit(s1, s2));
 }

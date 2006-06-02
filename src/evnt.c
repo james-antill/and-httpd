@@ -45,7 +45,7 @@
 #include <sys/sendfile.h>
 
 /* FIXME: Should do better autoconf checks... */
-#ifdef __linux__
+#if defined(__linux__)
 /* Linux doesn't let TCP_NODELAY be config., like Solaris ... and maybe *BSD?
  * and doesn't inherit socket flags from accept() like *BSD */
 # define HAVE_TCP_NODELAY_CONFIG FALSE
@@ -53,7 +53,7 @@
 # define HAVE_TCP_NODELAY_CONFIG TRUE
 #endif
 
-#ifdef __BSD__
+#if defined(__BSD__)
 /* Linux doesn't inherit socket flags from accept() like *BSD ...
  * and maybe Solaris? */
 # define HAVE_SOCK_FLAGS_INHERIT TRUE
@@ -73,22 +73,22 @@
 #define CONF_GETTIMEOFDAY_TIME TRUE /* does tv_sec contain time(NULL) */
 
 #ifdef CONF_FULL_STATIC
-# define EVNT__RESOLVE_NAME(saddr, x) do {                               \
+# define EVNT__RESOLVE_NAME(saddr, x) do {                     \
    if ((saddr->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
-     saddr->sin_addr.s_addr = htonl(INADDR_ANY);            \
+     saddr->sin_addr.s_addr = htonl(INADDR_ANY);               \
  } while (FALSE)
 #else
 # include <netdb.h>
-# define EVNT__RESOLVE_NAME(saddr, x) do {                               \
-   if ((saddr->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE) \
+# define EVNT__RESOLVE_NAME(saddr, x) do {                              \
+   if ((saddr->sin_addr.s_addr = inet_addr(x)) == INADDR_NONE)          \
    {                                                                    \
      struct hostent *h = gethostbyname(x);                              \
                                                                         \
-     saddr->sin_addr.s_addr = htonl(INADDR_ANY);            \
+     saddr->sin_addr.s_addr = htonl(INADDR_ANY);                        \
      if (h)                                                             \
-       memcpy(&saddr->sin_addr.s_addr,                      \
+       memcpy(&saddr->sin_addr.s_addr,                                  \
               h->h_addr_list[0],                                        \
-              sizeof(saddr->sin_addr.s_addr));              \
+              sizeof(saddr->sin_addr.s_addr));                          \
    }                                                                    \
  } while (FALSE)
 #endif
@@ -138,8 +138,6 @@ struct sock_fprog
 #include "evnt.h"
 
 #include "mk.h"
-
-#define CSTREQ(x,y) (!strcmp(x,y))
 
 volatile sig_atomic_t evnt_child_exited = FALSE;
 
@@ -908,7 +906,8 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
 
-  unlink(fname);
+  if (unlink(fname) != -1)
+    vlg_warn(vlg, "HAD to unlink(%s) for bind\n", fname);
   
   if (bind(fd, EVNT_SA(evnt), alloc_len) == -1)
     goto bind_fail;

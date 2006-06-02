@@ -22,13 +22,5 @@ conf_DATA = and-httpd.conf mime_types_extra.txt
 confddir = $(sysconfdir)/and-httpd/conf.d
 confd_DATA = README _redirect-index.conf _,tools.conf _io-limiting.conf
 
-wwwconfdir   = $(localstatedir)/www/conf
-wwwconf_DATA = status status.html status.html.gz status.html.bz2
-
-wwwhtmldir   =  $(localstatedir)/www/html
-wwwhtml_DATA =  
-wwwgendir    =  $(localstatedir)/www/generated_html
-wwwgen_DATA  =  
-
 # Generated from autoconf
 CLEANFILES = $(initd_SCRIPTS)

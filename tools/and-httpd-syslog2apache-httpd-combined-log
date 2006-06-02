@@ -63,23 +63,27 @@ sub parse_syslog_line
 
     return undef # Match syslog line...
       unless /^
-	      (\w+)         \s # Month
-	      (\d\d|\s\d)   \s # Day
-	      (\d+:\d+:\d+) \s # Time
-	      \w+           \s # Logging host
-	      (?:j|and-)httpd  # It's the and-httpd server
-	      \[ \d+ \]        # Pid of web server
-	      :             \s # MSG Seperator...
+	      (?: (\d{4,})  \s )? # Year?
+	      (\w+)         \s    # Month
+	      (\d\d|\s\d)   \s    # Day
+	      (\d+:\d+:\d+) \s    # Time
+	      \w+           \s    # Logging host
+	      (?:j|and-)httpd     # It's the and-httpd server
+	      \[ \d+ \]           # Pid of web server
+	      :             \s    # MSG Seperator...
 	      (.+)
 	      $/x;
 
-    my ($mon, $day, $tm, $msg) = ($1, $2, $3, $4);
-    my $year = shift;
-    my $file_mon = shift;
+    my ($year, $mon, $day, $tm, $msg) = ($1, $2, $3, $4, $5);
 
+    my $passed_year = shift;
+    my $file_mon = shift;
     # Deal with year rollover...
     if (exists $mon_map->{$mon} && ($mon_map->{$mon} < $file_mon))
-      { $year--; }
+      { $passed_year--; }
+
+    if (! defined($year))
+    { $year = $passed_year; }
 
     my $off = $global_off; # FIXME: Assumes offset is constant *sighs*
     # my $off = "+0000"; # FIXME: Assumes syslog is in GMT (wrong)
@@ -92,7 +96,7 @@ sub parse_syslog_line
     if (0) {}
     elsif (/^REQ \s (GET|HEAD)                   \s
 	    from \[ (\d+.\d+.\d+.\d+) [@] \d+ \] \s # IP
-	    ret  \[ (\d+) \s [^]]+ \]            \s            # return code
+	    ret  \[ (\d+) \s [^]]+ \]            \s # return code
 	    sz   \[ [^:]+ : (\d+) \]             \s # Size
 	    host \[ ".*?" \]                     \s # Host header
 	    UA   \[ "(.*?)" \]                   \s # User-agent header

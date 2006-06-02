@@ -379,10 +379,33 @@ sub setup
 	    $root . "/foo.example.com/corner/index.html",
 	    $root . "/foo.example.com/there",
 	    $root . "/foo.example.com:1234",
+	    $conf_root . "/conf.d",
 	    $conf_root . "/foo.example.com/conf2",
 	    $conf_root . "/foo.example.com/conf3",
 	    $conf_root . "/foo.example.com/conf4",
 	    $err_conf_7_root . "/foo.example.com"]);
+
+    my @conf_httpd_tsts = glob("$ENV{_TSTDIR}/ex_conf_httpd_tst_*");
+    for (1..scalar(@conf_httpd_tsts))
+      {
+	my $src_conf = "../../$ENV{_TSTDIR}/ex_conf_httpd_tst_$_";
+	if ($_ < 2)
+	  {
+	    symlink($src_conf, "$conf_root/conf.d/__$_.conf");
+	  }
+	elsif ($_ < 10)
+	  {
+	    symlink($src_conf, "$conf_root/conf.d/_$_.conf");
+	  }
+	else
+	  {
+	    symlink($src_conf, "$conf_root/conf.d/$_.conf");
+	  }
+      }
+    make_html(0, "ERR",    "$conf_root/conf.d/index.html");
+    make_html(0, "ERR",    "$conf_root/conf.d/.ignored.conf");
+    make_html(0, "ERR",    "$conf_root/conf.d/ignored.conf~");
+    make_html(0, "ERR",    "$conf_root/conf.d/x");
 
     make_html(1, "root",    "$root/index.html");
     make_html(2, "default", "$root/default/index.html");
@@ -542,8 +565,8 @@ if (@ARGV)
     success();
   }
 
-our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP strictness headers allow-spaces true))'";
-our $conf_args_strict = " --configuration-data-and-httpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))'";
+our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP strictness headers allow-spaces true))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+our $conf_args_strict = " --configuration-data-and-httpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
 
 sub httpd_vhost_tst
   {
@@ -559,10 +582,18 @@ sub conf_tsts
     my $beg = shift;
     my $end = shift;
     my $args = ' --configuration-data-daemon "rlimit CORE <unlimited>"';
-#    my $args = '';
+    $args .= " --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
 
-    for ($beg..$end)
-      { $args .= " -C $ENV{_TSTDIR}/ex_conf_httpd_tst_$_"; }
+    my @conf_httpd_tsts = glob("$ENV{_TSTDIR}/ex_conf_httpd_tst_*");
+    if (($beg == 1) && ($end == scalar(@conf_httpd_tsts)))
+      {
+	$args .= " --config-dir $conf_root/conf.d";
+      }
+    else
+      {
+	for ($beg..$end)
+	  { $args .= " -C $ENV{_TSTDIR}/ex_conf_httpd_tst_$_"; }
+      }
 
     daemon_init("and-httpd", $root, $args);
     my $list_pid = http_cntl_list();

@@ -34,7 +34,7 @@ function del()
 
 function linkup()
 {
-  for dir in src tools; do
+  for dir in src; do
   cd $dir
 
   lndir ../$s/../$dir
@@ -60,6 +60,6 @@ function cov()
   $s/lcov.sh $type
 }
 
-cov dbg --enable-debug # --enable-debug-vstr
+cov dbg --enable-debug --enable-debug-vstr --enable-debug-timer_q
 cov opt
 

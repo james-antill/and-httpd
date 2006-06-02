@@ -77,7 +77,7 @@ my $cmds = <<EOL;
  ${prefix}dir_list --size --follow -- '$dir_loc' | \
  ${prefix}dir_filter $filter_args | \
  ${prefix}dir_sort $sort_args | \
- ${prefix}dir_list2html --name '$dir_name' $html_args > '$index_loc'
+ ${prefix}dir_list2html --name '$dir_name' $html_args --output '$index_loc'
 EOL
 
 system($cmds);

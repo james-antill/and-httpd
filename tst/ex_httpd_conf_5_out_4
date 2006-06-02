@@ -1,6 +1,6 @@
 HTTP/1.1 404 Not Found
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -8,7 +8,7 @@ Content-Length: 324
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -19,7 +19,7 @@ Content-Length: 6
 a txt
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -30,7 +30,7 @@ Content-Length: 6
 a txt
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept,Accept-Encoding
@@ -40,7 +40,7 @@ Content-Length: 7
 a html
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept,Accept-Encoding
@@ -50,7 +50,7 @@ Content-Length: 6
 a txt
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept,Accept-Encoding
@@ -60,7 +60,7 @@ Content-Length: 7
 a html
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept,Accept-Encoding
@@ -70,7 +70,7 @@ Content-Length: 6
 a txt
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 04 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

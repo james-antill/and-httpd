@@ -503,8 +503,10 @@ static void serv_cmd_line(int argc, char *argv[])
    
    {"configuration-file", required_argument, NULL, 'C'},
    {"config-file",        required_argument, NULL, 'C'},
+   {"conf-file",          required_argument, NULL, 'C'},
    {"configuration-directory", required_argument, NULL, 140},
-   {"config-dir",         required_argument, NULL, 140},
+   {"config-dir",              required_argument, NULL, 140},
+   {"conf-dir",                required_argument, NULL, 140},
    {"configuration-data-daemon", required_argument, NULL, 143},
    {"config-data-daemon",        required_argument, NULL, 143},
    {"configuration-data-httpd", required_argument, NULL, 144},
@@ -595,7 +597,7 @@ static void serv_cmd_line(int argc, char *argv[])
                                     httpd_sc_conf_main_parse_dir_file))
           goto out_err_conf_msg;
         break;
-      case 143: /* FIXME: ... need to integrate */
+      case 143:
         if (!opt_serv_conf_parse_cstr(out, httpd_opts->s, optarg))
           goto out_err_conf_msg;
       break;
@@ -652,13 +654,11 @@ static void serv_cmd_line(int argc, char *argv[])
 
   {
     const char *pid_file = NULL;
-    const char *cntl_file = NULL;
     Opt_serv_opts *opts = httpd_opts->s;
     
     vlg->syslog_facility = opts->syslog_facility;
   
     OPT_SC_EXPORT_CSTR(pid_file,   opts->pid_file,   FALSE, "pid file");
-    OPT_SC_EXPORT_CSTR(cntl_file,  opts->cntl_file,  FALSE, "control file");
     OPT_SC_EXPORT_CSTR(chroot_dir, opts->chroot_dir, FALSE, "chroot directory");
     
     if (opts->drop_privs)
@@ -698,8 +698,8 @@ static void serv_cmd_line(int argc, char *argv[])
     if (pid_file)
       vlg_pid_file(vlg, pid_file);
 
-    if (cntl_file)
-      cntl_make_file(vlg, cntl_file);
+    if (opts->cntl_file->len)
+      cntl_make_file(vlg, opts->cntl_file);
 
     if (chroot_dir)
     { /* preload locale info. so syslog can log in localtime, this doesn't work
@@ -745,7 +745,10 @@ static void serv_cmd_line(int argc, char *argv[])
     }
 
     if (opts->num_procs > 1)
-      cntl_sc_multiproc(vlg, opts->num_procs, !!cntl_file, opts->use_pdeathsig);
+    {
+      int has_cntl = !!opts->cntl_file->len;
+      cntl_sc_multiproc(vlg, opts->num_procs, has_cntl, opts->use_pdeathsig);
+    }
     
     if (opts->make_dumpable && (PROC_CNTL_DUMPABLE(TRUE) == -1))
       vlg_warn(vlg, "prctl(%s, %s): %m\n", "PR_SET_DUMPABLE", "TRUE");
@@ -781,6 +784,8 @@ int main(int argc, char *argv[])
   if (sizeof(uintmax_t) != sizeof(VSTR_AUTOCONF_uintmax_t))
     errx(EXIT_FAILURE, "uintmax_t size is different between program and Vstr");
 
+  assert((F(M0(1, 1)), 1)); /* for coverage */
+  
   serv_init();
 
   serv_cmd_line(argc, argv);

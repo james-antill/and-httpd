@@ -135,10 +135,11 @@ fi
 %config(noreplace) %{_sysconfdir}/and-httpd/and-httpd.conf
 %config(noreplace) %{_sysconfdir}/and-httpd/conf.d/_*.conf
 %config %{_sysconfdir}/and-httpd/mime_types_extra.txt
-%{wwwdir}/err/*
-%{wwwdir}/conf/*
+%config(noreplace) %{wwwdir}/err/*
+%config(noreplace) %{wwwdir}/conf/*
 %{wwwdir}/conf_tmpl/*
-%{wwwdir}/html
+%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py
+%config(noreplace) %{wwwdir}/html/*
 %{wwwdir}/generated_html
 %doc
 %{_datadir}/doc/and-httpd-@VERSION@

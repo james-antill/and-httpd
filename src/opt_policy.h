@@ -22,20 +22,26 @@ extern int opt_policy_copy(Opt_serv_policy_opts *,
 extern Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *,
                                              const Conf_parse *, Conf_token *);
 
-extern void opt_policy_add(Opt_serv_opts *, Opt_serv_policy_opts *);
-   
+extern void opt_policy_add(Opt_serv_opts *, Opt_serv_policy_opts *)
+    COMPILE_ATTR_NONNULL_A();
+
 extern int opt_policy_ipv4_make(Conf_parse *, Conf_token *,
-                                unsigned int, struct sockaddr *, int *);
-extern int opt_policy_ipv4_cidr_eq(Opt_policy_ipv4 *, struct sockaddr *);
+                                unsigned int, struct sockaddr *, int *)
+    COMPILE_ATTR_NONNULL_A();
+extern int opt_policy_ipv4_cidr_eq(Opt_policy_ipv4 *, struct sockaddr *)
+    COMPILE_ATTR_NONNULL_A();
 
 
 extern Opt_serv_policy_opts *opt_policy_sc_conf_make(Opt_serv_opts *,
                                                      const Conf_parse *,
                                                      const Conf_token *,
-                                                     const Vstr_sect_node *);
+                                                     const Vstr_sect_node *)
+    COMPILE_ATTR_NONNULL_A();
 extern unsigned int opt_policy_sc_conf_parse(Opt_serv_opts *,
                                              const Conf_parse *, Conf_token *,
-                                             Opt_serv_policy_opts **);
+                                             Opt_serv_policy_opts **,
+                                             Conf_token **)
+    COMPILE_ATTR_NONNULL_A();
 extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 
 

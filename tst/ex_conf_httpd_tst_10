@@ -7,7 +7,8 @@
 (org.and.httpd-conf-main-1.0
 
   (org.and.daemon-conf-1.0
-    (listen addr 127.0.9.1)
+    (listen addr 127.0.9.1 queue-length <max>
+            (filter = <HOME> root <ENV> HOME <cwd> <hostname>) filter <none>)
 
     (cntl-file ex_httpd_cntl))
 
@@ -109,3 +110,60 @@
       (Location: <<=
        http://www.ircache.net/cgi-bin/cacheability.py?descend=on&query=)
        return <temporary-redirect>)
+
+; Do extra coverage stuff....
+
+(org.and.daemon-conf-1.0
+  (logging syslog 
+      facility AUTH
+      facility AUTHPRIV
+      facility CRON
+      facility DAEMON
+      facility FTP
+      facility LPR
+      facility MAIL
+      facility NEWS
+      facility FTP
+      facility USER
+      facility UUCP
+      facility LOCAL 0
+      facility LOCAL 1
+      facility LOCAL 2
+      facility LOCAL 3
+      facility LOCAL 4
+      facility LOCAL 5
+      facility LOCAL 6
+      facility LOCAL 7
+      facility LOCAL0
+      facility LOCAL1
+      facility LOCAL2
+      facility LOCAL3
+      facility LOCAL4
+      facility LOCAL5
+      facility LOCAL6
+      facility LOCAL7)
+  (drop-privs on
+      keep-cap-fowner true
+      uid 0
+      gid 0
+      username  root
+      groupname root)
+  (drop-privs off)
+  (daemonize)
+  (daemonize)
+  (chroot '')
+  (match-init [hostname-eq abcd.example.com])
+  (match-init [else and ! or uid-eq 0 euid-eq 0 name-eq abcd 
+               version-eq 1.0 version<= 0.0.1])
+
+  (rlimit CORE 1)
+  (rlimit CORE += <num>) ; == 2
+  (rlimit CORE +=     2) ; == 4
+  (rlimit CORE *= <num>) ; == 16
+  (rlimit CORE /=     2) ; == 8
+  (rlimit CORE -=     8) ; == 0
+  (rlimit CORE  =     4) ; == 4
+  (rlimit CORE %=     3) ; == 1
+  (rlimit CORE   <zero>) ; == 0
+
+)

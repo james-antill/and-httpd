@@ -1,3 +1,68 @@
+2006-06-02  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.8
+
+2006-06-02  James Antill  <james@and.org>
+
+	* html/Makefile.am (wwwhtml_DATA): Add a simple index.en.html.
+
+2006-06-01  James Antill  <james@and.org>
+
+	* tools/and-httpd.conf: Fix chroot configuration.
+
+	* tools/and-httpd-syslog2apache-httpd-combined-log
+	(parse_syslog_line): Parse years in dates, as output from
+	and-httpd-syslog-grep.
+
+	* tools/and-httpd-syslog-grep (grep_syslog_and_httpd_line): Add year
+	to syslog date format. Also add skip-year option.
+	(grep_syslog_and_httpd_line): Add skip-match option.
+
+	* src/opt_policy.c (opt_policy_sc_conf_parse): Allow multiple policies
+	to be changed at once.
+
+	* src/vlg.c (vlg_sc_bind_mount): Try to create the /dev/log in the
+	chroot() if it doesn't exist.
+
+2006-05-27  James Antill  <james@and.org>
+
+	* tools/and-httpd-syslog-grep (grep_syslog_and_httpd_line): Add option
+	to skip old files.
+
+	* tools/and-httpd_logs.in: Fix the logging scripts to pretty much work
+	by default.
+
+	* tools/and-httpd-syslog-grep (grep_syslog_and_httpd_line): Add
+	option to skip files that don't exist.
+	(grep_syslog_and_httpd_line): Add regexp matching.
+
+2006-05-11  James Antill  <james@and.org>
+
+	* src/cntl.c (cntl__cb_func_acpt_free): unlink the old cntl file when
+	we close the socket.
+
+	* tools/and-httpd-status (open): If and-httpd cntl file isn't there,
+	don't do anything.
+
+2006-05-09  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv_sc_make_uintmax): Allow symbolic NONE for
+	numbers.
+
+2006-05-05  James Antill  <james@and.org>
+
+	* src/httpd.c (httpd_sc_add_req_hostname): Helper function for the
+	request hostname ... also means the output is always lowercase (Ie. 
+	redirects).
+
+2006-04-22  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv__sort_conf_files): Have varying _ levels.
+
+2006-04-20  James Antill  <james@and.org>
+
+	* src/httpd.c (http_parse_quality): Fix type of num_len *sigh*.
+
 2006-04-08  James Antill  <james@and.org>
 
 	* src/opt_serv.c (strsignal): Explicit test for strsignal() to avoid
@@ -58,8 +123,6 @@
 	* and-httpd.spec.in: Add the perl-File-Slurp requires in.
 
 	* tools/and-httpd_logs: Fix typo for two digit years.
-
-	* tools/and-httpd.conf: Fix chrrot configuration.
 
 	* tools/and-httpd-status (prnt_tail): Fix inter. proc. communication
 	events.

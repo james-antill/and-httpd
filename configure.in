@@ -61,7 +61,7 @@ AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
-VERSION=0.99.7
+VERSION=0.99.8
 PACKAGE=and-httpd
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
@@ -112,6 +112,9 @@ AC_PATH_PROG(ETAGS_PATH, etags, $TRUE_PATH,
 
 AC_PATH_PROG(SED_PATH, sed, $TRUE_PATH,
              $PATH:/usr/bin:/bin:/usr/local/bin:/usr/gnu/bin:/usr/local/gnu/bin:/opt/gnu/bin)
+
+AC_PATH_PROG(BASH_PATH, bash, $TRUE_PATH,
+             $PATH:/usr/bin:/bin:/usr/local/bin:/usr/local/perl:/usr/gnu/bin:/usr/local/gnu/bin:/opt/gnu/bin)
 
 AC_PATH_PROG(PERL_PATH, perl, $TRUE_PATH,
              $PATH:/usr/bin:/bin:/usr/local/bin:/usr/local/perl:/usr/gnu/bin:/usr/local/gnu/bin:/opt/gnu/bin)

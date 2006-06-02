@@ -639,6 +639,23 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
                                       d_h, 1, d_h->len,
                                       HTTPD_MATCH__TYPE_REQ_HDR_CASE_EQ);
   }
+  else if (OPT_SERV_SYM_EQ("port-eq") || OPT_SERV_SYM_EQ("port=="))
+  {
+    Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
+    unsigned int tmp = 0;
+    
+    OPT_SERV_X_SINGLE_UINT(tmp);
+
+    if (h_h->len)
+      *matches = tmp == req->http_host_port;
+    else
+    { /* FIXME: ipv6 */
+      struct sockaddr_in *sinv4 = EVNT_ACPT_SA_IN4(con->evnt);
+      
+      ASSERT(sinv4->sin_family == AF_INET);
+      *matches = tmp == ntohs(sinv4->sin_port);
+    }
+  }
   else if (OPT_SERV_SYM_EQ("User-Agent:") ||
            /* compat */
            OPT_SERV_SYM_EQ("user-agent-eq") || OPT_SERV_SYM_EQ("UA-eq") ||
@@ -1324,21 +1341,27 @@ static int httpd__conf_main_policy(Httpd_opts *opts,
                                    Conf_parse *conf, Conf_token *token)
 {
   Opt_serv_policy_opts *popts = NULL;
+  Conf_token *ntoken = NULL;
   unsigned int cur_depth = opt_policy_sc_conf_parse(opts->s, conf, token,
-                                                    &popts);
-  int clist = FALSE;
+                                                    &popts, &ntoken);
   
   if (!cur_depth)
     return (FALSE);
-  
-  CONF_SC_MAKE_CLIST_MID(cur_depth, clist);
-  
-  else if (httpd__conf_main_policy_d1((Httpd_policy_opts *)popts, conf, token,
-                                      clist))
-  { }
-  
-  CONF_SC_MAKE_CLIST_END();
-  
+
+  do
+  {
+    int clist = FALSE;
+    
+    CONF_SC_MAKE_CLIST_MID(cur_depth, clist);
+    
+    else if (httpd__conf_main_policy_d1((Httpd_policy_opts *)popts, conf, token,
+                                        clist))
+    { }
+    
+    CONF_SC_MAKE_CLIST_END();
+  } while (ntoken &&
+           (cur_depth = opt_policy_sc_conf_parse(opts->s, conf, token,
+                                                 &popts, &ntoken)));
   return (TRUE);
 }
 

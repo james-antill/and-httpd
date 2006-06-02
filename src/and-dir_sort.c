@@ -200,7 +200,7 @@ static void ex_dir_sort_cmd_line(int *passed_argc, char **passed_argv[])
   if (!out)
     errno = ENOMEM, err(EXIT_FAILURE, "command line");
   
-  program_name = opt_program_name(argv[0], "jdir_sort");
+  program_name = opt_program_name(argv[0], "and-dir_sort");
 
   while ((optchar = getopt_long(argc, argv, "hV",
                                 long_options, NULL)) != -1)

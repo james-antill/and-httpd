@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -10,7 +10,7 @@ Content-Length: 136
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -20,7 +20,7 @@ Content-Length: 136
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Thu, 14 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -29,7 +29,7 @@ Content-Length: 136
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -38,7 +38,7 @@ Content-Length: 165
 
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Vary: Accept-Encoding
 Content-Type: text/html
@@ -48,7 +48,7 @@ Content-Range: bytes 1-135/136
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -57,7 +57,7 @@ Content-Length: 165
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -66,7 +66,7 @@ Content-Length: 165
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -75,7 +75,7 @@ Content-Length: 165
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -84,7 +84,7 @@ Content-Length: 165
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -94,7 +94,7 @@ Content-Length: 132
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -104,7 +104,7 @@ Content-Length: 207
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -114,7 +114,7 @@ Content-Length: 299
 
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Vary: Accept-Encoding
 Content-Type: text/html
@@ -124,7 +124,7 @@ Content-Range: bytes 0-4/136
 
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.7
+Server: and-httpd/0.99.8
 Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Connection: close
 Vary: Accept-Encoding

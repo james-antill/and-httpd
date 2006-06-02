@@ -2,13 +2,25 @@
            ------
 GET / HTTP/1.1
 Host: code.and.org:8008
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.12) Gecko/20060202 Galeon/2.0.0
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.12) Gecko/20060202 Galeon/2.0.1
 Accept: text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5
 Accept-Language: en
 Accept-Encoding: gzip,deflate
 Accept-Charset: UTF-8,*
 Keep-Alive: 300
 Connection: keep-alive
+
+
+GET /and.org-large.png HTTP/1.1
+Host: code.and.org:8008
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.7.12) Gecko/20060202 Galeon/2.0.1
+Accept: image/png,*/*;q=0.5
+Accept-Language: en
+Accept-Encoding: gzip,deflate
+Accept-Charset: UTF-8,*
+Keep-Alive: 300
+Connection: keep-alive
+Referer: http://code.and.org:8008/
 
 GET /dir_list.css HTTP/1.1
 Host: code.and.org:8008

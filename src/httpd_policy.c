@@ -212,18 +212,12 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
     
     *used_req = TRUE;
     httpd_policy_path_mod_exts(con->evnt->io_r, &pos, &len);
-      HTTPD_APP_REF_VSTR(conf->tmp, con->evnt->io_r, pos, len);
+    HTTPD_APP_REF_VSTR(conf->tmp, con->evnt->io_r, pos, len);
   }
-  else if (OPT_SERV_SYM_EQ("<hostname>"))
-  {
-    Vstr_base *http_data = con->evnt->io_r;
-    Vstr_sect_node *h_h = req->http_hdrs->hdr_host;
-    
+  else if (OPT_SERV_SYM_EQ("<hostname>") || OPT_SERV_SYM_EQ("<url-hostname>"))
+  { /* this adds hostname:port */
     *used_req = TRUE;
-    if (h_h->len)
-      HTTPD_APP_REF_VSTR(conf->tmp, http_data, h_h->pos, h_h->len);
-    else
-      httpd_sc_add_default_hostname(con, req, conf->tmp, conf->tmp->len);
+    httpd_sc_add_hostname(con, req, conf->tmp, conf->tmp->len);
   }
   else if (OPT_SERV_SYM_EQ("<request-configuration-directory>") ||
            OPT_SERV_SYM_EQ("<req-conf-dir>"))

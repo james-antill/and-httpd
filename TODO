@@ -1,9 +1,5 @@
  CHANGES
 
-  and-httpd-syslog2apahce-httpd-combined-log.pl
-
-        Take year from input file timestamp.
-
   ex_utils
 
 	Allow '-' filename, for stdin
@@ -43,19 +39,19 @@
 
 	conf
 	 max timeout for keep-alive
+           do we want to say no more input after X, or no more output?
 
   ex_httpd
 
 http://www.sans.org/top20/#u2
 
-	mime.types is different, giving application/x-gunzip types for .gz on
-         some distros. Breaks unit tests.
-        and-httpd-syslog-grep is broken, as is the default _logs cron
-        copying policy values ... Ie. for post <limited> copying from default?
-          applying a policy config. to multiple policies?
-        mod_rssindex - make_index outputs atom?
-        fix hostname. problem (ie. Host: www.and.org.:8008)
+        change gethostbyname() to the new BS.
+          IPv6 (and flying cars)
+        mod_rssindex - and-dir_list2html outputs atom?
         conf
+         default policy for each listening socket
+         match-* tied to policies?
+         openssh like limit connection backoff?
          stat() ... so right paren can be a generic:
               if ! stat(fname): fname -= ')'; redirect;
               dito. '.'
@@ -86,8 +82,6 @@ http://www.sans.org/top20/#u2
         update config. while live.
         optionally log full requests.
         log to files / hosts
-        change gethostbyname() to the new BS.
-          IPv6 (and flying cars)
 	Redirect for non-canonical URLs (Ie. %61 used) -- like %2e/%2f fixup
         have MIME "/cgi/ pl" "/fcgi/ php" etc. when we get dynamic content
         nice()
