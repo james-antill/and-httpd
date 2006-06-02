@@ -58,9 +58,10 @@ http://www.sans.org/top20/#u2
            Harder to do in async manner.
             match-response for 404s could do this?
 
-        include a default start page?
+        in default start page:
          ,tools explanation
          README for scons and tools etc.
+         generic config. manual etc.
 
 	man pages
         tst zsync

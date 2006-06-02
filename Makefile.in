@@ -70,9 +70,10 @@ am__vpath_adj = case $$p in \
     *) f=$$p;; \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
-am__installdirs = "$(DESTDIR)$(docmaindir)"
+am__installdirs = "$(DESTDIR)$(docmaindir)" "$(DESTDIR)$(wwwgendir)"
 docmainDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(docmain_DATA)
+wwwgenDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(docmain_DATA) $(wwwgen_DATA)
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = $(SUBDIRS)
@@ -235,9 +236,11 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AUTOMAKE_OPTIONS = no-dependencies 1.4
-SUBDIRS = src tools Documentation err conf_tmpl
+SUBDIRS = src tools Documentation conf conf_tmpl err html
 docmaindir = $(datadir)/doc/and-httpd-$(VERSION)
 docmain_DATA = TODO README NEWS ChangeLog AUTHORS COPYING
+wwwgendir = $(localstatedir)/www/generated_html
+wwwgen_DATA = 
 all: all-recursive
 
 .SUFFIXES:
@@ -304,6 +307,23 @@ uninstall-docmainDATA:
 	  f=$(am__strip_dir) \
 	  echo " rm -f '$(DESTDIR)$(docmaindir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(docmaindir)/$$f"; \
+	done
+install-wwwgenDATA: $(wwwgen_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(wwwgendir)" || $(mkdir_p) "$(DESTDIR)$(wwwgendir)"
+	@list='$(wwwgen_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(wwwgenDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(wwwgendir)/$$f'"; \
+	  $(wwwgenDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(wwwgendir)/$$f"; \
+	done
+
+uninstall-wwwgenDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(wwwgen_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(wwwgendir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(wwwgendir)/$$f"; \
 	done
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -585,7 +605,7 @@ check: check-recursive
 all-am: Makefile $(DATA)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(docmaindir)"; do \
+	for dir in "$(DESTDIR)$(docmaindir)" "$(DESTDIR)$(wwwgendir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-recursive
@@ -632,7 +652,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-docmainDATA
+install-data-am: install-docmainDATA install-wwwgenDATA
 
 install-exec-am:
 
@@ -660,7 +680,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-docmainDATA uninstall-info-am
+uninstall-am: uninstall-docmainDATA uninstall-info-am \
+	uninstall-wwwgenDATA
 
 uninstall-info: uninstall-info-recursive
 
@@ -673,12 +694,13 @@ uninstall-info: uninstall-info-recursive
 	dvi-am html html-am info info-am install install-am \
 	install-data install-data-am install-docmainDATA install-exec \
 	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	maintainer-clean-recursive mostlyclean mostlyclean-generic \
-	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
-	tags tags-recursive uninstall uninstall-am \
-	uninstall-docmainDATA uninstall-info-am
+	install-strip install-wwwgenDATA installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive \
+	mostlyclean mostlyclean-generic mostlyclean-libtool \
+	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am uninstall-docmainDATA uninstall-info-am \
+	uninstall-wwwgenDATA
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
