@@ -1290,7 +1290,9 @@ TWOCAN_CONF_MSG(Output Substitution)
 AC_OUTPUT([Makefile
            conf_tmpl/Makefile
            Documentation/Makefile
+           conf/Makefile
            err/Makefile
+           html/Makefile
            src/Makefile
            tools/Makefile
            tools/and-httpd

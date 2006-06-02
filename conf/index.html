@@ -1,0 +1,12 @@
+(org.and.httpd-conf-req-1.0
+   content-lang-ext .en    ; If we don't accept anything, assume english...
+   Content-Language: en
+
+   content-type-ext .html  ; ...and html
+   Content-Type: text/html
+
+# Don't have anything but english atm.
+#  (content-lang-negotiate (en .en) (fr .fr) (de .de) (es .es) (it .it) (jp .jp))
+#  (content-type-negotiate (text/plain .txt) (text/html .html))
+
+   filename [limit path-end .html] = <content-lang-ext> <content-type-ext>)

@@ -1,0 +1,5 @@
+; In theory we could redo the ip checks here and allow people to download the
+; files compressed, directly. But we don't.
+(org.and.httpd-conf-req-1.0
+   Location: [limit <basename>] status
+   return <permanent-redirect>)

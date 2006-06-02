@@ -138,7 +138,6 @@ fi
 %config(noreplace) %{wwwdir}/err/*
 %config(noreplace) %{wwwdir}/conf/*
 %{wwwdir}/conf_tmpl/*
-%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py
 %config(noreplace) %{wwwdir}/html/*
 %{wwwdir}/generated_html
 %doc
@@ -150,9 +149,13 @@ fi
 %defattr(-,root,root,-)
 %{_datadir}/and-httpd-@VERSION@-tools/*
 %{_libexecdir}/and-httpd-@VERSION@-tools/*
+%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py
 
 
 %changelog
+* Fri Jun  2 2006 James Antill <james@and.org> - and-httpd-0.99.8
+- Copy scons helper, and add conf+html files.
+
 * Wed Nov 30 2005 James Antill <james@and.org> - and-httpd-0.99.6
 - Only try adding the user on install
 
