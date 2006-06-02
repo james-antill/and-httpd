@@ -45,7 +45,9 @@
     <Program_Install_Support>Install and Uninstall</Program_Install_Support>
     <Program_OS_Support>Linux,Unix</Program_OS_Support>
     <Program_Language>English</Program_Language>
-    <Program_Change_Info> IO limiting. Status page. Optimizations. Added multi step configuration of strings and numbers. Added [else] test for matches.</Program_Change_Info>
+    <Program_Change_Info> Cleanups for 64bit, status page on none-running server, configuration numbers, chroot, logging scripts and hostname parsing.
+ Add index page.
+ Fixes for static builds, uLibc builds and disallow possible XSS on redirects inHTML interpeters.</Program_Change_Info>
     <Program_System_Requirements/>
     <Program_Specific_Category>Webserver</Program_Specific_Category>
     <Program_Categories/>
@@ -57,8 +59,8 @@
       <Filename_Versioned>and-httpd-0.99.8</Filename_Versioned>
       <Filename_Previous>and-httpd-0.99.7</Filename_Previous>
       <Filename_Long>and-httpd-0.99.8.tar.gz</Filename_Long>
-      <File_Size_Bytes>691003</File_Size_Bytes>
-      <File_Size_K>674.81</File_Size_K>
+      <File_Size_Bytes>691133</File_Size_Bytes>
+      <File_Size_K>674.93</File_Size_K>
       <File_Size_MB>0.66</File_Size_MB>
     </File_Info>
     <Expire_Info>

@@ -1521,6 +1521,9 @@ void opt_serv_sc_resolve_uid(struct Opt_serv_opts *opts,
   const char *name  = NULL;
   struct passwd *pw = NULL;
   
+  if (!opts->vpriv_uid->len)
+    return;
+  
   OPT_SC_EXPORT_CSTR(name, opts->vpriv_uid, TRUE, "privilage uid");
   
   if (!(pw = getpwnam(name)))
@@ -1545,10 +1548,13 @@ void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
 {
   const char *name = NULL;
   struct group *gr = NULL;
+
+  if (!opts->vpriv_gid->len)
+    return;
   
   OPT_SC_EXPORT_CSTR(name, opts->vpriv_gid, FALSE, "privilage gid");
   
-  if ((gr = getgrnam(name)))
+  if (!(gr = getgrnam(name)))
   {
     Vstr_base *s1 = vstr_make_base(NULL);
     const char *msg = NULL;

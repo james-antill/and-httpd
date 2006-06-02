@@ -12,9 +12,6 @@
 
 static Bag *filters = NULL;
 
-#define CSTREQ(x, y) (strcmp(x, y) == 0)
-
-
 #define FILTER_MATCH(name, cmp)                                 \
     (CSTREQ(obj->key, name) && cmp (s2, vpos, vlen, obj->val))
 

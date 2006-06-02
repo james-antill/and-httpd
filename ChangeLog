@@ -4,6 +4,14 @@
 
 2006-06-02  James Antill  <james@and.org>
 
+	* src/opt_serv.c (opt_serv_sc_resolve_uid): Allow no username
+	(opt_serv_sc_resolve_gid): Allow no gid, fix test for getgrnam return
+	value.
+
+	* src/and-dir_filter.c (CSTREQ): Remove, now it's in ex_utils.
+
+	* Documentation/and-httpd.html: Fix old yum information.
+
 	* html/Makefile.am (wwwhtml_DATA): Add a simple index.en.html.
 
 2006-06-01  James Antill  <james@and.org>
