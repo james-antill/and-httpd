@@ -33,7 +33,7 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>and-httpd</Program_Name>
-    <Program_Version>0.99.7</Program_Version>
+    <Program_Version>0.99.8</Program_Version>
     <Program_Release_Month>03</Program_Release_Month>
     <Program_Release_Day>06</Program_Release_Day>
     <Program_Release_Year>2006</Program_Release_Year>
@@ -54,12 +54,12 @@
     <Includes_DirectX>N</Includes_DirectX>
     <File_Info>
       <Filename_Generic>and-httpd</Filename_Generic>
-      <Filename_Versioned>and-httpd-0.99.7</Filename_Versioned>
-      <Filename_Previous>and-httpd-0.99.6</Filename_Previous>
-      <Filename_Long>and-httpd-0.99.7.tar.gz</Filename_Long>
-      <File_Size_Bytes>678361</File_Size_Bytes>
-      <File_Size_K>662.46</File_Size_K>
-      <File_Size_MB>0.64</File_Size_MB>
+      <Filename_Versioned>and-httpd-0.99.8</Filename_Versioned>
+      <Filename_Previous>and-httpd-0.99.7</Filename_Previous>
+      <Filename_Long>and-httpd-0.99.8.tar.gz</Filename_Long>
+      <File_Size_Bytes>691003</File_Size_Bytes>
+      <File_Size_K>674.81</File_Size_K>
+      <File_Size_MB>0.66</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -85,9 +85,9 @@
       <Application_XML_File_URL>http://www.and.org/and-httpd/and-httpd_pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.7/and-httpd-0.99.7.tar.gz</Primary_Download_URL>
-      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.7/and-httpd-0.99.7.tar.gz</Secondary_Download_URL>
-      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.7/</Additional_Download_URL_1>
+      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.8/and-httpd-0.99.8.tar.gz</Primary_Download_URL>
+      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.8/and-httpd-0.99.8.tar.gz</Secondary_Download_URL>
+      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.8/</Additional_Download_URL_1>
     </Download_URLs>
   </Web_Info>
   <Permissions>

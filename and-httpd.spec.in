@@ -149,10 +149,13 @@ fi
 %defattr(-,root,root,-)
 %{_datadir}/and-httpd-@VERSION@-tools/*
 %{_libexecdir}/and-httpd-@VERSION@-tools/*
-%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py
+%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py*
 
 
 %changelog
+* Fri Jun  2 2006 James Antill <james@and.org> - and-httpd-0.99.8-2
+- Remove built python files for FC5.
+
 * Fri Jun  2 2006 James Antill <james@and.org> - and-httpd-0.99.8
 - Copy scons helper, and add conf+html files.
 
