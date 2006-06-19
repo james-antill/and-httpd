@@ -4,4 +4,10 @@ LC_ALL=C order after the main configuration file is loaded.
 
  The difference in sort order is that files starting with an _ are loaded before
 all others ... this is because all the files that and-httpd ships in the conf.d
-directory will start with an '_'.
+directory will start with a single '_', allowing you to put configs. before
+them by specify two '_' but by default going before other configs.
+ The other difference is that strverscmp() is used, if available, so
+x9.conf and x10.conf are loaded in the "correct" order.
+
+ Note that there is an and-conf.d-ls program, which will print the files which
+will be loaded (in the order they will be loaded).

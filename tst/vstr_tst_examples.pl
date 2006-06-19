@@ -270,6 +270,27 @@ sub run_simple_tst
     sub_tst(\&sub_run_simple_tst, $prefix, {cmd => $cmd});
   }
 
+sub run_dir_tst
+  {
+    my $cmd    = shift;
+    my $dir    = shift;
+    my $prefix = shift || $cmd;
+
+    sub sub_run_dir_tst
+      {
+	my $io_r = shift;
+	my $io_w = shift;
+	my $xtra = shift;
+
+	my $cmd  = $xtra->{cmd};
+	my $dir  = $xtra->{dir};
+
+	system("./${cmd} $dir > $io_w");
+      }
+
+    sub_tst(\&sub_run_dir_tst, $prefix, {cmd => $cmd, dir => $dir});
+  }
+
 {
 my $pdaemon_pid = undef;
 my $ldaemon_pid = undef;

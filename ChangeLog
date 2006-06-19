@@ -1,3 +1,35 @@
+2006-06-18  James Antill  <james@and.org>
+
+	* tools/_io-limiting.conf: Turn limiting on by default, also add
+	127.0.0.1/8 to an exception list and allow space for more.
+
+	* scripts/coverage.sh: Remove lndir usage.
+
+	* shtool: Update to latest upstream.
+
+	* src/evnt.c (evnt_limit_add): Remove warning, even though it was fine.
+
+	* tst/tst_httpd_cmd.pl: Added tests for conf.d processing.
+
+	* src/and-conf.d-ls.c (main): Added program to print files that would
+	be read by conf.d processing.
+
+2006-06-09  James Antill  <james@and.org>
+
+	* tools/_io-limiting.conf: Change config. so certain networks can easily
+	be exempt (default is just localhost).
+
+	* src/httpd.c (http_vlg_def): Fix HTTP/0.9 version logging output.
+	(http__err_vlg_msg): Don't output data if we aren't parsing HTTP/0.9
+	and a HTTP/0.9 like request came in (because we didn't parse it).
+
+2006-06-02  James Antill  <james@and.org>
+
+	* src/and-dir_list2html.c (main): Fix --output option.
+
+	* src/opt_serv.c (opt_serv__sort_conf_files): Sort leading _ files
+	properly, *sigh*.
+
 2006-06-02  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.8

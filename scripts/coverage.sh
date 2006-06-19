@@ -37,7 +37,9 @@ function linkup()
   for dir in src; do
   cd $dir
 
-  lndir ../$s/../$dir
+  # FC5 ate my lndir
+  # lndir ../$s/../$dir
+  ln -s ../$s/../$dir/* .
 
 ## 4.0 does everything different, again.
 ### Newer GCCs put them in the $srcdir

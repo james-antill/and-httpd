@@ -672,9 +672,12 @@ static void http_vlg_def(struct Con *con, struct Httpd_req_data *req, int meth)
              data, req->sects, 1U);
 
   if (req->ver_0_9)
-    vlg_info(vlg, " ver[\"HTTP/0.9]\"");
+    vlg_info(vlg, " ver[\"HTTP/0.9\"]");
   else
+  {
+    ASSERT(req->sects->num >= 3);
     vlg_info(vlg, " ver[\"$<vstr.sect:%p%p%u>\"]", data, req->sects, 3);
+  }
 
   vlg_info(vlg, ": $<http-esc.vstr:%p%zu%zu>\n",
            data, req->path_pos, req->path_len);
@@ -1539,7 +1542,7 @@ static void http__err_vlg_msg(struct Con *con, Httpd_req_data *req)
   vlg_info(vlg, "ERREQ from[$<sa:%p>] err[%03u %s%s%s] sz[${BKMG.ju:%ju}:%ju]",
            CON_CEVNT_SA(con), req->error_code, req->error_line,
            *req->error_xmsg ? " | " : "", req->error_xmsg, tmp, tmp);
-  if (req->sects->num >= 2)
+  if ((req->sects->num >= 2) && (req->ver_0_9 || (req->sects->num >= 3)))
     http_vlg_def(con, req, TRUE);
   else
     vlg_info(vlg, "%s", "\n");
@@ -2248,10 +2251,7 @@ static void http_req_split_method(struct Con *con, struct Httpd_req_data *req)
   { len -= skip_len; pos += skip_len; }
 
   if (!len)
-  {
-    req->sects->num = orig_num;
-    return;
-  }
+    goto req_line_parse_err;
   
   if (!(el = vstr_srch_cstr_chrs_fwd(s1, pos, len, HTTP_LWS)))
   {
@@ -2270,8 +2270,18 @@ static void http_req_split_method(struct Con *con, struct Httpd_req_data *req)
 
   if (len)
     vstr_sects_add(req->sects, pos, len);
-  else if (req->policy->allow_http_0_9)
+  else if (!req->policy->allow_http_0_9)
+    return; /* we keep it, for logging */
+  else
     req->ver_0_9 = TRUE;
+
+  if (req->sects->malloc_bad)
+    goto req_line_parse_err;
+  
+  return;
+  
+ req_line_parse_err:
+  req->sects->num = orig_num;
 }
 
 static void http_req_split_hdrs(struct Con *con, struct Httpd_req_data *req)
@@ -4037,13 +4047,18 @@ static int httpd_serv_add_vhost(struct Con *con, struct Httpd_req_data *req)
     if (dots == h_h_len)
       h_h_len = 1; /* give 400s to hostname "." */
     else
+    {
+      ASSERT(dots < h_h_len);
+      
       h_h_len -= dots;
   
-    if (h_h_len && req->policy->use_canonize_host)
-    {
-      if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
-      { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
+      if (req->policy->use_canonize_host)
+      {
+        if (VIPREFIX(data, h_h_pos, h_h_len, "www."))
+        { h_h_len -= CLEN("www."); h_h_pos += CLEN("www."); }
+      }
     }
+    
     h_h->pos = h_h_pos;
     h_h->len = h_h_len;
   }

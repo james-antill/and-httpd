@@ -1,7 +1,6 @@
 #define _GNU_SOURCE 1
 
 #include "bag.h"
-#include "compiler.h"
 
 /* need to use vlg etc. */
 #define EX_UTILS_NO_FUNCS 1

@@ -45,10 +45,10 @@ CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c
 CMDLINE_FILES_HDRS = date.h evnt.h hexdump.h opt.h vlg.h
 
 DAEMON_FILES_SRCS = bag.c conf.c cntl.c date.c evnt.c hexdump.c \
-                    opt.c opt_policy.c opt_serv.c vlg.c \
+                    opt.c opt_policy.c opt_conf.c opt_serv.c vlg.c \
                     conf_inline.c opt_policy_inline.c
 DAEMON_FILES_HDRS = bag.h conf.h cntl.h date.h evnt.h hexdump.h \
-                    opt.h opt_policy.h opt_serv.h vlg.h
+                    opt.h opt_policy.h opt_conf.h opt_serv.h vlg.h
 
 
 and_httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
@@ -78,6 +78,11 @@ and_conf_SOURCES      = conf.c and-conf.c conf_inline.c
 and_conf_DEPENDENCIES = conf.h ex_utils.h mk.h
 and_conf_CFLAGS = $(GEN_CFLAGS)
 and_conf_LDADD  = $(GEN_LDLIBS)
+
+and_conf_d_ls_SOURCES      = and-conf.d-ls.c opt_conf.c
+and_conf_d_ls_DEPENDENCIES =                 opt_conf.h ex_utils.h
+and_conf_d_ls_CFLAGS   = $(GEN_CFLAGS)
+and_conf_d_ls_LDADD    = $(GEN_LDLIBS)
 
 and_sock_filter_DEPENDENCIES = ex_utils.h
 and_sock_filter_CFLAGS = $(GEN_CFLAGS)
@@ -128,7 +133,7 @@ httpdadmindir = $(sbindir)
 httpdadmin_PROGRAMS = and-cntl and-httpd
 
 httpduserdir = $(bindir)
-httpduser_PROGRAMS = and-conf and-sock-filter
+httpduser_PROGRAMS = and-conf and-conf.d-ls and-sock-filter
 
 httpdtooldir = $(libexecdir)/and-httpd-$(VERSION)-tools
 httpdtool_PROGRAMS = and-dir_list and-dir_filter and-dir_sort \

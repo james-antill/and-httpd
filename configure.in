@@ -51,7 +51,7 @@ if test ".`echo dummy $@ | grep help`" = .; then
     echo "                   See ${T_MD}AUTHORS${T_ME} file for more info."
 
 # Could just del this, but it looks cool and like I know what I'm doing :)
-    PLATFORM=`$ac_shtool guessos`
+    PLATFORM=`$ac_shtool platform`
     echo "Platform: ${T_MD}${PLATFORM}${T_ME}"
 fi
 

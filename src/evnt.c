@@ -984,21 +984,23 @@ void evnt_close(struct Evnt *evnt)
 int evnt_limit_add(struct Evnt *evnt, Vstr_ref *ref)
 {
   Vstr_ref **refs = evnt->lims;
-  unsigned int lim_num = evnt->lim_num;
+  unsigned int lim_num = evnt->lim_num + 1;
   struct Evnt_limit *lim = ref->ptr;
 
+  ASSERT((!evnt->lims && (lim_num == 1)) ||
+         ( evnt->lims && (lim_num >= 2)));
+    
   evnt->io_r_limited |= !!lim->io_r_max;
   evnt->io_w_limited |= !!lim->io_w_max;
   
-  if (++lim_num == 1)
-    refs = MK(sizeof(Vstr_ref *));
-  else
-    MV(evnt->lims, refs, sizeof(Vstr_ref *) * lim_num);
-
-  if (!refs)
+  if (lim_num == 1)
+  {
+    if (!(evnt->lims = MK(sizeof(Vstr_ref *))))
+      return (FALSE);
+  }
+  else if (!MV(evnt->lims, refs, sizeof(Vstr_ref *) * lim_num))
     return (FALSE);
   
-  evnt->lims = refs;
   evnt->lims[evnt->lim_num] = vstr_ref_add(ref);
   evnt->lim_num = lim_num;
 

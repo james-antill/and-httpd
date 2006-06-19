@@ -389,11 +389,11 @@ sub setup
     for (1..scalar(@conf_httpd_tsts))
       {
 	my $src_conf = "../../$ENV{_TSTDIR}/ex_conf_httpd_tst_$_";
-	if ($_ < 2)
+	if ($_ <= 2)
 	  {
-	    symlink($src_conf, "$conf_root/conf.d/__$_.conf");
+	    symlink($src_conf, "$conf_root/conf.d/__99_$_.conf");
 	  }
-	elsif ($_ < 10)
+	elsif ($_ <= 8)
 	  {
 	    symlink($src_conf, "$conf_root/conf.d/_$_.conf");
 	  }

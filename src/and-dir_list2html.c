@@ -363,8 +363,8 @@ int main(int argc, char *argv[])
     EX_UTILS_GETOPT_CSTR("css-filename", css_fname);
     EX_UTILS_GETOPT_CSTR("cssfilename",  css_fname);
     EX_UTILS_GETOPT_CSTR("name",         def_name);
-    /*    EX_UTILS_GETOPT_CSTR("output",       output_fname);
-          EX_UTILS_GETOPT_CSTR("style",        output_fname); */
+    EX_UTILS_GETOPT_CSTR("output",       output_fname);
+        /*      EX_UTILS_GETOPT_CSTR("style",        output_tname); */
     EX_UTILS_GETOPT_NUM("filemode",      output_fmode);
     else if (!strcmp("--version", argv[count]))
     { /* print version and exit */

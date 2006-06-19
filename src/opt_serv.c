@@ -9,10 +9,11 @@
 
 #include "mk.h"
 
+#include "opt_conf.h"
+
 #include <stddef.h> /* offsetof */
 
 #include <sys/resource.h>
-#include <grp.h>
 #include <signal.h>
 
 #ifndef CONF_FULL_STATIC
@@ -1571,54 +1572,6 @@ void opt_serv_sc_resolve_gid(struct Opt_serv_opts *opts,
 }
 #endif
 
-#include <dirent.h>
-#ifndef _D_EXACT_NAMLEN
-# _D_EXACT_NAMLEN(x) strlen((x)->d_name)
-#endif
-
-#define OPT_SERV_DIR_CHR_(x, y) ((*x)->d_name[y] == '_')
-static int opt_serv__sort_conf_files(const void *passed_a, const void *passed_b)
-{
-  const struct dirent * const *a = passed_a;
-  const struct dirent * const *b = passed_b;
-  unsigned int scan = 0;
-  
-  /* treat any leading '_'s as system conf.d files and process those first...
-   * Ie. if a is _y  and b is  x, then (a is < b), hence return -1
-         if a is __y and b is _x, then (a is < b), hence return -1 */
-  if (OPT_SERV_DIR_CHR_(a, scan) || OPT_SERV_DIR_CHR_(b, scan))
-  {
-    while (OPT_SERV_DIR_CHR_(a, scan) == OPT_SERV_DIR_CHR_(b, scan))
-      ++scan;
-
-    if (OPT_SERV_DIR_CHR_(a, scan) || OPT_SERV_DIR_CHR_(b, scan))
-      return (OPT_SERV_DIR_CHR_(a, scan) - OPT_SERV_DIR_CHR_(b, scan));
-  }
-  
-  return (strcmp((*a)->d_name, (*b)->d_name)); /* the rest is POSIX */
-}
-
-/* filter to files that:
- * 1. _don't_ start with a '.'
- * 1. _do_    end   with a ".conf"
- */
-static int opt_serv__filt_conf_files(const struct dirent *dent)
-{
-  size_t len = _D_EXACT_NAMLEN(dent);
-  
-  ASSERT(!dent->d_name[len]);
-  
-  if (dent->d_name[0] == '.') /* filters . .. _and_ .foo.conf */
-    return (FALSE);
-  
-  if (len < strlen("a.conf"))
-    return (FALSE);
-  if (!CSTREQ(dent->d_name + len - strlen(".conf"), ".conf"))
-    return (FALSE);
-  
-  return (TRUE);
-}
-
 int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
                            int (*func)(Vstr_base *, void *, const char *))
 {
@@ -1634,14 +1587,7 @@ int opt_serv_sc_config_dir(Vstr_base *s1, void *data, const char *dir,
     goto fail;
   }
 
-  if (!dir[0])
-  {
-    errno = ENOENT;
-    goto fail;
-  }
-
-  num = scandir(dir, &dents,
-                opt_serv__filt_conf_files, opt_serv__sort_conf_files);
+  num = opt_conf_sc_scan_dir(dir, &dents);
   if (num == -1)
     goto fail;
 
