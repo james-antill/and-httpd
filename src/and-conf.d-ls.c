@@ -1,5 +1,6 @@
-#define _GNU_SOURCE 1 /* strverscmp() */
-
+#define EX_UTILS_NO_USE_GET   1
+#define EX_UTILS_NO_USE_LIMIT 1
+#define EX_UTILS_NO_USE_OPEN  1
 #include "ex_utils.h"
 
 #include "opt_conf.h"
@@ -7,7 +8,7 @@
 int main(int argc, char *argv[])
 {
   Vstr_base *out = ex_init(NULL);
-  unsigned int scan = 0;
+  int scan = 0;
   
   if (argc < 2)
     errx(EXIT_FAILURE, "args");

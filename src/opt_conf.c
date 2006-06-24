@@ -5,10 +5,7 @@
 
 #include "opt_conf.h"
 
-#ifndef HAVE_STRVERSCMP
-# define strverscmp(x, y) strcmp(x, y)
-#endif
-
+#include "glibc-strverscmp.h"
 
 #define OPT_CONF_DIR_CHR_(x, y) ((*x)->d_name[y] == '_')
 static int opt_conf__sort_conf_files(const void *passed_a, const void *passed_b)

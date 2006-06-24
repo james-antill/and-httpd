@@ -5,6 +5,7 @@ use File::Copy;
 
 require 'vstr_tst_examples.pl';
 
+our $tst_DBG;
 our $root      = "ex_httpd_root";
 our $conf_root = "ex_httpd_conf_root";
 my $err_conf_7_root  = "ex_httpd_err_conf_7_root";
@@ -358,6 +359,8 @@ sub make_conf
 
 sub cleanup
   {
+    print "DBG($$): httpd_cleanup()\n" if ($tst_DBG > 0);
+
     rmtree([$root,
 	    $conf_root,
 	    $err_conf_7_root]);

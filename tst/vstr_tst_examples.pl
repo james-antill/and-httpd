@@ -15,8 +15,8 @@ use POSIX;
 use IO::Socket;
 use IO::Handle;
 
-my $tst_DBG      = $ENV{VSTR_TST_DBG};
-   $tst_DBG      =  0 if (!defined ($tst_DBG));
+our $tst_DBG      = $ENV{VSTR_TST_DBG};
+    $tst_DBG      =  0 if (!defined ($tst_DBG));
 
 my $tst_mp       = $ENV{VSTR_TST_MP};
    $tst_mp       =  1 if (!defined ($tst_mp));

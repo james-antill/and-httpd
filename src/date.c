@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004, 2005  James Antill
+ *  Copyright (C) 2004, 2005, 2006  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -257,7 +257,7 @@ const char *date_asctime(Date_store *data, time_t val)
   
   return (data->ret_buf);
 }
-const char *date_syslog(Date_store *data, time_t val)
+const char *date_syslog_trad(Date_store *data, time_t val)
 {
   const struct tm *tm = NULL;
   char *ptr = NULL;
@@ -266,6 +266,31 @@ const char *date_syslog(Date_store *data, time_t val)
     err(EXIT_FAILURE, "localtime_r(%s)", "%h %e %T");
 
   CP_BEG();
+  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP_LEN(" ");
+  CP__2NUM(tm->tm_mday); /* %e */
+  CP_LEN(" ");
+  CP_02NUM(tm->tm_hour); /* %T */
+  CP_LEN(":");
+  CP_02NUM(tm->tm_min);
+  CP_LEN(":");
+  CP_02NUM(tm->tm_sec);
+  CP_END();
+  
+  return (data->ret_buf);
+}
+
+const char *date_syslog_yr(Date_store *data, time_t val)
+{
+  const struct tm *tm = NULL;
+  char *ptr = NULL;
+  
+  if (!(tm = date_localtime(data, val)))
+    err(EXIT_FAILURE, "localtime_r(%s)", "%h %e %T");
+
+  CP_BEG();
+  CP_NUM(tm->tm_year + 1900); /* %Y */
+  CP_LEN(" ");
   CP(date__months[tm->tm_mon], 3); /* %h */
   CP_LEN(" ");
   CP__2NUM(tm->tm_mday); /* %e */

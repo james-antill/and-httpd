@@ -1538,7 +1538,7 @@ echo "${ECHO_T}${T_MD}Initial phase:${T_ME}" >&6
 
 
 
-VERSION=0.99.8
+VERSION=0.99.9
 PACKAGE=and-httpd
 
 am__api_version="1.9"

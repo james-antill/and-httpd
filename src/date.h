@@ -39,6 +39,7 @@ extern const struct tm *date_localtime(Date_store *, time_t);
 extern const char *date_rfc1123(Date_store *, time_t);
 extern const char *date_rfc850(Date_store *, time_t);
 extern const char *date_asctime(Date_store *, time_t);
-extern const char *date_syslog(Date_store *, time_t);
+extern const char *date_syslog_trad(Date_store *, time_t);
+extern const char *date_syslog_yr(Date_store *, time_t);
 
 #endif

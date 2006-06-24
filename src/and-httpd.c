@@ -656,7 +656,17 @@ static void serv_cmd_line(int argc, char *argv[])
     const char *pid_file = NULL;
     Opt_serv_opts *opts = httpd_opts->s;
     
-    vlg->syslog_facility = opts->syslog_facility;
+    vlg_syslog_facility_set(vlg, opts->syslog_facility);
+    /* vlg_date_set(vlg, opts->vlg_date_fmt_type); */
+    if (!opts->vlg_tweaked_size)
+    {
+      if (opts->become_daemon)      
+        opts->vlg_size = OPT_SERV_CONF_VLG_SIZE_UNTWEAKED_DAEMON;
+      else
+        opts->vlg_size = OPT_SERV_CONF_VLG_SIZE_UNTWEAKED_CONSOLE;
+    }
+    vlg_size_set(vlg, opts->vlg_size);
+    vlg_syslog_native_set(vlg, opts->vlg_syslog_native);
   
     OPT_SC_EXPORT_CSTR(pid_file,   opts->pid_file,   FALSE, "pid file");
     OPT_SC_EXPORT_CSTR(chroot_dir, opts->chroot_dir, FALSE, "chroot directory");

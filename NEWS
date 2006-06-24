@@ -1,3 +1,9 @@
+0.99.9 - 2006-06-24
+ Fix bug when configured not to process HTTP/0.9 requests.
+ Fix conf.d sort order processing.
+ Add exception for localhost in default io limiting.
+ Add some config. options for syslog output.
+
 0.99.8 - 2006-06-02
  Cleanups for 64bit, status page on none-running server, configuration
 numbers, chroot, logging scripts and hostname parsing.

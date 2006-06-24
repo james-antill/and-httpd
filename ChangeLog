@@ -1,3 +1,23 @@
+2006-06-24  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.9
+
+2006-06-24  James Antill  <james@and.org>
+
+	* src/glibc-strverscmp.h (gnulib_strverscmp): Add gnu libc strverscmp()
+	for those times it's needed.
+
+	* src/vlg.c (vlg_size_set): Add a max size, as syslog only does UDP
+	and so splits messages.
+	(vlg__flush): Implement max message limits, cleanup error handling for
+	console output.
+	(vlg__flush): Cleanup error handling for console output.
+	(vlg__flush): Allow "always native" syslog calls.
+	(vlg_sc_bind_mount): Fix bind mounts when _PATH_LOG != /dev/log.
+
+	* src/date.c (date_syslog_yr): Add a syslog date variant that also 
+	outputs the current year.
+
 2006-06-18  James Antill  <james@and.org>
 
 	* tools/_io-limiting.conf: Turn limiting on by default, also add

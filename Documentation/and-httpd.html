@@ -20,7 +20,7 @@
   <body>
     <h1>And-HTTPD</h1>
 
-    <h2>Current version is 0.99.8</h2>
+    <h2>Current version is 0.99.9</h2>
 
 <p> NOTE that this software requires the Vstr, socket_poll and timer_q
  libraries.</p>
@@ -31,8 +31,8 @@
 
 <ul>
   <li> Tar balls are available via.
-              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.8/">ftp</a> and
-              <a href="http://www.and.org/and-httpd/0.99.8/"><b>http</b></a>.
+              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.9/">ftp</a> and
+              <a href="http://www.and.org/and-httpd/0.99.9/"><b>http</b></a>.
  Also a binary bzip2 cpio archive, of version 0.99.7, compiled against uLibc is
 available <a href="http://bent.latency.net/bent/i386/and-httpd-0.99.7.cpio.bz2">here</a>.
 </li>
@@ -199,7 +199,7 @@ has available.</li>
 </ul>
 
 <p> It also does automatic gzip encoding negotiation (with pre-encoded data)
-and allows IO limiting for clients that don't request it (saving badiwdth).
+and IO limiting for clients that don't allow encoded output (saving badiwdth).
  Due to the design, keep-alive is basically free, which also helps reduce
 bandwidth.
 </p>
@@ -208,9 +208,9 @@ bandwidth.
 <h3>Secure</h3>
 <p> Although written in C the code doesn't call
  <a href="http://www.and.org/vstr/security">simplistic "C string" functions</a>,
- so it isn't possible to create buffer overflows even if there is a logic
-problem. </p>
-<!-- % LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c
+everywhere, so it isn't possible to create buffer overflows even if there is a
+logic problem. </p>
+<!-- % LC_ALL=C egrep '[^_.>a-zA-Z0-9](mem|rawmem|bcopy|bzero|bcmp|str(n?cpy|n?cat|n?cmp|coll|xfrm|n?dup|r?chr|c?spn|str|pbrk|tok|n?case|sep|verscmp|fry|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*httpd*.c - one false hit
  -->
 <pre>
 % LC_ALL=C egrep '[^_.>a-zA-Z0-9](str(n?cpy|n?cat|xfrm|n?dup|str|pbrk|tok|_)|stpn?cpy|r?index[^.]|a?sn?printf|byte_)' src/*.c
@@ -238,15 +238,15 @@ and the rest of the request is processed)</li>
 <li>Any kind of payload. In other words a non-zero content-length, or a transfer encoding (other than identity) on a request.</li>
 <li>Any "extra" CR or LF characters in the hostname or URL-path. </li>
 <li>Any whitespace in a header name.</li>
-<li>Any repeating of headers that aren't allowed to be repeated.</li>
+<li>Any repeating of HTTP/1.1 headers that aren't allowed to be repeated.</li>
 <li>A URL-path that ends in any of: <tt>.shtml</tt> <tt>~</tt> <tt>#</tt> <tt>.tmp</tt> <tt>.htaccess</tt> or <tt>.sconsign</tt>
 (or their compressed versions) -- enforced by the extra mime types file</li>
 <li>When virtual hosting is enabled, a hostname that isn't specifically
  allowed (this is actually encouraged by rfc2616)</li>
 </ul>
 
-<p>...while some of these might make it "non-compliant" with rfc2616, no real
-world clients do any of the above things. </p>
+<p>...while some of these might make it "non-compliant" with rfc2616, no sane
+clients should be doing any of the above things. </p>
 
 <p>And-httpd can also be configured to reject TRACE methods and HTTP/0.9
 requests, although due to the lack of harm those are left enabled as a
@@ -330,7 +330,7 @@ probes database.</p>
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Fri Jun  2 11:02:59 EDT 2006
+Last modified: Sat Jun 24 15:27:03 EDT 2006
 <!-- hhmts end -->
   </body>
 </html>

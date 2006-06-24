@@ -29,7 +29,12 @@
 #define OPT_SERV_CONF_DEF_RLIM_FILE_NUM 0
 #define OPT_SERV_CONF_USE_CAP_FOWNER FALSE
 #define OPT_SERV_CONF_USE_DUMPABLE FALSE
-
+#define OPT_SERV_CONF_VLG_DATE_FMT_TYPE VLG_DATE_FMT_SYSLOG_TRAD
+#define OPT_SERV_CONF_VLG_SYSLOG_NATIVE FALSE
+#define OPT_SERV_CONF_VLG_TWEAKED_SIZE FALSE
+#define OPT_SERV_CONF_VLG_SIZE_DEF 0 /* syslog has 1024 limit as of FC5 */
+#define OPT_SERV_CONF_VLG_SIZE_UNTWEAKED_CONSOLE    0
+#define OPT_SERV_CONF_VLG_SIZE_UNTWEAKED_DAEMON  1024
 
 typedef struct Opt_serv_policy_opts
 {
@@ -87,9 +92,18 @@ typedef struct Opt_serv_opts
  unsigned int rlim_core_call : 1;
  unsigned int rlim_file_call : 1;
  
- unsigned int keep_cap_fowner : 1;
+ unsigned int keep_cap_fowner : 1; /* 8 */
+ 
  unsigned int make_dumpable : 1;
 
+ unsigned int vlg_date_fmt_type : 2;
+
+ unsigned int vlg_syslog_native : 1;
+
+ unsigned int vlg_tweaked_size : 1; /* not user settable */
+
+ size_t vlg_size;
+ 
  Vstr_base *pid_file;
  Vstr_base *cntl_file;
  Vstr_base *chroot_dir;
@@ -137,6 +151,10 @@ typedef struct Opt_serv_opts
     OPT_SERV_CONF_DEF_RLIM_FILE_CALL,                                   \
     OPT_SERV_CONF_USE_CAP_FOWNER,                                       \
     OPT_SERV_CONF_USE_DUMPABLE,                                         \
+    OPT_SERV_CONF_VLG_DATE_FMT_TYPE,                                    \
+    OPT_SERV_CONF_VLG_SYSLOG_NATIVE,                                    \
+    OPT_SERV_CONF_VLG_TWEAKED_SIZE,                                     \
+    OPT_SERV_CONF_VLG_SIZE_DEF,                                         \
     NULL, NULL, NULL,                                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_UID,                                   \
     NULL, OPT_SERV_CONF_DEF_PRIV_GID,                                   \

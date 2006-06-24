@@ -6,9 +6,7 @@
 #define EX_UTILS_NO_FUNCS 1
 #include "ex_utils.h"
 
-#ifndef HAVE_STRVERSCMP
-# define strverscmp(x, y) strcmp(x, y)
-#endif
+#include "glibc-strverscmp.h"
 
 void bag_del_all(Bag *bag)
 {

@@ -10,6 +10,9 @@
 
 #include "date.h"
 
+#define VLG_DATE_FMT_SYSLOG_TRAD 0
+#define VLG_DATE_FMT_SYSLOG_YR   1
+
 #define VLG__TM_SYSLOG_SZ 128
 
 typedef struct Vlg
@@ -27,11 +30,15 @@ typedef struct Vlg
  
  unsigned int syslog_facility;
 
+ size_t log_max_sz;
+ 
  unsigned int syslog_stream : 1;
  unsigned int log_pid : 1;
  unsigned int out_dbg : 2;
  unsigned int daemon_mode : 1;
  unsigned int log_prefix_console : 1;
+ unsigned int date_fmt_type : 2; /* 8 */
+ unsigned int log_syslog_native : 1;
 } Vlg;
 
 extern void vlg_init(void);
@@ -44,9 +51,12 @@ extern void vlg_daemon(Vlg *, const char *);
 extern void vlg_debug(Vlg *);
 extern void vlg_undbg(Vlg *);
 
-extern int  vlg_pid_set(Vlg *, int);
-extern int  vlg_prefix_set(Vlg *, int);
-extern void vlg_time_set(Vlg *vlg, time_t (*func)(void));
+extern int vlg_pid_set(Vlg *, int);
+extern int vlg_prefix_set(Vlg *, int);
+extern int vlg_size_set(Vlg *, size_t);
+extern int vlg_syslog_facility_set(Vlg *, int);
+extern int vlg_syslog_native_set(Vlg *, int);
+extern int vlg_time_set(Vlg *vlg, time_t (*func)(void));
 
 extern void vlg_pid_file(Vlg *, const char *);
 

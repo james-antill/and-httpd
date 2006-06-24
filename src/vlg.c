@@ -153,18 +153,26 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
   const char *tm_data = NULL;
   
   ASSERT(vstr_export_chr(dlg, dlg->len) == '\n');
+  ASSERT((vlg->date_fmt_type == VLG_DATE_FMT_SYSLOG_TRAD) ||
+         (vlg->date_fmt_type == VLG_DATE_FMT_SYSLOG_YR));
 
-  tm_data = date_syslog(vlg->dt, now);
-  
   if (vlg->daemon_mode)
   {
-    if (!vlg__syslog_con(vlg, 0))
-    { /* ignoring borken syslog()'s that overflow here use a real OS */
-      const char *tmp = vstr_export_cstr_ptr(dlg, 1, dlg->len - 1);
-      
-      if (!tmp)
+    if (vlg->log_syslog_native || !vlg__syslog_con(vlg, 0))
+    {
+      const char *tmp = NULL;
+
+      if (vlg->log_max_sz && (dlg->len > vlg->log_max_sz))
+      { /* note that this _just_ does the message */
+        size_t rm = (dlg->len - vlg->log_max_sz) + strlen("...\n");
+        
+        vstr_sc_reduce(dlg, 1, dlg->len, rm);
+        vstr_add_cstr_ptr(dlg, dlg->len, "...\n");
+      }
+
+      if (!(tmp = vstr_export_cstr_ptr(dlg, 1, dlg->len - 1))) /* remove \n */
         errno = ENOMEM, err(EXIT_FAILURE, "vlog__flush");
-      
+        
       syslog(type | vlg->syslog_facility, "%s", tmp);
     }
     else
@@ -173,6 +181,9 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
       int fd = vlg->syslog_fd;
       size_t beg_len = 0;
 
+      /* syslog doesn't like years, so don't let that happen atm. */  
+      tm_data = date_syslog_trad(vlg->dt, now);
+      
       vstr_add_fmt(dlg, 0, "<%u>%s %s[%lu]: ", type | vlg->syslog_facility,
                    tm_data, vlg->prog_name, (unsigned long)pid);
       
@@ -180,7 +191,15 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
         vstr_sub_buf(dlg, dlg->len, 1, "", 1);
       else
         vstr_sc_reduce(dlg, 1, dlg->len, 1); /* remove "\n" */
-      
+
+      if (vlg->log_max_sz && (dlg->len > vlg->log_max_sz))
+      {
+        size_t rm = (dlg->len - vlg->log_max_sz) + strlen("...\n");
+        
+        vstr_sc_reduce(dlg, 1, dlg->len, rm);
+        vstr_add_cstr_ptr(dlg, dlg->len, "...\n");
+      }
+
       if (dlg->conf->malloc_bad)
         errno = ENOMEM, err(EXIT_FAILURE, "vlog__flush");
 
@@ -201,35 +220,35 @@ static void vlg__flush(Vlg *vlg, int type, int out_err)
   else
   {
     int fd = out_err ? STDERR_FILENO : STDOUT_FILENO;
-    
+
     if (vlg->log_prefix_console)
     {
       /* Note: we add the begining backwards, it's easier that way */
-      if ((type == LOG_WARNING) && !vstr_add_cstr_ptr(dlg, 0, "WARN: "))
-        errno = ENOMEM, err(EXIT_FAILURE, "warn");
-      if ((type == LOG_ALERT) && !vstr_add_cstr_ptr(dlg, 0, "ERR: "))
-        errno = ENOMEM, err(EXIT_FAILURE, "err");
-      if ((type == LOG_DEBUG) && !vstr_add_cstr_ptr(dlg, 0, "DEBUG: "))
-        errno = ENOMEM, err(EXIT_FAILURE, "vlog_vdbg");
+      if (type == LOG_WARNING) vstr_add_cstr_ptr(dlg, 0, "WARN: ");
+      if (type == LOG_ALERT)   vstr_add_cstr_ptr(dlg, 0, "ERR: ");
+      if (type == LOG_DEBUG)   vstr_add_cstr_ptr(dlg, 0, "DEBUG: ");
       
       if (!vlg->log_pid)
-      {
-        if (!vstr_add_cstr_ptr(dlg, 0, "]: "))
-          errno = ENOMEM, err(EXIT_FAILURE, "prefix");
-      }
+        vstr_add_cstr_ptr(dlg, 0, "]: ");
       else
-      {
-        pid_t pid = getpid();
-        
-        if (!vstr_add_fmt(dlg, 0, "] %lu: ", (unsigned long)pid))
-          errno = ENOMEM, err(EXIT_FAILURE, "prefix");
-      }
-      
-      if (!vstr_add_cstr_ptr(dlg, 0, tm_data) ||
-          !vstr_add_cstr_ptr(dlg, 0, "["))
-        errno = ENOMEM, err(EXIT_FAILURE, "prefix");      
+        vstr_add_fmt(dlg, 0, "] %lu: ", (unsigned long)getpid());
+
+      tm_data = date_syslog_yr(vlg->dt, now);
+      vstr_add_cstr_ptr(dlg, 0, tm_data);
+      vstr_add_cstr_ptr(dlg, 0, "[");
     }
     
+    if (vlg->log_max_sz && (dlg->len > vlg->log_max_sz))
+    {
+      size_t rm = (dlg->len - vlg->log_max_sz) + strlen("...\n");
+      
+      vstr_sc_reduce(dlg, 1, dlg->len, rm);
+      vstr_add_cstr_ptr(dlg, dlg->len, "...\n");
+    }
+    
+    if (dlg->conf->malloc_bad)
+      errno = ENOMEM, err(EXIT_FAILURE, "vlog__flush");
+
     while (dlg->len)
       if (!vstr_sc_write_fd(dlg, 1, dlg->len, fd, NULL) && (errno != EAGAIN))
         err(EXIT_FAILURE, "vlg__flush");
@@ -483,10 +502,31 @@ int vlg_sc_fmt_add_all(Vstr_conf *conf)
                           "<sa", "p", ">"));
 }
 
+static void vlg__mkdir_p(const char *dst, Vstr_base *tmp, size_t len)
+{
+  const char *bn = strrchr(dst, '/');
+
+  ASSERT(strlen(dst) == len);
+  
+  if (!bn || (bn == dst))
+    err(EXIT_FAILURE, "stat(%s)", dst);
+
+  len -= strlen(bn);
+  if ((dst = vstr_export_cstr_ptr(tmp, 1, len)))
+  {
+    if (mkdir(dst, 0700) == -1 && (errno == ENOENT))
+    {
+      vlg__mkdir_p(dst, tmp, len);
+      if ((dst = vstr_export_cstr_ptr(tmp, 1, len)))
+        mkdir(dst, 0700);
+    }
+  }
+}
+
 void vlg_sc_bind_mount(const char *chroot_dir)
 { /* make sure we can reconnect to syslog */
   Vstr_base *tmp = NULL;
-  const char *src = "/dev/log";
+  const char *src = _PATH_LOG;
   const char *dst = NULL;
   struct stat64 st_src[1];
   struct stat64 st_dst[1];
@@ -497,7 +537,7 @@ void vlg_sc_bind_mount(const char *chroot_dir)
   if (!(tmp = vstr_make_base(NULL)))
     errno = ENOMEM, err(EXIT_FAILURE, "bind-mount");
     
-  vstr_add_fmt(tmp, 0, "%s%s", chroot_dir, "/dev/log");
+  vstr_add_fmt(tmp, 0, "%s%s", chroot_dir, _PATH_LOG);
   dst = vstr_export_cstr_ptr(tmp, 1, tmp->len);
   if (tmp->conf->malloc_bad)
     errno = ENOMEM, err(EXIT_FAILURE, "bind-mount");
@@ -506,10 +546,9 @@ void vlg_sc_bind_mount(const char *chroot_dir)
     err(EXIT_FAILURE, "stat(%s)", src);
   
   if (stat64(dst, st_dst) == -1)
-  { /* if it fails, try creating the /dev/log chroot file... */
-    if ((dst = vstr_export_cstr_ptr(tmp, 1, tmp->len - strlen("/log"))))
-      mkdir(dst, 0700);
-
+  { /* if it fails, try creating the X in /path/X chroot file... */
+    vlg__mkdir_p(dst, tmp, tmp->len);
+    
     if ((dst = vstr_export_cstr_ptr(tmp, 1, tmp->len)))
     {
       int fd = open(dst, O_TRUNC | O_CREAT | O_EXCL, 0600);
@@ -626,11 +665,15 @@ Vlg *vlg_make(void)
   vlg->tm_get             = vlg__tm_get;
   
   vlg->syslog_facility    = LOG_DAEMON;
+
+  vlg->log_max_sz         = 0; /* no size limit */
+  
   vlg->syslog_stream      = FALSE;
   vlg->log_pid            = FALSE;
   vlg->out_dbg            = 0;
   vlg->daemon_mode        = FALSE;
   vlg->log_prefix_console = TRUE;
+  vlg->date_fmt_type      = VLG_DATE_FMT_SYSLOG_TRAD;
   
   return (vlg);
 
@@ -685,25 +728,61 @@ void vlg_undbg(Vlg *vlg)
 
 int vlg_pid_set(Vlg *vlg, int pid)
 {
-  int old = vlg->log_pid;
-
   vlg->log_pid = !!pid;
 
-  return (old);
+  return (TRUE);
 }
 
 int vlg_prefix_set(Vlg *vlg, int prefix)
 {
-  int old = vlg->log_prefix_console;
-
   vlg->log_prefix_console = prefix;
-
-  return (old);
+  return (TRUE);
 }
 
-void vlg_time_set(Vlg *vlg, time_t (*func)(void))
+#if 0 /* syslog doesn't allow this... */
+int vlg_date_set(Vlg *vlg, unsigned int date_fmt)
+{
+  ASSERT((vlg->date_fmt_type == VLG_DATE_FMT_SYSLOG_TRAD) ||
+         (vlg->date_fmt_type == VLG_DATE_FMT_SYSLOG_YR));
+  ASSERT((date_fmt == VLG_DATE_FMT_SYSLOG_TRAD) ||
+         (date_fmt == VLG_DATE_FMT_SYSLOG_YR));
+
+  if ((date_fmt != VLG_DATE_FMT_SYSLOG_TRAD) &&
+      (date_fmt != VLG_DATE_FMT_SYSLOG_YR))
+    return (FALSE);
+  
+  vlg->date_fmt_type = date_fmt;
+
+  return (TRUE);
+}
+#endif
+
+int vlg_syslog_native_set(Vlg *vlg, int prefix)
+{
+  vlg->log_syslog_native = prefix;
+  return (TRUE);
+}
+
+int vlg_syslog_facility_set(Vlg *vlg, int fac)
+{
+  vlg->syslog_facility = fac;
+  return (TRUE);
+}
+
+int vlg_size_set(Vlg *vlg, size_t sz)
+{
+  if (sz && (sz <= 3))
+    return (FALSE);
+  
+  vlg->log_max_sz = sz;
+  
+  return (TRUE);
+}
+
+int vlg_time_set(Vlg *vlg, time_t (*func)(void))
 {
   vlg->tm_get = func;
+  return (TRUE);
 }
 
 void vlg_pid_file(Vlg *vlg, const char *pid_file)

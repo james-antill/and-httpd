@@ -43,6 +43,9 @@ org.and.daemon-conf-1.0
 . processes | procs
 . logging
 .. syslog
+... native
+... limit
+.... size
 ... facility
 . resource-limits | rlimit
 .. address-space | AS

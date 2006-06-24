@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -11,7 +11,7 @@ ETag: "f.e.c/3"
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -20,25 +20,7 @@ Content-Length: 159
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
-Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
-Accept-Ranges: bytes
-Vary: Accept-Encoding
-Content-Type: text/html
-Content-Length: 159
-
-HTTP/1.1 412 Precondition Failed
-Date:
-Server: and-httpd/0.99.8
-Last-Modified:
-Accept-Ranges: bytes
-Vary: Accept-Encoding
-Content-Type: text/html
-Content-Length: 393
-
-HTTP/1.1 200 OK
-Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -47,7 +29,7 @@ Content-Length: 159
 
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -56,7 +38,7 @@ Content-Length: 393
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -65,7 +47,7 @@ Content-Length: 159
 
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -74,7 +56,25 @@ Content-Length: 393
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
+Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 159
+
+HTTP/1.1 412 Precondition Failed
+Date:
+Server: and-httpd/0.99.9
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 393
+
+HTTP/1.1 200 OK
+Date:
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -83,7 +83,7 @@ Content-Length: 159
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.8
+Server: and-httpd/0.99.9
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

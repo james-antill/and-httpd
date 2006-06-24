@@ -576,6 +576,20 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     else if (OPT_SERV_SYM_EQ("syslog"))
     {
       CONF_SC_MAKE_CLIST_BEG(logging_syslog, clist);
+      else if (OPT_SERV_SYM_EQ("native"))
+        OPT_SERV_X_TOGGLE(opts->vlg_syslog_native);
+      else if (OPT_SERV_SYM_EQ("limit"))
+      {
+        CONF_SC_MAKE_CLIST_BEG(logging_limit, clist);
+        
+        else if (OPT_SERV_SYM_EQ("size"))
+        {
+          opts->vlg_tweaked_size = TRUE;
+          OPT_SERV_X_ULONG(opts->vlg_size);
+        }
+    
+        CONF_SC_MAKE_CLIST_END();
+      }
       else if (OPT_SERV_SYM_EQ("facility"))
       {
         OPT_SERV_X_SINGLE_VSTR(conf->tmp);
