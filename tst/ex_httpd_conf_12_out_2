@@ -1,0 +1,265 @@
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Modified-Since
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Modified-Since
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Modified-Since
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Unmodified-Since
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Unmodified-Since
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Unmodified-Since
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Range
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Range
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Range
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-None-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-None-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: If-None-Match
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: X-Moz
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: X-Moz
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 404 Not Found
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: User-Agent
+Content-Type: text/html
+Content-Length: 324
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: User-Agent
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: User-Agent
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: User-Agent
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 410 Gone
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 427
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 312
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>403 Forbidden</title>
+  </head>
+  <body>
+    <h1>403 Forbidden</h1>
+    <p>The request is forbidden.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 403 Forbidden
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Vary: Referer
+Content-Type: text/html
+Content-Length: 312
+
+HTTP/1.1 404 Not Found
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Connection: close
+Vary: *
+Content-Type: text/html
+Content-Length: 324
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>404 Not Found</title>
+  </head>
+  <body>
+    <h1>404 Not Found</h1>
+    <p>The document requested was not found.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
