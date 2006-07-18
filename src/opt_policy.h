@@ -20,7 +20,10 @@ extern int opt_policy_copy(Opt_serv_policy_opts *,
                            const Opt_serv_policy_opts *);
 
 extern Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *,
-                                             const Conf_parse *, Conf_token *);
+                                             const Vstr_base *, size_t, size_t);
+extern Opt_serv_policy_opts *opt_policy_conf_find(Opt_serv_opts *,
+                                                  const Conf_parse *,
+                                                  Conf_token *);
 
 extern void opt_policy_add(Opt_serv_opts *, Opt_serv_policy_opts *)
     COMPILE_ATTR_NONNULL_A();
@@ -84,19 +87,16 @@ OPT_POLICY__EI int opt_policy_copy(Opt_serv_policy_opts *dst,
 }
 
 OPT_POLICY__EI Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *beg_opts,
-                                                     const Conf_parse *conf,
-                                                     Conf_token *token)
+                                                     const Vstr_base *s1,
+                                                     size_t pos, size_t len)
 {
-  const Vstr_sect_node *val = conf_token_value(token);
-  Opt_serv_policy_opts *opts = NULL;
-  
-  if (!val)
-    return (NULL);
+  Opt_serv_policy_opts *opts = beg_opts->def_policy;
 
-  opts = beg_opts->def_policy;
-
-  if (vstr_cmp_cstr_eq(conf->data, val->pos, val->len, "<default>"))
+  if (vstr_cmp_cstr_eq(s1, pos, len, "<default>"))
     return (opts);
+
+  OPT_POLICY__ASSERT(vstr_cmp_cstr_eq(opts->policy_name, 1,
+                                      opts->policy_name->len, "<default>"));
   
   while ((opts = opts->next))
   {
@@ -110,18 +110,31 @@ OPT_POLICY__EI Opt_serv_policy_opts *opt_policy_find(Opt_serv_opts *beg_opts,
                                  opts->next->policy_name, 1,
                                  opts->next->policy_name->len) < 0));
     
-    if (val->len > tmp->len)
+    if (len > tmp->len)
       continue;
-    if (val->len < tmp->len)
+    if (len < tmp->len)
       break;
-    cmp = vstr_cmp(conf->data, val->pos, val->len, tmp, 1, tmp->len);
+    cmp = vstr_cmp(s1, pos, len, tmp, 1, tmp->len);
     if (!cmp)
       return (opts);
     if (cmp < 0)
       break;
   }
-  
+
   return (NULL);
+}
+
+OPT_POLICY__EI
+Opt_serv_policy_opts *opt_policy_conf_find(Opt_serv_opts *beg_opts,
+                                           const Conf_parse *conf,
+                                           Conf_token *token)
+{
+  const Vstr_sect_node *val = conf_token_value(token);
+  
+  if (!val)
+    return (NULL);
+
+  return (opt_policy_find(beg_opts, conf->data, val->pos, val->len));
 }
 
 #endif

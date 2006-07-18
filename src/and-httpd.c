@@ -62,6 +62,14 @@ MALLOC_CHECK_DECL();
 #include "httpd_policy.h"
 
 
+#ifndef TCP_CONGESTION
+# ifdef __linux__
+#  define TCP_CONGESTION 13
+# else
+#  define TCP_CONGESTION 0
+# endif
+#endif
+
 /* we get prctl.h from evnt.h */
 #if defined(HAVE_SYS_CAPABILITY_H) && defined(PR_SET_KEEPCAPS)
 # include <sys/capability.h>
@@ -336,6 +344,9 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
 
   ASSERT(!con->evnt->flag_q_closed);
 
+  vlg_dbg2(vlg, "con($<sa:%p>): congestion=$<sockopt.s:%d%d%d>\n",
+           CON_CEVNT_SA(con), evnt_fd(con->evnt), IPPROTO_TCP, TCP_CONGESTION);
+  
   return (con->evnt);
   
  evnt_fail:
@@ -359,20 +370,36 @@ static void serv_make_bind(const char *program_name)
   
   while (addr)
   {
-    const char *ipv4_address = NULL;
+    const char *acpt_address = NULL;
     const char *acpt_filter_file = NULL;
+    const char *acpt_cong = NULL;
     struct Evnt *evnt = NULL;
     
-    OPT_SC_EXPORT_CSTR(ipv4_address,     addr->ipv4_address,     FALSE,
-                       "ipv4 address");
+    OPT_SC_EXPORT_CSTR(acpt_address,     addr->acpt_address,     FALSE,
+                       "accept address");
     OPT_SC_EXPORT_CSTR(acpt_filter_file, addr->acpt_filter_file, FALSE,
                        "accept filter file");
+    OPT_SC_EXPORT_CSTR(acpt_cong,        addr->acpt_cong,        FALSE,
+                       "accept congestion mode");
     
-    evnt = evnt_sc_serv_make_bind(ipv4_address, addr->tcp_port,
-                                  addr->q_listen_len,
-                                  addr->max_connections,
-                                  addr->defer_accept,
-                                  acpt_filter_file);
+    evnt = evnt_sc_serv_make_bind_ipv4(acpt_address, addr->tcp_port,
+                                       addr->q_listen_len,
+                                       addr->max_connections,
+                                       addr->defer_accept,
+                                       acpt_filter_file, acpt_cong);
+
+    if (addr->def_policy->len)
+    {
+      Vstr_base *dp = addr->def_policy;
+      Opt_serv_policy_opts *po = opt_policy_find(httpd_opts->s, dp, 1, dp->len);
+      Acpt_listener *acpt_listener = (Acpt_listener *)evnt;
+
+      if (!po)
+        usage(program_name, EXIT_FAILURE,
+              " The name of the accept policy isn't valid.\n");
+        
+      acpt_listener->def_policy = vstr_ref_add(po->ref);
+    }
     
     evnt->cbs->cb_func_accept = serv_cb_func_accept;
 

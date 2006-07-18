@@ -106,7 +106,9 @@ am_and_httpd_OBJECTS = and_httpd-mime_types.$(OBJEXT) \
 	and_httpd-httpd_conf_main.$(OBJEXT) \
 	and_httpd-httpd_conf_req.$(OBJEXT) \
 	and_httpd-httpd_policy.$(OBJEXT) \
-	and_httpd-httpd_policy_inline.$(OBJEXT) $(am__objects_2) \
+	and_httpd-httpd_policy_inline.$(OBJEXT) \
+	and_httpd-match_con.$(OBJEXT) and_httpd-match_req.$(OBJEXT) \
+	and_httpd-match_resp.$(OBJEXT) $(am__objects_2) \
 	and_httpd-httpd.$(OBJEXT) and_httpd-and-httpd.$(OBJEXT)
 and_httpd_OBJECTS = $(am_and_httpd_OBJECTS)
 @DBG_TIMER_Q_FALSE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
@@ -319,12 +321,14 @@ DAEMON_FILES_HDRS = bag.h conf.h cntl.h date.h evnt.h hexdump.h \
                     opt.h opt_policy.h opt_conf.h opt_serv.h vlg.h
 
 and_httpd_SOURCES = mime_types.c httpd_conf_main.c httpd_conf_req.c \
-                        httpd_policy.c httpd_policy_inline.c \
-                        $(DAEMON_FILES_SRCS) httpd.c and-httpd.c
+                         httpd_policy.c httpd_policy_inline.c \
+                         match_con.c match_req.c match_resp.c \
+                         $(DAEMON_FILES_SRCS) httpd.c and-httpd.c
 
 and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
-                        httpd_policy.h \
-                        $(DAEMON_FILES_HDRS) httpd.h httpd_err_codes.h
+                         httpd_policy.h \
+                         match_con.h match_req.h \
+                         $(DAEMON_FILES_HDRS) httpd.h httpd_err_codes.h
 
 and_httpd_CFLAGS = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(XTIMER_Q_CFLAGS) \
                      -DHTTPD_CONF_VERSION='"@VERSION@"'
@@ -717,6 +721,24 @@ and_httpd-httpd_policy_inline.o: httpd_policy_inline.c
 
 and_httpd-httpd_policy_inline.obj: httpd_policy_inline.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-httpd_policy_inline.obj `if test -f 'httpd_policy_inline.c'; then $(CYGPATH_W) 'httpd_policy_inline.c'; else $(CYGPATH_W) '$(srcdir)/httpd_policy_inline.c'; fi`
+
+and_httpd-match_con.o: match_con.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_con.o `test -f 'match_con.c' || echo '$(srcdir)/'`match_con.c
+
+and_httpd-match_con.obj: match_con.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_con.obj `if test -f 'match_con.c'; then $(CYGPATH_W) 'match_con.c'; else $(CYGPATH_W) '$(srcdir)/match_con.c'; fi`
+
+and_httpd-match_req.o: match_req.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_req.o `test -f 'match_req.c' || echo '$(srcdir)/'`match_req.c
+
+and_httpd-match_req.obj: match_req.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_req.obj `if test -f 'match_req.c'; then $(CYGPATH_W) 'match_req.c'; else $(CYGPATH_W) '$(srcdir)/match_req.c'; fi`
+
+and_httpd-match_resp.o: match_resp.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_resp.o `test -f 'match_resp.c' || echo '$(srcdir)/'`match_resp.c
+
+and_httpd-match_resp.obj: match_resp.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-match_resp.obj `if test -f 'match_resp.c'; then $(CYGPATH_W) 'match_resp.c'; else $(CYGPATH_W) '$(srcdir)/match_resp.c'; fi`
 
 and_httpd-bag.o: bag.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-bag.o `test -f 'bag.c' || echo '$(srcdir)/'`bag.c

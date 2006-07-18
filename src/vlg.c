@@ -273,14 +273,16 @@ static void vlg__add_chk_flush(Vlg *vlg, const char *fmt, va_list ap,
 
 
 /* because vlg goes away quickly it's likely we'll want to just use _BUF_PTR
-   for Vstr data to save the copying. So here is a helper. */
+ * for Vstr data to save the copying.
+ * Note that if we have ability to go async in vlg, we can tweak this so it
+ * "just works" for the user. */
 static int vlg__fmt__add_vstr_add_vstr(Vstr_base *base, size_t pos,
                                        Vstr_fmt_spec *spec)
 {
   Vstr_base *sf          = VSTR_FMT_CB_ARG_PTR(spec, 0);
   size_t sf_pos          = VSTR_FMT_CB_ARG_VAL(spec, size_t, 1);
   size_t sf_len          = VSTR_FMT_CB_ARG_VAL(spec, size_t, 2);
-  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR;
+  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR; /* OK because it's "sync" */
   
   if (!vstr_sc_fmt_cb_beg(base, &pos, spec, &sf_len,
                           VSTR_FLAG_SC_FMT_CB_BEG_OBJ_STR))
@@ -312,7 +314,7 @@ static int vlg__fmt__add_vstr_add_all_vstr(Vstr_base *base, size_t pos,
   Vstr_base *sf          = VSTR_FMT_CB_ARG_PTR(spec, 0);
   size_t sf_pos          = 1;
   size_t sf_len          = sf->len;
-  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR;
+  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR; /* OK because it's "sync" */
   
   if (!vstr_sc_fmt_cb_beg(base, &pos, spec, &sf_len,
                           VSTR_FLAG_SC_FMT_CB_BEG_OBJ_STR))
@@ -344,7 +346,7 @@ static int vlg__fmt__add_vstr_add_sect_vstr(Vstr_base *base, size_t pos,
   unsigned int num       = VSTR_FMT_CB_ARG_VAL(spec, unsigned int, 2);
   size_t sf_pos          = VSTR_SECTS_NUM(sects, num)->pos;
   size_t sf_len          = VSTR_SECTS_NUM(sects, num)->len;
-  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR;
+  unsigned int sf_flags  = VSTR_TYPE_ADD_BUF_PTR; /* OK because it's "sync" */
   
   if (!vstr_sc_fmt_cb_beg(base, &pos, spec, &sf_len,
                           VSTR_FLAG_SC_FMT_CB_BEG_OBJ_STR))
@@ -400,6 +402,58 @@ static int vlg__fmt_add_vstr_add_hexdump_vstr(Vstr_conf *conf, const char *name)
                        VSTR_TYPE_FMT_PTR_VOID,
                        VSTR_TYPE_FMT_SIZE_T,
                        VSTR_TYPE_FMT_SIZE_T,
+                       VSTR_TYPE_FMT_END));
+}
+
+/* easy way to print socket options... */
+static int vlg__fmt__add_vstr_add_sockopt_s(Vstr_base *base, size_t pos,
+                                            Vstr_fmt_spec *spec)
+{
+  int fd          = VSTR_FMT_CB_ARG_VAL(spec, int, 0);
+  int level       = VSTR_FMT_CB_ARG_VAL(spec, int, 1);
+  int optname     = VSTR_FMT_CB_ARG_VAL(spec, int, 2);
+  char buf[1024];
+  const char *ptr = buf;
+  size_t obj_len = 0;
+
+  if (!optname) /* assume 0 is invalid */
+  {
+    ptr = "<unknown>";
+    obj_len = strlen(ptr);
+  }
+  else
+  {
+    socklen_t len = sizeof(buf);
+    int ret = -1;
+    
+    if ((ret = getsockopt(fd, level, optname, buf, &len)) != -1)
+      obj_len = len;
+    else
+    {
+      ptr = "<error>";
+      obj_len = strlen(ptr);
+    }
+  }
+  
+  if (!vstr_sc_fmt_cb_beg(base, &pos, spec, &obj_len,
+                          VSTR_FLAG_SC_FMT_CB_BEG_OBJ_STR))
+    return (FALSE);
+  
+  if (!vstr_add_buf(base, pos, ptr, obj_len))
+    return (FALSE);
+                                                                                
+  if (!vstr_sc_fmt_cb_end(base, pos, spec, obj_len))
+    return (FALSE);
+                                                                                
+  return (TRUE);
+}
+
+static int vlg__fmt_add_vstr_add_sockopt_s(Vstr_conf *conf, const char *name)
+{
+  return (vstr_fmt_add(conf, name, vlg__fmt__add_vstr_add_sockopt_s,
+                       VSTR_TYPE_FMT_INT,
+                       VSTR_TYPE_FMT_INT,
+                       VSTR_TYPE_FMT_INT,
                        VSTR_TYPE_FMT_END));
 }
 
@@ -499,7 +553,9 @@ int vlg_sc_fmt_add_all(Vstr_conf *conf)
           VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sect_vstr,
                           "<vstr.sect", "p%p%u", ">") &&
           VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sa,
-                          "<sa", "p", ">"));
+                          "<sa", "p", ">") &&
+          VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sockopt_s,
+                          "<sockopt.s", "d%d%d", ">"));
 }
 
 static void vlg__mkdir_p(const char *dst, Vstr_base *tmp, size_t len)

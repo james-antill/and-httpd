@@ -180,6 +180,8 @@ typedef struct Httpd_opts
  Conf_token tmp_match_connection[1];
  Conf_token match_request[1];
  Conf_token tmp_match_request[1];
+ Conf_token match_response[1];
+ Conf_token tmp_match_response[1];
 } Httpd_opts;
 #define HTTPD_CONF_MAIN_DECL_OPTS(N)                            \
     Httpd_opts N[1] = {                                         \
@@ -193,6 +195,8 @@ typedef struct Httpd_opts
       {CONF_TOKEN_INIT},                                        \
       {CONF_TOKEN_INIT},                                        \
       {CONF_TOKEN_INIT},                                        \
+      {CONF_TOKEN_INIT},                                        \
+      {CONF_TOKEN_INIT},                                        \
      }                                                          \
     }
 
@@ -201,12 +205,22 @@ extern void httpd_conf_main_free(Httpd_opts *);
 
 extern int httpd_match_request_tst_d1(struct Con *, struct Httpd_req_data *,
                                       Conf_parse *, Conf_token *,
-                                      int *, int);
+                                      int *, int,
+                                      int (*)(Conf_parse *, Conf_token *,
+                                              int *, int, void *),
+                                      void *);
+extern int httpd_match_request_sc_tst_d1(struct Con *, struct Httpd_req_data *,
+                                         Conf_parse *, Conf_token *,
+                                         int *, int);
 
+
+/* these are in match_*.c */
 extern int httpd_policy_connection(struct Con *,
                                    Conf_parse *, const Conf_token *);
 extern int httpd_policy_request(struct Con *, struct Httpd_req_data *,
                                 Conf_parse *, const Conf_token *);
+extern int httpd_policy_response(struct Con *, struct Httpd_req_data *,
+                                 Conf_parse *, const Conf_token *);
 
 
 extern int httpd_conf_main(Httpd_opts *, Conf_parse *, Conf_token *);

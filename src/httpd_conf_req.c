@@ -554,8 +554,8 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     {
       CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
       
-      if (!httpd_match_request_tst_d1(con, req, conf, token, &matches,
-                                      prev_match))
+      if (!httpd_match_request_sc_tst_d1(con, req, conf, token, &matches,
+                                         prev_match))
         return (FALSE);
       
       if (!matches)

@@ -44,6 +44,14 @@
 
 #include <sys/sendfile.h>
 
+#ifndef TCP_CONGESTION
+# ifdef __linux__
+#  define TCP_CONGESTION 13
+# else
+#  define TCP_CONGESTION 0
+# endif
+#endif
+
 /* FIXME: Should do better autoconf checks... */
 #if defined(__linux__)
 /* Linux doesn't let TCP_NODELAY be config., like Solaris ... and maybe *BSD?
@@ -182,7 +190,7 @@ void evnt_fd__set_nonblock(int fd, int val)
   ASSERT(val == !!val);
   
   if ((flags = fcntl(fd, F_GETFL)) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "%s\n", __func__);
+    vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", __func__);
 
   if (!!(flags & O_NONBLOCK) == val)
     return;
@@ -193,7 +201,15 @@ void evnt_fd__set_nonblock(int fd, int val)
     flags &= ~O_NONBLOCK;
   
   if (fcntl(fd, F_SETFL, flags) == -1)
-    vlg_err(vlg, EXIT_FAILURE, "%s\n", __func__);
+    vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", __func__);
+}
+
+static void evnt_fd__set_coe(int fd, int val)
+{
+  ASSERT(val == !!val);
+
+  if (fcntl(fd, F_SETFD, val) == -1)
+    vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", __func__);
 }
 
 static int evnt_fd__set_nodelay(int fd, int val)
@@ -209,6 +225,15 @@ static int evnt_fd__set_cork(int fd, int val)
 static int evnt_fd__set_reuse(int fd, int val)
 {
   return (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) != -1);
+}
+
+#define CLEN_SZ(x) (strlen(x) + 1)
+static int evnt_fd__set_congestion(int fd, const char *val)
+{
+  if (!TCP_CONGESTION)
+    return (errno = ENOPROTOOPT, FALSE);
+  
+  return (setsockopt(fd, IPPROTO_TCP, TCP_CONGESTION, val, CLEN_SZ(val)) != -1);
 }
 
 void evnt_add(struct Evnt **que, struct Evnt *node)
@@ -531,9 +556,8 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref,
   EVNT__COPY_TV(&evnt->mtime);
 
   evnt->msecs_tm_mtime = 0;
-  
-  if (fcntl(fd, F_SETFD, TRUE) == -1)
-    goto fcntl_fail;
+
+  evnt_fd__set_coe(fd, TRUE);
 
   evnt->sa_ref = vstr_ref_add(ref);
   evnt->acpt_sa_ref = NULL;
@@ -558,7 +582,6 @@ static int evnt_init(struct Evnt *evnt, int fd, Vstr_ref *ref,
 
  poll_add_fail:
   vstr_ref_del(evnt->sa_ref); evnt->sa_ref = NULL;
- fcntl_fail:
   vstr_free_base(evnt->io_w);
  make_vstr_fail:
   vstr_free_base(evnt->io_r);
@@ -817,21 +840,20 @@ static int evnt__make_bind_end(struct Evnt *evnt)
 
 int evnt_make_bind_ipv4(struct Evnt *evnt,
                         const char *acpt_addr, short server_port,
-                        unsigned int listen_len)
+                        unsigned int listen_len, const char *cong)
 {
   int fd = -1;
-  int saved_errno = 0;
   socklen_t alloc_len = sizeof(struct sockaddr_in);
   Vstr_ref *ref = NULL;
   struct sockaddr_in *saddr = NULL;
   
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-    goto sock_fail;
+    VLG_WARN_GOTO(sock_fail, (vlg, "socket(): %m\n"));
   
   EVNT__UPDATE_TV();
 
   if (!(ref = vstr_ref_make_malloc(alloc_len)))
-    goto init_fail;
+    VLG_WARNNOMEM_GOTO(init_fail, (vlg, "%s(): %m\n", __func__));
   saddr = ref->ptr;
   
   saddr->sin_family = AF_INET;
@@ -845,29 +867,33 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   saddr->sin_port = htons(server_port);
 
   if (!evnt_init(evnt, fd, ref, NULL))
-    goto init_fail;
+    VLG_WARNNOMEM_GOTO(init_fail, (vlg, "%s(): %m\n", __func__));
 
   if (!evnt_fd__set_reuse(fd, TRUE))
-    goto reuse_fail;
+    VLG_WARNNOMEM_GOTO(reuse_fail, (vlg, "%s(): %m\n", __func__));
+  
+  if (cong && !evnt_fd__set_congestion(fd, cong) && (errno != ENOPROTOOPT))
+    VLG_WARN_GOTO(cong_fail,
+                  (vlg, "setsockopt(TCP_CONGESTION, %s): %m\n", cong));
   
   if (bind(fd, EVNT_SA(evnt), alloc_len) == -1)
-    goto bind_fail;
+    VLG_WARN_GOTO(bind_fail,
+                  (vlg, "bind(%s:%hd): %m\n", acpt_addr, server_port));
 
   if (!server_port)
     if (getsockname(fd, EVNT_SA(evnt), &alloc_len) == -1)
-      vlg_err(vlg, EXIT_FAILURE, "getsockname: %m\n");
+      VLG_WARN_GOTO(getsockname_fail, (vlg, "getsockname(): %m\n"));
   
   if (listen(fd, listen_len) == -1)
-    goto listen_fail;
+    VLG_WARN_GOTO(listen_fail, (vlg, "listen(%d): %m\n", listen_len));
 
   vstr_ref_del(ref);
   return (evnt__make_bind_end(evnt));
   
- bind_fail:
-  saved_errno = errno;
-  vlg_warn(vlg, "bind(%s:%hd): %m\n", acpt_addr, server_port);
-  errno = saved_errno;
  listen_fail:
+ getsockname_fail:
+ bind_fail:
+ cong_fail:
  reuse_fail:
   evnt__uninit(evnt);
  init_fail:
@@ -1844,7 +1870,7 @@ static int evnt__get_timeout(void)
       msecs = 0;
   }
 
-  vlg_dbg2(vlg, "get_timeout = %d\n", msecs);
+  vlg_dbg2(vlg, "get_timeout = %'d\n", msecs);
   
   return (msecs);
 }
@@ -1987,8 +2013,9 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
 
     if (revents & POLLIN)
     {
-      struct sockaddr_in sa;
-      socklen_t len = sizeof(struct sockaddr_in);
+      struct sockaddr_storage sstore[1];
+      struct sockaddr *sa = (struct sockaddr *) sstore;
+      socklen_t len = sizeof(struct sockaddr_storage);
       int fd = -1;
       struct Evnt *tmp = NULL;
       unsigned int acpt_num = 0;
@@ -2000,11 +2027,9 @@ void evnt_scan_fds(unsigned int ready, size_t max_sz)
        * should just kill the listen socket and wait to die. But for instance.
        * we can't just kill the socket on EMFILE, as we might have hit our
        * resource limit */
-      while ((revents & POLLIN) &&
-             (fd = accept(evnt_fd(scan), (struct sockaddr *) &sa, &len)) != -1)
+      while ((revents & POLLIN) && (fd = accept(evnt_fd(scan), sa, &len)) != -1)
       {
-        if (!(tmp = scan->cbs->cb_func_accept(scan, fd,
-                                              (struct sockaddr *) &sa, len)))
+        if (!(tmp = scan->cbs->cb_func_accept(scan, fd, sa, len)))
         {
           close(fd);
           scan_next = scan->next;
@@ -2478,7 +2503,7 @@ static Timer_q_node *evnt__timeout_mtime_make(struct Evnt *evnt,
 {
   Timer_q_node *tm_o = NULL;
 
-  vlg_dbg2(vlg, "mtime_make($<sa:%p>, %lu)\n", EVNT_SA(evnt), msecs);
+  vlg_dbg2(vlg, "mtime_make($<sa:%p>, %'lu)\n", EVNT_SA(evnt), msecs);
   
   if (0) { }
   else if (msecs >= ( 99 * 1000))
@@ -2659,6 +2684,7 @@ void evnt_sc_serv_cb_func_acpt_free(struct Evnt *evnt)
 
   acpt_data->evnt = NULL;
   vstr_ref_del(acpt_listener->ref);
+  vstr_ref_del(acpt_listener->def_policy);
   F(acpt_listener);
 }
 
@@ -2675,12 +2701,13 @@ static void evnt__sc_serv_make_acpt_data_cb(Vstr_ref *ref)
   free(ref);
 }
 
-struct Evnt *evnt_sc_serv_make_bind(const char *acpt_addr,
-                                    unsigned short acpt_port,
-                                    unsigned int q_listen_len,
-                                    unsigned int max_connections,
-                                    unsigned int defer_accept,
-                                    const char *acpt_filter_file)
+struct Evnt *evnt_sc_serv_make_bind_ipv4(const char *acpt_addr,
+                                         unsigned short acpt_port,
+                                         unsigned int q_listen_len,
+                                         unsigned int max_connections,
+                                         unsigned int defer_accept,
+                                         const char *acpt_filter_file,
+                                         const char *acpt_cong)
 {
   struct sockaddr_in *sinv4 = NULL;
   Acpt_listener *acpt_listener = NULL;
@@ -2691,7 +2718,8 @@ struct Evnt *evnt_sc_serv_make_bind(const char *acpt_addr,
     VLG_ERRNOMEM((vlg, EXIT_FAILURE, "make_bind(%s, %hu): %m\n",
                   acpt_addr, acpt_port));
   acpt_listener->max_connections = max_connections;
-
+  acpt_listener->def_policy = NULL;
+  
   if (!(acpt_data = MK(sizeof(Acpt_data))))
     VLG_ERRNOMEM((vlg, EXIT_FAILURE, "make_bind(%s, %hu): %m\n",
                   acpt_addr, acpt_port));
@@ -2704,8 +2732,9 @@ struct Evnt *evnt_sc_serv_make_bind(const char *acpt_addr,
   acpt_listener->ref = ref;
   
   if (!evnt_make_bind_ipv4(acpt_listener->evnt, acpt_addr, acpt_port,
-                           q_listen_len))
-    vlg_err(vlg, 2, "%s: %m\n", __func__);
+                           q_listen_len, acpt_cong))
+    vlg_err(vlg, 2, "make_bind(%s, %hd, %d, %s): Failed!\n",
+            acpt_addr ? acpt_addr : "any", acpt_port, q_listen_len, acpt_cong);
   acpt_data->evnt = acpt_listener->evnt;
   acpt_data->sa   = vstr_ref_add(acpt_data->evnt->sa_ref);
   

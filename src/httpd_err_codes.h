@@ -191,5 +191,18 @@
       HTTPD_ERR(req, code);                             \
       return val ;                                      \
     } while (0)
-      
+
+
+#define HTTPD_ERR_REDIR(x)                      \
+    (((x) == 301) ||                            \
+     ((x) == 302) ||                            \
+     ((x) == 303) ||                            \
+     ((x) == 307))
+#define HTTPD_ERR_MATCH_RESP(x)                 \
+    (((x) == 400) ||                            \
+     ((x) == 403) ||                            \
+     ((x) == 404) ||                            \
+     ((x) == 406) ||                            \
+     ((x) == 410))
+    
 #endif

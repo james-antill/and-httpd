@@ -1,0 +1,141 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 372
+Location: http://foo.example.com/01_
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://foo.example.com/01_">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/02
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://foo.example.com/02">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/03
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/04
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/05
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/06
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/07
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/08
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/09
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/10
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/11
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Content-Type: text/html
+Content-Length: 371
+Location: http://foo.example.com/12
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 377
+Location: http://foo.example.com/13%22%3e
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://foo.example.com/13%22%3e">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

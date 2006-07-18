@@ -1,9 +1,9 @@
 GET /virt/tst_11/lowercase-path/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/lowercase-path/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/lowercase-path/fOo.html.Pl HTTP/1.1
@@ -14,11 +14,11 @@ Host:
 
 
 GET /virt/tst_11/uppercase-path/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/uppercase-path/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/uppercase-path/fOo.html.Pl HTTP/1.1
@@ -31,11 +31,11 @@ Host:
 
 
 GET /virt/tst_11/lowercase-ext/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/lowercase-ext/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/lowercase-ext/fOo.html.Pl HTTP/1.1
@@ -46,11 +46,11 @@ Host:
 
 
 GET /virt/tst_11/uppercase-ext/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/uppercase-ext/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/uppercase-ext/fOo.html.Pl HTTP/1.1
@@ -63,11 +63,11 @@ Host:
 
 
 GET /virt/tst_11/lowercase-exts/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/lowercase-exts/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/lowercase-exts/fOo.html.Pl HTTP/1.1
@@ -78,11 +78,11 @@ Host:
 
 
 GET /virt/tst_11/uppercase-exts/fOO.html.PL HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 GET /virt/tst_11/uppercase-exts/fOo.HTML.pl HTTP/1.1
-Accept-Encoding: x
+Accept-Encoding: foo
 Host:
 
 HEAD /virt/tst_11/uppercase-exts/fOo.html.Pl HTTP/1.1

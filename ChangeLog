@@ -1,3 +1,39 @@
+2006-07-17  James Antill  <james@and.org>
+
+	* src/match_req.c (httpd_match_request_tst_d1): Fix bug with 
+	compiled server-ipv4-cidr.
+
+	* src/match_req.c (httpd_match_request_tst_d1): Fix hdr checks
+	for UA/referer.
+
+	* src/match_req.c (httpd_match_request_tst_d1): Fix NULL checks for
+	content-type/content-lang.
+
+	* tools/_fixup-url-pasting.conf: Add config. file to fix pasting typos.
+
+	* src/httpd.c (http_fin_err_req): Call match-response, if config.
+
+	* src/match_resp.c (httpd_policy_response): Add code for matching error
+	responses.
+
+2006-07-15  James Antill  <james@and.org>
+
+	* src/match_req.c (httpd_policy_request): Split code from
+	httpd_conf_main.c
+
+	* src/match_con.c (httpd_policy_connection): Split code from
+	httpd_conf_main.c
+
+2006-07-14  James Antill  <james@and.org>
+
+	* src/and-httpd.c (serv_make_bind): Add TCP_CONGESTION support, and
+	change ipv4_address to acpt_address for when we get ipv6 support.
+
+	* src/evnt.c (evnt_fd__set_congestion): Add TCP_CONGESTION support.
+
+	* src/vlg.c (vlg__fmt__add_vstr_add_sockopt_s): Add custom formatter for
+	string sockopt's.
+
 2006-06-24  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.9

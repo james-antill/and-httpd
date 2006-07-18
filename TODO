@@ -49,14 +49,12 @@ http://www.sans.org/top20/#u2
           IPv6 (and flying cars)
         mod_rssindex - and-dir_list2html outputs atom?
         conf
-         default policy for each listening socket
-         match-* tied to policies?
+         match-* tied to policies? -- minor speed boost
          openssh like limit connection backoff?
-         stat() ... so right paren can be a generic:
-              if ! stat(fname): fname -= ')'; redirect;
-              dito. '.'
-           Harder to do in async manner.
-            match-response for 404s could do this?
+	 userdirs? - problem due to getpwnam() braindamage
+          Have async vars that are processed before match-request/req_conf
+          which can then be used in file alteration etc.
+
 
         in default start page:
          ,tools explanation
@@ -64,17 +62,18 @@ http://www.sans.org/top20/#u2
          generic config. manual etc.
 
 	man pages
+	http://people.apache.org/~pquerna/modules/mod_flvx.c
         tst zsync
 	static app.
          way to enable CONF_FULL_STATIC
          way to not include libcap, which doesn't have a static file
          way to use -Wl,-Bstatic?
         conf
+         stat()
+              if ! stat(fname): fname = 'foo'; redirect;
+           More async vars, like getpwnam()
          allow setting arbitrary socket options?
          call tzset() every X seconds, for changing timezone?
-	 userdirs? - problem due to getpwnam() braindamage
-          Have async vars that are processed before match-request/req_conf
-          which can then be used in file alteration etc.
          getgroups before setgroups?
          Allow "macros", so you can say turn "extra speed" on etc.
           ACL lists for ipv4-etc.

@@ -62,7 +62,9 @@ typedef struct Opt_serv_addr_opts
 {
  struct Opt_serv_addr_opts *next;
  Vstr_base *acpt_filter_file;
- Vstr_base *ipv4_address;
+ Vstr_base *acpt_address;
+ Vstr_base *acpt_cong;
+ Vstr_base *def_policy;
  unsigned short tcp_port;
  unsigned int defer_accept;
  unsigned int q_listen_len;
@@ -277,7 +279,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 
 #define OPT_SERV_GETOPTS(opts)                                          \
     case 't': opts->def_policy->idle_timeout = atoi(optarg);        break; \
-    case 'H': OPT_VSTR_ARG(opts->addr_beg->ipv4_address);           break; \
+    case 'H': OPT_VSTR_ARG(opts->addr_beg->acpt_address);           break; \
     case 'M': OPT_NUM_NR_ARG(opts->addr_beg->max_connections,           \
                              "max connections");                        \
     opts->def_policy->max_connections = opts->addr_beg->max_connections; \
@@ -497,6 +499,11 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 
 #define OPT_SERV_X_EQ(x) do {                                           \
       if (conf_sc_token_parse_eq(conf, token, (x), 1, (x)->len, matches)) \
+        return (FALSE);                                                 \
+    } while (FALSE)
+
+#define OPT_SERV_X_CSTR_EQ(x) do {                                      \
+      if (conf_sc_token_parse_cstr_eq(conf, token, (x), matches))       \
         return (FALSE);                                                 \
     } while (FALSE)
 

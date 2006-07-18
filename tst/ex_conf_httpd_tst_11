@@ -1,19 +1,20 @@
-#########################################################
-###                                                   ###
-### This is a configuration for httpd_conf_9 tests... ###
-###                                                   ###
-#########################################################
+##########################################################
+###                                                    ###
+### This is a configuration for httpd_conf_11 tests... ###
+###                                                    ###
+##########################################################
 
 (org.and.httpd-conf-main-1.0
 
   (org.and.daemon-conf-1.0
-    (listen addr 127.0.10.1)
+    (listen addr 127.0.10.1 policy conf-httpd-tst-11.1-<default>)
 
      cntl-file ex_httpd_cntl)
 
-  (match-connection [policy-eq <default>
-                     server-ipv4-cidr-eq 127.0.10.1]
-    policy conf-httpd-tst-11.1-<default>)
+;; Done via. new default policy on listen
+#  (match-connection [policy-eq <default>
+#                     server-ipv4-cidr-eq 127.0.10.1]
+#    policy conf-httpd-tst-11.1-<default>)
 
    policy conf-httpd-tst-11.1-<default>
 
@@ -59,15 +60,24 @@
   (match-request 'non-compression IO Limits'
                  [policy-eq conf-httpd-tst-11.1-<default>
                  # (|| method-eq GET method-eq POST)
-                  protect-vary ! Accept-Encoding:]
+                  protect-vary ! || Accept-Encoding: gzip
+                                    Accept-Encoding: bzip2
+                                    ; Put any local networks here...
+                                    ; client-ipv4-cidr-eq 127.0.0.1/8
+                                    client-ipv4-cidr-eq 127.0.0.1/32
+                                    server-ipv4-cidr-eq 127.0.0.1/32
+                                    server-ipv4-port-eq 1
+                                    server-ipv6-port-eq 1
+                                   (Accept-Encoding:)]
      policy            conf-httpd-tst-11.1-<limited>
      connection-policy conf-httpd-tst-11.1-<limited>)
   (match-init [true] ; Change if you want to never get back...
    match-request     'compression IO Limits'
                  [policy-eq conf-httpd-tst-11.1-<limited>
-                  ||
-                    # (! || method-eq GET method-eq POST)
-                     protect-vary   Accept-Encoding:]
+                  !
+                  # (|| method-eq GET method-eq POST)
+                  protect-vary ! || Accept-Encoding: gzip
+                                    Accept-Encoding: bzip2 (Accept-Encoding:)]
      policy            conf-httpd-tst-11.1-<default>
      connection-policy conf-httpd-tst-11.1-<default>)
 

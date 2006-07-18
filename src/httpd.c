@@ -1639,29 +1639,68 @@ static int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     vstr_del(con->evnt->io_r, 1, con->evnt->io_r->len);
     deleted_req_data = TRUE;
   }
-  else if (((req->error_code != 301) && /* don't do as href is passed */
-            (req->error_code != 302) &&
-            (req->error_code != 303) &&
-            (req->error_code != 307)) && req->policy->req_err_dir->len)
+  else if (!HTTPD_ERR_REDIR(req->error_code) && /* don't do as href is passed */
+           req->policy->req_err_dir->len)
   { /* custom err message */
-    Vstr_base *fname = vstr_make_base(req->fname->conf);
+    Vstr_base *fname = NULL;
     size_t vhost_prefix_len = 0;
     const char *fname_cstr = NULL;
     struct stat64 f_stat[1];
     int open_flags = O_NONBLOCK;
 
-    if (!fname)
+    if (HTTPD_ERR_MATCH_RESP(req->error_code))
+    {
+      req->req_user_return_error_code = req->user_return_error_code;
+      req->user_return_error_code     = FALSE;    
+      req->req_error_code             = req->error_code;
+      req->error_code                 = 0;
+      req->req_error_xmsg             = req->error_xmsg;
+      req->error_xmsg                 = "";
+    
+      if (!httpd_policy_response(con, req,
+                                 httpd_opts->conf, httpd_opts->match_response))
+      {
+        Vstr_base *s1 = httpd_opts->conf->tmp;
+        if (!req->user_return_error_code)
+          vlg_info(vlg, "CONF-MATCH-RESP-ERR from[$<sa:%p>]:"
+                   " backtrace: $<vstr.all:%p>\n", CON_CEVNT_SA(con), s1);
+        /* fall through */
+      }
+      else
+      {
+        ASSERT(!req->user_return_error_code);
+        ASSERT(!req->error_code);
+        ASSERT(!*req->error_xmsg);
+        req->user_return_error_code = req->req_user_return_error_code;
+        req->error_code             = req->req_error_code;
+        req->error_xmsg             = req->req_error_xmsg;
+        
+        if (con->evnt->flag_q_closed)
+        {
+          Vstr_base *s1 = req->policy->s->policy_name;
+          
+          vlg_info(vlg, "BLOCKED from[$<sa:%p>]: policy $<vstr.all:%p>\n",
+                   CON_CEVNT_SA(con), s1);
+          return (http_con_cleanup(con, req));
+        }
+        
+        if (req->direct_uri)
+        {
+          Vstr_base *s1 = req->policy->s->policy_name;
+          vlg_info(vlg, "CONF-MATCH-RESP-ERR from[$<sa:%p>]: "
+                   "policy $<vstr.all:%p> Has URI.\n", CON_CEVNT_SA(con), s1);
+          HTTPD_ERR_MSG_RET(req, 503, "Has URI", TRUE);
+        }
+      }
+    
+      if (!HTTPD_ERR_MATCH_RESP(req->error_code))
+        return (http_fin_err_req(con, req)); /* don't loop, just fall through */
+    }
+    
+    if (!(fname = vstr_make_base(req->fname->conf)))
       goto fail_custom_err;
 
-    /* -- leave as union of both...
-  req->vary_star = con ? con->vary_star : FALSE;
-  req->vary_a    = FALSE;
-  req->vary_ac   = FALSE;
-  req->vary_ae   = FALSE;
-  req->vary_al   = FALSE;
-  req->vary_rf   = FALSE;
-  req->vary_ua   = FALSE;
-    */
+    /* NOTE that vary_* is the union of both the req and the resp. processing */
     
     if (!req->user_return_error_code)
     {
@@ -4558,7 +4597,8 @@ int httpd_serv_recv(struct Con *con)
 int httpd_con_init(struct Con *con, struct Acpt_listener *acpt_listener)
 {
   int ret = TRUE;
-
+  Httpd_policy_opts *po = (Httpd_policy_opts *)httpd_opts->s->def_policy;
+  
   con->mpbr_ct = NULL;
   
   con->fs      = con->fs_store;
@@ -4576,7 +4616,10 @@ int httpd_con_init(struct Con *con, struct Acpt_listener *acpt_listener)
 
   con->parsed_method_ver_1_0 = FALSE;
 
-  httpd_policy_change_con(con, (Httpd_policy_opts *)httpd_opts->s->def_policy);
+  if (acpt_listener->def_policy)
+    po = acpt_listener->def_policy->ptr;
+  
+  httpd_policy_change_con(con, po);
 
   if (!httpd_policy_connection(con,
                                httpd_opts->conf, httpd_opts->match_connection))

@@ -531,7 +531,11 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     else if (OPT_SERV_SYM_EQ("port"))
       OPT_SERV_X_UINT(addr->tcp_port);
     else if (OPT_SERV_SYM_EQ("addr") || OPT_SERV_SYM_EQ("address"))
-      OPT_SERV_X_VSTR(opts, addr->ipv4_address);
+      OPT_SERV_X_VSTR(opts, addr->acpt_address);
+    else if (OPT_SERV_SYM_EQ("cong") || OPT_SERV_SYM_EQ("congestion"))
+      OPT_SERV_X_VSTR(opts, addr->acpt_cong);
+    else if (OPT_SERV_SYM_EQ("policy"))
+      OPT_SERV_X_VSTR(opts, addr->def_policy);
     else if (OPT_SERV_SYM_EQ("queue-length"))
     {
       OPT_SERV_X_SYM_UINT_BEG(addr->q_listen_len);
@@ -702,7 +706,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       {
         Opt_serv_policy_opts *popts = NULL;
         
-        if (!(popts = opt_policy_find(opts, conf, token)))
+        if (!(popts = opt_policy_conf_find(opts, conf, token)))
           return (FALSE);
         
         CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
@@ -719,7 +723,7 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       {
         Opt_serv_policy_opts *popts = NULL;
         
-        if (!(popts = opt_policy_find(opts, conf, token)))
+        if (!(popts = opt_policy_conf_find(opts, conf, token)))
           return (FALSE);
         
         CONF_SC_MAKE_CLIST_BEG(limit_ioi, clist_ioi);
@@ -898,7 +902,9 @@ void opt_serv_conf_free_beg(struct Opt_serv_opts *opts)
     Opt_serv_addr_opts *scan_next = scan->next;
     
     vstr_free_base(scan->acpt_filter_file);
-    vstr_free_base(scan->ipv4_address);
+    vstr_free_base(scan->acpt_address);
+    vstr_free_base(scan->acpt_cong);
+    vstr_free_base(scan->def_policy);
     F(scan);
 
     scan = scan_next;
@@ -959,7 +965,9 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
   opts->vpriv_uid        = vstr_make_base(NULL);
   opts->vpriv_gid        = vstr_make_base(NULL);
   addr->acpt_filter_file = vstr_make_base(NULL);
-  addr->ipv4_address     = vstr_make_base(NULL);
+  addr->acpt_address     = vstr_make_base(NULL);
+  addr->acpt_cong        = vstr_make_base(NULL);
+  addr->def_policy       = vstr_make_base(NULL);
   opts->ref_io_limit     = vstr_ref_make_ptr(&opts->io_limit,
                                              opt_serv__io_lim_ref_cb);
     
@@ -969,7 +977,9 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
       !opts->vpriv_uid        ||
       !opts->vpriv_gid        ||
       !addr->acpt_filter_file ||
-      !addr->ipv4_address     ||
+      !addr->acpt_address     ||
+      !addr->acpt_cong        ||
+      !addr->def_policy       ||
       !opts->ref_io_limit     ||
       FALSE)
     goto opts_init_fail;
@@ -1002,10 +1012,10 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
   return (FALSE);
 }
 
-#define OPT_SERV_ADDR_DUP_VSTR(x)                                       \
-    vstr_dup_vstr(opts->addr_beg-> x ->conf ,                           \
-                  opts->addr_beg-> x , 1, opts->addr_beg-> x ->len,     \
-                  VSTR_TYPE_SUB_BUF_REF)
+#define OPT_SERV_ADDR_DUP_VSTR(x, y, z)                                 \
+    (((x)-> z) = vstr_dup_vstr((y)-> z ->conf ,                         \
+                               (y)-> z , 1, (y)-> z ->len,              \
+                               VSTR_TYPE_SUB_BUF_REF))
 Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *opts)
 {
   Opt_serv_addr_opts *addr = NULL;
@@ -1022,11 +1032,15 @@ Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *opts)
   if (!(addr = MK(sizeof(Opt_serv_addr_opts))))
     goto mk_addr_fail;
     
-  addr->acpt_filter_file = OPT_SERV_ADDR_DUP_VSTR(acpt_filter_file);
-  addr->ipv4_address     = OPT_SERV_ADDR_DUP_VSTR(ipv4_address);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_filter_file);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_address);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_cong);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, def_policy);
   
   if (!addr->acpt_filter_file ||
-      !addr->ipv4_address     ||
+      !addr->acpt_address     ||
+      !addr->acpt_cong        ||
+      !addr->def_policy       ||
       FALSE)
     goto addr_init_fail;
   

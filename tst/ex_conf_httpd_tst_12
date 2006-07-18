@@ -1,0 +1,240 @@
+##########################################################
+###                                                    ###
+### This is a configuration for httpd_conf_12 tests... ###
+###                                                    ###
+##########################################################
+
+(org.and.httpd-conf-main-1.0
+
+  (org.and.daemon-conf-1.0
+    (listen addr 127.0.11.1 policy conf-httpd-tst-12.1-<default>)
+
+     cntl-file ex_httpd_cntl)
+
+;; Done via. new default policy on listen
+#  (match-connection [policy-eq <default>
+#                     server-ipv4-cidr-eq 127.0.11.1]
+#    policy conf-httpd-tst-12.1-<default>)
+
+   policy conf-httpd-tst-12.1-<default>
+
+    (HTTP
+        Server: Apache/1.0.0)
+    (match-init [debug]
+     HTTP
+     Server: += ' (' Debug ')')
+     unspecified-hostname foo.example.com ; -- so we always match in tests
+     unspecified-hostname-append-port off
+     MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
+
+     virtual-hosts true
+; Test that it gets pulled in from <default>
+     document-root ''
+     request-configuration-directory ex_httpd_conf_root
+     req-err-dir ex_httpd_err_conf_11_root)
+
+;; Taken from tools/_fixup-url-pasting.conf
+;;;; People (including me) paste URLs from email etc. which often look like:
+
+;;  blah blah blah, you should have a look at http://www.example.org/foo.
+;;  blah blah blah, have you seen "http://www.example.org/foo"
+;;  blah blah blah, the url for foo (http://www.example.org/foo)
+
+;;;; ...and many UIs will then pass URLs ending in any of "/). 
+;;;; etc. ... so this config. tries to fix that up.
+
+(org.and.httpd-conf-main-1.0
+   match-init [true] ; Turn this off to remove all fixups...
+
+  (match-error-response 'fixup .'
+                 [error-response-code== <not-found> path-end .]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end .] ''
+       return <permanent-redirect>)
+
+  (match-error-response "fixup _"
+                 [error-response-code== 404 path-end _]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end _] ''
+       return <permanent-redirect>)
+
+  (match-error-response "fixup _"
+                 [error-response-code== 404 path-end _]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end _] ''
+       return <permanent-redirect>)
+
+  (match-error-response "fixup ,"
+                 [error-response-code== 404 path-end ,]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ,] ''
+       return <permanent-redirect>)
+
+  (match-error-response "fixup !"
+                 [error-response-code== 404 path-end '!']
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end '!'] ''
+       return <permanent-redirect>)
+
+  (match-error-response 'fixup >'
+                 [error-response-code== 404 path-end >]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end >] ''
+       return <permanent-redirect>)
+
+  (match-error-response 'fixup )'
+                 [error-response-code== 404 path-end ')']
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ')'] ''
+       return <permanent-redirect>)
+
+  (match-error-response 'fixup ]'
+                 [error-response-code== 404 path-end ']']
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end ']'] ''
+       return <permanent-redirect>)
+
+  (match-error-response 'fixup "'
+                 [error-response-code== 404 path-end '"']
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end '"'] ''
+       return <permanent-redirect>)
+
+  (match-error-response "fixup '"
+                 [error-response-code== 404 path-end "'"]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end "'"] ''
+       return <permanent-redirect>)
+
+   match-error-response "fixup <space>"
+                 [error-response-code== <not-found> path-end " "]
+     org.and.httpd-conf-req-1.0
+       Location: [limit <path>-end " "] ''
+       return <permanent-redirect>)
+
+;; And try a few more...
+(org.and.httpd-conf-main-1.0
+   match-init [true] ; Turn this off to remove all fixups...
+
+  (match-request 'tester 12.1'
+                 [policy-eq conf-httpd-tst-12.1-<default> path-beg /403]
+     org.and.httpd-conf-req-1.0
+       return <forbidden>)
+
+
+  (match-error-response 'tester 12.1'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /1 path-end /*)
+                  error-response-code==  403
+                  error-user-initiated== TRUE
+                  Accept-Encoding:]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.2'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /2 path-end /*)
+                  error-response-code==  403
+                  error-user-initiated== TRUE
+                  If-Modified-Since: foo]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.3'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /3 path-end /*)
+                  error-response-code==   <forbidden>
+                  error-response-detail== "Req conf"
+                  If-Unmodified-Since: foo]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.4'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /4 path-end /*)
+                  error-response-code==  403
+                  If-Range: foo]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.5'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /5 path-end /*)
+                  error-response-code==  403
+                 (! error-user-initiated== FALSE)
+                  If-Match: foo]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.6'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (|| path-end /6 path-end /*)
+                  error-response-code==  403
+                 (! error-user-initiated== FALSE)
+                  If-None-Match: foo]
+     org.and.httpd-conf-req-1.0
+       return <not-found>)
+
+  (match-error-response 'tester 12.1.7'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (! port-eq 1)
+                 (|| path-end /7 path-end /*)
+                  error-response-code==  403
+                 (! error-user-initiated== FALSE)
+                  X-Moz:]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+  (match-error-response 'tester 12.1.8'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (! port-eq 2)
+                 (|| path-end /8 path-end /*)
+                  error-response-code==  403
+                 (! error-user-initiated== FALSE)
+                  user-agent-search-eq foo
+                  User-Agent: blah_foo_]
+     org.and.httpd-conf-req-1.0
+       return <not-found>)
+
+  (match-error-response 'tester 12.1.9'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                 (! port-eq 2)
+                 (|| path-end /9 path-end /*)
+                  error-response-code==  403
+                 (! error-user-initiated== FALSE)
+                  referrer-beg news:
+                  referrer-search-eq x1234
+                  method-eq HEAD
+                  Referer: news:_x1234]
+     org.and.httpd-conf-req-1.0
+       return <gone>)
+
+   match-error-response 'tester 12.1.x'
+                 [policy-eq conf-httpd-tst-12.1-<default>
+                  error-response-code==  <bad>
+                  error-response-detail== "Double header User-Agent"
+                  error-user-initiated== FALSE
+                 (! tm-dow== 8)
+                 (! basename-without-extension-beg xxxx)
+                 (! basename-without-extension-end xxxx)
+                 (! basename-without-extension-eq xxxx)
+                 (! basename-without-extensions-beg xxxx)
+                 (! basename-without-extensions-end xxxx)
+                 (! basename-without-extensions-eq xxxx)
+                 (! basename-beg xxxx)
+                 (! basename-end xxxx)
+                 (! basename-eq xxxx)
+                 (! extension-beg xxxx)
+                 (! extension-end xxxx)
+                 (! extension-eq xxxx)
+                 (! extensions-beg xxxx)
+                 (! extensions-end xxxx)
+                 (! extensions-eq xxxx)
+                 (! content-lang-eq abcd)
+                 (! content-lang-ext-eq abcd)
+                 (! content-type-eq abcd)
+                 (! content-type-ext-eq abcd)
+                  method-eq GET]
+     org.and.httpd-conf-req-1.0
+       return <not-found>)
+

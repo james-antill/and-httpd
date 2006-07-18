@@ -559,6 +559,8 @@ if (@ARGV)
 	  { all_conf_x_tsts(10); $y = 1; }
 	elsif ($arg eq "conf_11")
 	  { all_conf_x_tsts(11); $y = 1; }
+	elsif ($arg eq "conf_12")
+	  { all_conf_x_tsts(12); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -631,7 +633,8 @@ sub conf_tsts
 	    daemon_status("and-httpd_cntl", "127.0.3.1");
 	    all_none_tsts();
 	  }
-	elsif (($_ == 5) || ($_ == 6) || ($_ == 7) || ($_ == 10) || ($_ == 11))
+	elsif (($_ == 5) || ($_ == 6) || ($_ == 7) ||
+	       ($_ == 10) || ($_ == 11) || ($_ == 12))
 	  {
 	    all_conf_x_tsts($_);
 	  }

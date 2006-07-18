@@ -79,6 +79,8 @@ typedef struct Httpd_req_data
  const char              *error_msg;
  const char              *error_xmsg;
  VSTR_AUTOCONF_uintmax_t  error_len; /* due to custom files */
+ unsigned int             req_error_code;
+ const char              *req_error_xmsg;
  
  Vstr_sects *sects;
  struct stat64 f_stat[1];
@@ -142,6 +144,7 @@ typedef struct Httpd_req_data
  unsigned int output_keep_alive_hdr : 1;
 
  unsigned int user_return_error_code : 1;
+ unsigned int req_user_return_error_code : 1;
  
  unsigned int vary_star : 1;
  unsigned int vary_a    : 1;

@@ -204,6 +204,7 @@ typedef struct Acpt_listener
 {
  struct Evnt evnt[1];
  unsigned int max_connections;
+ Vstr_ref *def_policy;
  Vstr_ref *ref;
 } Acpt_listener;
 
@@ -238,7 +239,8 @@ extern void evnt_limit_free(struct Evnt *);
 
 extern int evnt_make_con_ipv4(struct Evnt *, const char *, short);
 extern int evnt_make_con_local(struct Evnt *, const char *);
-extern int evnt_make_bind_ipv4(struct Evnt *, const char *, short,unsigned int);
+extern int evnt_make_bind_ipv4(struct Evnt *, const char *, short,
+                               unsigned int, const char *);
 extern int evnt_make_bind_local(struct Evnt *, const char *, unsigned int);
 extern int evnt_make_acpt_ref(struct Evnt *, int, Vstr_ref *);
 extern int evnt_make_acpt_dup(struct Evnt *, int, struct sockaddr *, socklen_t);
@@ -292,9 +294,10 @@ extern void evnt_sc_main_loop(size_t);
 extern time_t evnt_sc_time(void);
 
 extern void evnt_sc_serv_cb_func_acpt_free(struct Evnt *);
-extern struct Evnt *evnt_sc_serv_make_bind(const char *, unsigned short,
-                                           unsigned int, unsigned int,
-                                           unsigned int, const char *);
+extern struct Evnt *evnt_sc_serv_make_bind_ipv4(const char *, unsigned short,
+                                                unsigned int, unsigned int,
+                                                unsigned int, const char *,
+                                                const char *);
 
 extern void evnt_vlg_stats_info(struct Evnt *, const char *);
 

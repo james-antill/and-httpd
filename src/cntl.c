@@ -551,6 +551,7 @@ void cntl_make_file(Vlg *passed_vlg, const Vstr_base *fname)
   acpt_cntl_listener->fname = NULL;
   acpt_listener = acpt_cntl_listener->s;
   acpt_listener->max_connections = 0;
+  acpt_listener->def_policy = NULL;
   evnt = acpt_listener->evnt;
   
   if (!(acpt_cntl_listener->fname = vstr_dup_vstr(fname->conf,
@@ -593,6 +594,7 @@ static void cntl__cb_func_cntl_acpt_free(struct Evnt *evnt)
   
   acpt_data->evnt = NULL;
   vstr_ref_del(acpt_listener->s->ref);
+  vstr_ref_del(acpt_listener->s->def_policy);
   F(acpt_listener);
   
   evnt_acpt_close_all();

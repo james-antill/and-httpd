@@ -219,6 +219,8 @@ extern int conf_sc_token_parse_uintmax(const Conf_parse *, Conf_token *,
                                        uintmax_t *);
 extern int conf_sc_token_parse_eq(const Conf_parse *, Conf_token *,
                                   const Vstr_base *, size_t, size_t, int *);
+extern int conf_sc_token_parse_cstr_eq(const Conf_parse *, Conf_token *,
+                                       const char *, int *);
 extern int conf_sc_token_app_vstr(const Conf_parse *, Conf_token *,
                                   Vstr_base *,
                                   const Vstr_base **, size_t *, size_t *);
@@ -631,6 +633,24 @@ extern inline int conf_sc_token_parse_eq(const Conf_parse *conf,
   conf_parse_token(conf, token);
   
   *matches = conf_token_cmp_val_eq(conf, token, s1, pos, len);
+
+  return (CONF_SC_TYPE_RET_OK);
+}
+
+extern inline int conf_sc_token_parse_cstr_eq(const Conf_parse *conf,
+                                              Conf_token *token,
+                                              const char *s1, int *matches)
+{
+  unsigned int num = conf_token_list_num(token, token->depth_num);
+
+  CONF__ASSERT(matches);
+  
+  if (!num)
+    return (CONF_SC_TYPE_RET_ERR_PARSE);
+
+  conf_parse_token(conf, token);
+  
+  *matches = conf_token_cmp_val_cstr_eq(conf, token, s1);
 
   return (CONF_SC_TYPE_RET_OK);
 }
