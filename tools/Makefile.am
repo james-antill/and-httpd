@@ -24,7 +24,7 @@ confd_DATA = README \
              _redirect-index.conf \
              _,tools.conf \
              _io-limiting.conf \
-             _fix-url-pasting.conf
+             _fixup-url-pasting.conf
 
 wwwdir   =  $(localstatedir)/www
 www_DATA = scons_and_httpd_helpers.py
