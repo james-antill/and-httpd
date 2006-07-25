@@ -1,1 +1,14 @@
-ex_httpd_conf_11_tst_4
+GET /virt/tst_11/uppercase-path/a">x</a><SCRIPT>...</script>,validate HTTP/1.1
+Accept-Encoding: foo
+Host:
+
+GET /virt/tst_11/lowercase-abs-maybe-path/a">x</a><script>...</script>,validate HTTP/1.1
+Accept-Encoding: foo
+Host:
+
+GET /virt/tst_11/lowercase-abs-maybe-path/a">x</a><SCRIPT>...</script>,validate HTTP/1.1
+Accept-Encoding: foo
+Host:
+Connection: close
+
+

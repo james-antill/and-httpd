@@ -1,6 +1,6 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Content-Type: text/html
 Content-Length: 474
@@ -20,7 +20,7 @@ Location: http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/u
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Content-Type: text/html
 Content-Length: 484
@@ -40,7 +40,7 @@ Location: http://validator.w3.org/check?uri=http://foo.example.com/virt/tst_11/l
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: close
 Content-Type: text/html

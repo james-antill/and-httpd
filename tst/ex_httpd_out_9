@@ -1,6 +1,6 @@
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified: Fri, 08 Oct 2004 07:02:24 GMT
 Connection: close
 Accept-Ranges: bytes

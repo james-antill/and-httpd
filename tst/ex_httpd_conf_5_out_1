@@ -1,6 +1,6 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -21,7 +21,7 @@ Location: http://foo.example.com/
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -30,7 +30,7 @@ Location: http://foo.example.com/
 
 HTTP/1.1 404 Not Found
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -38,7 +38,7 @@ Content-Length: 324
 
 HTTP/1.1 404 Not Found
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -46,7 +46,7 @@ Content-Length: 324
 
 HTTP/1.1 200 OK
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified: Mon, 11 Oct 2004 07:02:24 GMT
 Connection: Keep-Alive
 Accept-Ranges: bytes
@@ -56,7 +56,7 @@ Content-Length: 159
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Content-Type: text/html
 Content-Length: 369
@@ -76,7 +76,7 @@ Location: http://foo.example.com/
 </html>
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.9
+Server: and-httpd/0.99.10
 Last-Modified:
 Connection: close
 Content-Type: text/html
