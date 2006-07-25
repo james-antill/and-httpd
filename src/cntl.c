@@ -494,6 +494,8 @@ static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
   if (!evnt_make_acpt_ref(evnt, fd, from_evnt->sa_ref))
     goto make_acpt_fail;
 
+  assert(EVNT_SA_UN(evnt));
+
   vlg_info(vlg, "CNTL CONNECT from[$<sa:%p>]\n", EVNT_SA(evnt));
 
   evnt->cbs->cb_func_recv = cntl__cb_func_recv;

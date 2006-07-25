@@ -165,7 +165,7 @@
       if (!req->policy->use_text_plain_redirect)                  \
         (req)->error_len  = CONF_MSG_LEN_ ## code ((req)->fname); \
       else                                                        \
-        (req)->error_len  = (req)->fname->len + 2;                \
+        (req)->error_len  = (req)->fname->len + 1;                \
       (req)->error_line = CONF_LINE_RET_ ## code;                 \
     } while (0)
 

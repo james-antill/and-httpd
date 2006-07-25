@@ -666,13 +666,16 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     {
       if (lim == HTTPD_POLICY_PATH_LIM_NONE)
         orig_len = req->fname->len; /* don't do more than we need */
-      else if (!vstr_sub_vstr(req->fname, 1, req->fname->len,
-                              con->evnt->io_r, req->path_pos, req->path_len, 0))
+      else
       {
-        vstr_ref_del(ref);
-        return (FALSE);
+        if (!vstr_sub_vstr(req->fname, 1, req->fname->len,
+                           con->evnt->io_r, req->path_pos, req->path_len, 0))
+        {
+          vstr_ref_del(ref);
+          return (FALSE);
+        }
+        req->vhost_prefix_len = 0;
       }
-      req->vhost_prefix_len = 0;
     }
     if (!httpd__build_path(con, req, conf, token,
                            req->fname, 1, req->fname->len,
@@ -685,6 +688,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                          con->evnt->io_r, req->path_pos, req->path_len, 0))
         return (FALSE);
     }
+    req->vhost_prefix_len = 0;
     
     req->direct_uri = TRUE;
     HTTPD_CONF_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);

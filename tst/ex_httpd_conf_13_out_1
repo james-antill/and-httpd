@@ -1,0 +1,77 @@
+HTTP/1.1 404 Not Found
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+ERROR 404 en/txt
+HTTP/1.1 404 Not Found
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Length: 185
+Content-Language: en
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo ERROR 404 en/html</title>
+  </head>
+  <body>
+    <h1>Foo ERROR 404 en/html</h1>
+  </body>
+</html>
+HTTP/1.1 404 Not Found
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/html
+Content-Length: 185
+Content-Language: fr
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>Foo ERROR 404 fr/html</title>
+  </head>
+  <body>
+    <h1>Foo ERROR 404 fr/html</h1>
+  </body>
+</html>
+HTTP/1.1 404 Not Found
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: es
+
+ERROR 404 es/txt
+HTTP/1.1 406 Not Acceptable
+Date:
+Server: foo-conf/13
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: application/octet-stream
+Content-Length: 0
+Content-Language: es
+
+HTTP/1.1 400 Bad Request
+Date:
+Server: foo-conf/13
+Last-Modified:
+Connection: close
+Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: it
+
+ERROR 400 it/txt

@@ -1,0 +1,57 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Keep-Alive: timeout=120, max=98
+Content-Type: text/html
+Content-Length: 551
+Location: http://foo.example.com/B:bp.x.y|bp.x.y && BE:bp.x|bp.x && BES:bp|bp && D:/|/ && DR:ex_httpd_root/|./ && E:.y|.y && ES:.x.y|.x.y && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/bp.x.y
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Keep-Alive: timeout=120, max=97
+Content-Type: text/html
+Content-Length: 567
+Location: http://foo.example.com/B:bp.x.y|bp.x%2E%79 && BE:bp.x|bp.x && BES:bp|bp && D:/|/ && DR:ex_httpd_root/|./ && E:.y|%2E%79 && ES:.x.y|.x%2E%79 && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/bp.x%2E%79
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Keep-Alive: timeout=120, max=96
+Content-Type: text/html
+Content-Length: 559
+Location: http://foo.example.com/B:bp.x.y|bp%2ex.y && BE:bp.x|bp%2ex && BES:bp|bp && D:/|/ && DR:ex_httpd_root/|./ && E:.y|.y && ES:.x.y|%2ex.y && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/bp%2ex.y
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Keep-Alive: timeout=120, max=95
+Content-Type: text/html
+Content-Length: 559
+Location: http://foo.example.com/B:bp.x.y|bp.x.%79 && BE:bp.x|bp.x && BES:bp|bp && D:/|/ && DR:ex_httpd_root/|./ && E:.y|.%79 && ES:.x.y|.x.%79 && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/bp.x.%79
+
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: Apache/1.0.0
+Last-Modified:
+Connection: close
+Content-Type: text/html
+Content-Length: 599
+Location: http://foo.example.com/B:bp.x.y|%62%70%2e%78%2E%79 && BE:bp.x|%62%70%2e%78 && BES:bp|%62%70 && D:/|/ && DR:ex_httpd_root/|./ && E:.y|%2E%79 && ES:.x.y|%2e%78%2E%79 && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/%62%70%2e%78%2E%79
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://foo.example.com/B:bp.x.y|%62%70%2e%78%2E%79 && BE:bp.x|%62%70%2e%78 && BES:bp|%62%70 && D:/|/ && DR:ex_httpd_root/|./ && E:.y|%2E%79 && ES:.x.y|%2e%78%2E%79 && RC:ex_httpd_conf_root/|./ && RE:ex_httpd_err_conf_11_root/|./ && U:/%62%70%2e%78%2E%79">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>

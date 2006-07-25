@@ -1,0 +1,39 @@
+##########################################################
+###                                                    ###
+### This is a configuration for httpd_conf_13 tests... ###
+###                                                    ###
+##########################################################
+
+(org.and.httpd-conf-main-1.0
+
+  (org.and.daemon-conf-1.0
+    (listen addr 127.0.12.1 policy conf-httpd-tst-12.1-<default>)
+; Test changing (listen) sections...
+    (listen addr 127.0.12.1 policy conf-httpd-tst-13.1-<default>)
+
+     cntl-file ex_httpd_cntl)
+
+;; Done via. new default policy on listen
+#  (match-connection [policy-eq <default>
+#                     server-ipv4-cidr-eq 127.0.12.1]
+#    policy conf-httpd-tst-13.1-<default>)
+
+   policy conf-httpd-tst-13.1-<default>
+
+    (match-init [debug]
+     HTTP
+    (Server: assign foo-conf/13)
+     Server: append """ (Debug)""")
+
+     unspecified-hostname foo.example.com ; -- so we always match in tests
+     unspecified-hostname-append-port off
+     MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)
+
+     virtual-hosts true
+
+; Test that it gets pulled in from <default>
+#     document-root ''
+
+     request-configuration-directory ex_httpd_conf_root
+     req-err-dir ex_httpd_err_conf_13_root)
+

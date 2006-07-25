@@ -180,9 +180,6 @@ extern void opt_serv_conf_free_beg(Opt_serv_opts *);
 extern void opt_serv_conf_free_end(Opt_serv_opts *);
 extern int  opt_serv_conf_init(Opt_serv_opts *);
 
-extern Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *)
-    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
-
 extern int opt_serv_conf(Opt_serv_opts *, Conf_parse *, Conf_token *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 extern int opt_serv_conf_parse_cstr(Vstr_base *, Opt_serv_opts *, const char *)
@@ -221,6 +218,9 @@ extern int opt_serv_sc_append_hostname(Vstr_base *, size_t)
 extern int opt_serv_sc_append_cwd(Vstr_base *, size_t)
     COMPILE_ATTR_NONNULL_A();
 
+extern int opt_serv_build_single_str(struct Opt_serv_opts *,
+                                     const Conf_parse *, Conf_token *, int, int)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 extern int opt_serv_sc_make_str(struct Opt_serv_opts *,
                                 Conf_parse *, Conf_token *,
                                 Vstr_base *, size_t, size_t)

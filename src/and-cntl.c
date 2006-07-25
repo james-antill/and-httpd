@@ -32,7 +32,6 @@
 #define CL_MAX_WAIT_SEND 16
 
 
-#include "app.h"
 #include "evnt.h"
 
 #define EX_UTILS_NO_FUNCS  1
@@ -126,19 +125,19 @@ static int cl_recv(struct Evnt *evnt)
       }
       
       if (done)
-        app_cstr_buf(io_w, " ");
+        vstr_add_cstr_buf(io_w, io_w->len, " ");
       
-      app_vstr(io_w, evnt->io_r, vpos, vlen, VSTR_TYPE_ADD_DEF);
+      vstr_add_vstr(io_w, io_w->len, evnt->io_r, vpos, vlen, VSTR_TYPE_ADD_DEF);
     
       if (!done)
-        app_cstr_buf(io_w, ":");
+        vstr_add_cstr_buf(io_w, io_w->len, ":");
     
       done = TRUE;
 
       len -= nse2; pos += nse2;
     }
     if (done)
-      app_cstr_buf(io_w, "\n");
+      vstr_add_cstr_buf(io_w, io_w->len, "\n");
 
     ui_out();
   
@@ -457,7 +456,8 @@ Uses Vstr string library.\n\
       case 'e':
         /* use cmd line instead of stdin */
         io_r_fd = -1;
-        app_cstr_buf(io_r, optarg); app_cstr_buf(io_r, "\n");
+        vstr_add_cstr_buf(io_r, io_r->len, optarg);
+        vstr_add_cstr_buf(io_r, io_r->len, "\n");
         break;
         
       case 'n':

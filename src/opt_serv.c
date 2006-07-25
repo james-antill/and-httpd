@@ -16,6 +16,8 @@
 #include <sys/resource.h>
 #include <signal.h>
 
+#include <sys/utsname.h>
+
 #ifndef CONF_FULL_STATIC
 # include <pwd.h>
 # include <grp.h>
@@ -102,7 +104,7 @@ int opt_serv_sc_append_cwd(Vstr_base *s1, size_t pos)
 }
 
 static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
-                                  Conf_parse *conf, Conf_token *token)
+                                  const Conf_parse *conf, Conf_token *token)
 {
   const Vstr_sect_node *pv = NULL;
   const char *env_name = NULL;
@@ -125,7 +127,7 @@ static int opt_serv_sc_append_env(Vstr_base *s1, size_t pos,
 # define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE)
 #else
 static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
-                                      Conf_parse *conf, Conf_token *token)
+                                      const Conf_parse *conf, Conf_token *token)
 {
   const Vstr_sect_node *pv = NULL;
   const char *usr_name = NULL;
@@ -146,6 +148,11 @@ static int opt_serv_sc_append_homedir(Vstr_base *s1, size_t pos,
 # define OPT_SERV_SC_APPEND_HOMEDIR(w, x, y, z) \
     opt_serv_sc_append_homedir(w, x, y, z)
 #endif
+
+#define OPT_SERV_SC_APPEND_UNAME(x) do {                                \
+      if (!vstr_add_cstr_buf(conf->tmp, conf->tmp->len, utsname-> x))   \
+        return (FALSE);                                                 \
+    } while (FALSE)
 
 
 int opt_serv_sc_tst(Conf_parse *conf, Conf_token *token,
@@ -461,8 +468,129 @@ int opt_serv_match_init(struct Opt_serv_opts *opts,
       OPT_SERV_X_SYM_NUM_END();                                         \
     } while (FALSE)
 
-
 #define OPT_SERV__TMP_EQ(x) vstr_cmp_cstr_eq(conf->tmp, 1, conf->tmp->len, x)
+
+#define OPT_SERV_ADDR_DUP_VSTR(x, y, z)                                 \
+    (((x)-> z) = vstr_dup_vstr((y)-> z ->conf ,                         \
+                               (y)-> z , 1, (y)-> z ->len,              \
+                               VSTR_TYPE_SUB_BUF_REF))
+
+static void opt_serv__free_addr(Opt_serv_addr_opts *addr)
+{
+  if (!addr)
+    return;
+  
+  vstr_free_base(addr->acpt_filter_file);
+  vstr_free_base(addr->acpt_address);
+  vstr_free_base(addr->acpt_cong);
+  vstr_free_base(addr->def_policy);
+  F(addr);
+}
+
+static Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+static Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *opts)
+{
+  Opt_serv_addr_opts *addr = NULL;
+
+  ASSERT(opts && opts->addr_beg);
+  
+  if (opts->no_conf_listen)
+  { /* use the initial one to start with */
+    opts->no_conf_listen = FALSE;
+    return (opts->addr_beg);
+  }
+
+  /* duplicate the currnet one */
+  if (!(addr = MK(sizeof(Opt_serv_addr_opts))))
+    goto mk_addr_fail;
+    
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_filter_file);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_address);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_cong);
+  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, def_policy);
+  
+  if (!addr->acpt_filter_file ||
+      !addr->acpt_address     ||
+      !addr->acpt_cong        ||
+      !addr->def_policy       ||
+      FALSE)
+    goto addr_init_fail;
+  
+  addr->next = NULL;
+  
+  addr->tcp_port        = opts->addr_beg->tcp_port;
+  addr->defer_accept    = opts->addr_beg->defer_accept;
+  addr->q_listen_len    = opts->addr_beg->q_listen_len;
+  addr->max_connections = opts->addr_beg->max_connections;
+
+  addr->next = opts->addr_beg;
+  opts->addr_beg = addr;
+
+  return (addr);
+
+ addr_init_fail:
+  F(addr);
+ mk_addr_fail:
+  return (FALSE);
+}
+
+static Opt_serv_addr_opts *opt_serv__srch_addr(Opt_serv_addr_opts *scan,
+                                               Opt_serv_addr_opts *addr)
+{
+  while (scan)
+  {
+    if ((scan->tcp_port == addr->tcp_port) &&
+        vstr_cmp_eq(scan->acpt_address, 1, scan->acpt_address->len,
+                    addr->acpt_address, 1, addr->acpt_address->len))
+      break;
+
+    scan = scan->next;
+  }
+
+  return (scan);
+}
+
+#define OPT_SERV__ADDR_MERGE_VSTR(z) do {                               \
+      if (!vstr_sub_vstr(oaddr-> z, 1, oaddr-> z ->len,                 \
+                         naddr-> z, 1, naddr-> z ->len, VSTR_TYPE_SUB_DEF)) \
+        return (FALSE);                                                 \
+    } while (FALSE)
+  
+static int opt_serv_merge_addrs(Opt_serv_opts *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+static int opt_serv_merge_addrs(Opt_serv_opts *opts)
+{
+  Opt_serv_addr_opts *oaddr = NULL;
+  Opt_serv_addr_opts *naddr = NULL;
+
+  ASSERT(opts && opts->addr_beg);
+  
+  naddr = opts->addr_beg;
+  oaddr = opt_serv__srch_addr(naddr->next, naddr);
+
+  if (!oaddr)
+    return (TRUE);
+  
+  /* can't match more than one */
+  ASSERT(!opt_serv__srch_addr(oaddr->next, naddr));
+
+  OPT_SERV__ADDR_MERGE_VSTR(acpt_filter_file);
+  ASSERT(vstr_cmp_eq(oaddr->acpt_address, 1, oaddr->acpt_address->len,
+                     naddr->acpt_address, 1, naddr->acpt_address->len));
+  OPT_SERV__ADDR_MERGE_VSTR(acpt_cong);
+  OPT_SERV__ADDR_MERGE_VSTR(def_policy);
+
+  ASSERT(oaddr->tcp_port == naddr->tcp_port);
+  oaddr->defer_accept    = naddr->defer_accept;
+  oaddr->q_listen_len    = naddr->q_listen_len;
+  oaddr->max_connections = naddr->max_connections;
+  
+  opts->addr_beg = naddr->next;
+  opt_serv__free_addr(naddr);
+
+  return (TRUE);
+}
 
 static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
                              Conf_parse *conf, Conf_token *token,
@@ -552,6 +680,9 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
       OPT_SERV_X_UINT(addr->max_connections);
 
     CONF_SC_MAKE_CLIST_END();
+
+    if (!opt_serv_merge_addrs(opts))
+      return (FALSE);
   }
   else if (OPT_SERV_SYM_EQ("parent-death-signal"))
     OPT_SERV_X_TOGGLE(opts->use_pdeathsig);
@@ -900,12 +1031,8 @@ void opt_serv_conf_free_beg(struct Opt_serv_opts *opts)
   while (scan)
   {
     Opt_serv_addr_opts *scan_next = scan->next;
-    
-    vstr_free_base(scan->acpt_filter_file);
-    vstr_free_base(scan->acpt_address);
-    vstr_free_base(scan->acpt_cong);
-    vstr_free_base(scan->def_policy);
-    F(scan);
+
+    opt_serv__free_addr(scan);
 
     scan = scan_next;
   }
@@ -1007,56 +1134,6 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
   vstr_ref_del(popts->ref);
  mk_policy_fail:
  mk_append_hostname_fail:
-  F(addr);
- mk_addr_fail:
-  return (FALSE);
-}
-
-#define OPT_SERV_ADDR_DUP_VSTR(x, y, z)                                 \
-    (((x)-> z) = vstr_dup_vstr((y)-> z ->conf ,                         \
-                               (y)-> z , 1, (y)-> z ->len,              \
-                               VSTR_TYPE_SUB_BUF_REF))
-Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *opts)
-{
-  Opt_serv_addr_opts *addr = NULL;
-
-  ASSERT(opts && opts->addr_beg);
-  
-  if (opts->no_conf_listen)
-  { /* use the initial one to start with */
-    opts->no_conf_listen = FALSE;
-    return (opts->addr_beg);
-  }
-
-  /* duplicate the currnet one */
-  if (!(addr = MK(sizeof(Opt_serv_addr_opts))))
-    goto mk_addr_fail;
-    
-  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_filter_file);
-  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_address);
-  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, acpt_cong);
-  OPT_SERV_ADDR_DUP_VSTR(addr, opts->addr_beg, def_policy);
-  
-  if (!addr->acpt_filter_file ||
-      !addr->acpt_address     ||
-      !addr->acpt_cong        ||
-      !addr->def_policy       ||
-      FALSE)
-    goto addr_init_fail;
-  
-  addr->next = NULL;
-  
-  addr->tcp_port        = opts->addr_beg->tcp_port;
-  addr->defer_accept    = opts->addr_beg->defer_accept;
-  addr->q_listen_len    = opts->addr_beg->q_listen_len;
-  addr->max_connections = opts->addr_beg->max_connections;
-
-  addr->next = opts->addr_beg;
-  opts->addr_beg = addr;
-
-  return (addr);
-
- addr_init_fail:
   F(addr);
  mk_addr_fail:
   return (FALSE);
@@ -1288,9 +1365,83 @@ void opt_serv_sc_cntl_resources(const Opt_serv_opts *opts)
                  0, opts->max_spare_ref_nodes);
 }
 
-/* into conf->tmp */
-static int opt_serv__build_str(struct Opt_serv_opts *
-                               COMPILE_ATTR_UNUSED(opts),
+/* appends into conf->tmp */
+int opt_serv_build_single_str(struct Opt_serv_opts *opts,
+                              const Conf_parse *conf, Conf_token *token,
+                              int clist, int doing_init)
+{
+  if (0) { }
+    
+  else if (OPT_SERV_SYM_EQ("ENV")   || OPT_SERV_SYM_EQ("ENVIRONMENT") ||
+           OPT_SERV_SYM_EQ("<ENV>") || OPT_SERV_SYM_EQ("<ENVIRONMENT>"))
+  {
+    if (!opt_serv_sc_append_env(conf->tmp, conf->tmp->len, conf, token))
+      return (FALSE);
+  }
+  else if (doing_init &&
+           (OPT_SERV_SYM_EQ("HOME") || OPT_SERV_SYM_EQ("<HOME>")))
+  {
+    if (!OPT_SERV_SC_APPEND_HOMEDIR(conf->tmp, conf->tmp->len, conf, token))
+      return (FALSE);
+  }
+  else if (OPT_SERV_SYM_EQ("<hostname>"))
+    opt_serv_sc_append_hostname(conf->tmp, conf->tmp->len);
+  else if (OPT_SERV_SYM_EQ("<cwd>"))
+    opt_serv_sc_append_cwd(conf->tmp, conf->tmp->len);
+  else if (OPT_SERV_SYM_EQ("<uname>"))
+  {
+    static struct utsname utsname[1];
+    static int done = FALSE;
+    
+    if (!done && (uname(utsname) == -1)) return (FALSE);
+    done = TRUE;
+    
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+    CONF_SC_TOGGLE_CLIST_VAR(clist);
+    
+    if (0) { }
+    
+    else if (OPT_SERV_SYM_EQ("sysname"))  OPT_SERV_SC_APPEND_UNAME(sysname);
+    else if (OPT_SERV_SYM_EQ("nodename")) OPT_SERV_SC_APPEND_UNAME(nodename);
+    else if (OPT_SERV_SYM_EQ("release"))  OPT_SERV_SC_APPEND_UNAME(release);
+    else if (OPT_SERV_SYM_EQ("version"))  OPT_SERV_SC_APPEND_UNAME(version);
+    else if (OPT_SERV_SYM_EQ("machine"))  OPT_SERV_SC_APPEND_UNAME(machine);
+    
+    else
+      return (FALSE);
+  }
+  else if (OPT_SERV_SYM_EQ("<version>") || OPT_SERV_SYM_EQ("<vers>"))
+  {
+    if (!vstr_add_ptr(conf->tmp, conf->tmp->len,
+                      opts->vers_cstr, opts->vers_len))
+      return (FALSE);
+  }
+  else if (OPT_SERV_SYM_EQ("<program-name>"))
+  {
+    if (!vstr_add_ptr(conf->tmp, conf->tmp->len,
+                      opts->name_cstr, opts->name_len))
+      return (FALSE);
+  }
+  else if (!clist)
+  { /* unknown symbol or string */
+    size_t pos = conf->tmp->len + 1;
+    const Vstr_sect_node *pv = conf_token_value(token);
+    
+    if (!pv || !vstr_add_vstr(conf->tmp, conf->tmp->len,
+                              conf->data, pv->pos, pv->len,
+                              VSTR_TYPE_ADD_BUF_REF))
+      return (FALSE);
+    
+    OPT_SERV_X__ESC_VSTR(conf->tmp, pos, pv->len);
+  }
+  
+  else
+    return (FALSE);
+
+  return (TRUE);
+}
+
+static int opt_serv__build_str(struct Opt_serv_opts *opts,
                                Conf_parse *conf, Conf_token *token,
                                int doing_init)
 {
@@ -1302,38 +1453,8 @@ static int opt_serv__build_str(struct Opt_serv_opts *
   {
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     CONF_SC_TOGGLE_CLIST_VAR(clist);
-    
-    if (0) { }
-    
-    else if (OPT_SERV_SYM_EQ("ENV")   || OPT_SERV_SYM_EQ("ENVIRONMENT") ||
-             OPT_SERV_SYM_EQ("<ENV>") || OPT_SERV_SYM_EQ("<ENVIRONMENT>"))
-    {
-      if (!opt_serv_sc_append_env(conf->tmp, conf->tmp->len, conf, token))
-        return (FALSE);
-    }
-    else if (doing_init &&
-             (OPT_SERV_SYM_EQ("HOME") || OPT_SERV_SYM_EQ("<HOME>")))
-    {
-      if (!OPT_SERV_SC_APPEND_HOMEDIR(conf->tmp, conf->tmp->len, conf, token))
-        return (FALSE);
-    }
-    else if (OPT_SERV_SYM_EQ("<hostname>"))
-      opt_serv_sc_append_hostname(conf->tmp, conf->tmp->len);
-    else if (OPT_SERV_SYM_EQ("<cwd>"))
-      opt_serv_sc_append_cwd(conf->tmp, conf->tmp->len);
-    else if (!clist)
-    { /* unknown symbol or string */
-      size_t pos = conf->tmp->len + 1;
-      const Vstr_sect_node *pv = conf_token_value(token);
-      
-      if (!pv || !vstr_add_vstr(conf->tmp, conf->tmp->len,
-                                conf->data, pv->pos, pv->len,
-                                VSTR_TYPE_ADD_BUF_REF))
-        return (FALSE);
-      
-      OPT_SERV_X__ESC_VSTR(conf->tmp, pos, pv->len);
-    }
-    else
+
+    if (!opt_serv_build_single_str(opts, conf, token, clist, doing_init))
       return (FALSE);
   }
   

@@ -45,22 +45,16 @@
 
 http://www.sans.org/top20/#u2
 
+	doc converter, manual
         change gethostbyname() to the new BS.
           IPv6 (and flying cars)
-        mod_rssindex - and-dir_list2html outputs atom?
-        conf
-         match-* tied to policies? -- minor speed boost
-         openssh like limit connection backoff?
-	 userdirs? - problem due to getpwnam() braindamage
-          Have async vars that are processed before match-request/req_conf
-          which can then be used in file alteration etc.
-
 
         in default start page:
          ,tools explanation
          README for scons and tools etc.
          generic config. manual etc.
 
+        mod_rssindex - and-dir_list2html outputs atom?
 	man pages
 	http://people.apache.org/~pquerna/modules/mod_flvx.c
         tst zsync
@@ -91,6 +85,11 @@ http://www.sans.org/top20/#u2
 	 stat cache
          conf data cache
 	conf
+         match-* tied to policies? -- minor speed boost
+         openssh like limit connection backoff?
+	 userdirs? - problem due to getpwnam() braindamage
+          Have async vars that are processed before match-request/req_conf
+          which can then be used in file alteration etc.
          redirect custom error files?
 	 memory allocation errors == 503 for conf?
          auth token-file cdb /path - allows multiple user/pass

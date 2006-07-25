@@ -419,12 +419,44 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     *matches = !!conf_token_srch_case_val(conf, token,
                                           http_data, h_ref->pos, h_ref->len);
   }
-  else if (OPT_SERV_SYM_EQ("http-0.9-eq") || OPT_SERV_SYM_EQ("http-0.9=="))
+  else if (OPT_SERV_SYM_EQ("http-0.9-eq") || OPT_SERV_SYM_EQ("http-0.9==") ||
+           OPT_SERV_SYM_EQ("http-vers-eq-0.9") ||
+           OPT_SERV_SYM_EQ("http-vers==0.9") ||
+           OPT_SERV_SYM_EQ("http-version-eq-0.9") ||
+           OPT_SERV_SYM_EQ("http-version==0.9"))
     *matches =  req->ver_0_9;
-  else if (OPT_SERV_SYM_EQ("http-1.0-eq") || OPT_SERV_SYM_EQ("http-1.0=="))
+  else if (OPT_SERV_SYM_EQ("http-1.0-eq") || OPT_SERV_SYM_EQ("http-1.0==") ||
+           OPT_SERV_SYM_EQ("http-vers-eq-1.0") ||
+           OPT_SERV_SYM_EQ("http-vers==1.0") ||
+           OPT_SERV_SYM_EQ("http-version-eq-1.0") ||
+           OPT_SERV_SYM_EQ("http-version==1.0"))
     *matches = !req->ver_0_9 && !req->ver_1_1;
-  else if (OPT_SERV_SYM_EQ("http-1.1-eq") || OPT_SERV_SYM_EQ("http-1.1=="))
-    *matches = !req->ver_0_9 &&  req->ver_1_1;
+  else if (OPT_SERV_SYM_EQ("http-1.1-eq") || OPT_SERV_SYM_EQ("http-1.1==") ||
+           OPT_SERV_SYM_EQ("http-vers-eq-1.1") ||
+           OPT_SERV_SYM_EQ("http-vers==1.1") ||
+           OPT_SERV_SYM_EQ("http-version-eq-1.1") ||
+           OPT_SERV_SYM_EQ("http-version==1.1"))
+  {
+    *matches = req->ver_1_1;
+    ASSERT(!req->ver_0_9 || !*matches);
+  }
+  else if (OPT_SERV_SYM_EQ("http-vers>=1.0") ||
+           OPT_SERV_SYM_EQ("http-version>=1.0"))
+    *matches = !req->ver_0_9;
+  else if (OPT_SERV_SYM_EQ("http-vers>1.0") ||
+           OPT_SERV_SYM_EQ("http-version>1.0") ||
+           OPT_SERV_SYM_EQ("http-vers>=1.1") ||
+           OPT_SERV_SYM_EQ("http-version>=1.1"))
+  {
+    *matches = HTTPD_VER_1_x(req);
+    ASSERT(!req->ver_0_9 || !*matches);
+  }
+  else if (OPT_SERV_SYM_EQ("http-vers>1.1") ||
+           OPT_SERV_SYM_EQ("http-vers>=1.2"))
+  {
+    *matches = req->ver_1_x;
+    ASSERT(!req->ver_0_9 || !*matches);
+  }
   else if (OPT_SERV_SYM_EQ("method-eq") || OPT_SERV_SYM_EQ("method=="))
   { /* doesn't do escaping because methods are ASCII */
     Vstr_sect_node *meth = VSTR_SECTS_NUM(req->sects, 1);

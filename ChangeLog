@@ -1,3 +1,36 @@
+2006-07-24  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv_merge_addrs): Allow changes to (listen ...)
+	sections.
+
+2006-07-20  James Antill  <james@and.org>
+
+	* src/httpd.c (http_fin_err_req): Reset the negotiate flag, so we can
+	re-negotiate in the error handlering.
+	(http_fin_err_req): Restore error_xmsg on 503's etc.
+
+2006-07-18  James Antill  <james@and.org>
+
+	* src/httpd_req.c: Create new file for httpd.c cleanup.
+
+	* src/httpd_parse.c: Create new file for httpd.c cleanup.
+
+	* src/httpd_app.c: Create new file for httpd.c cleanup.
+
+	* src/httpd_conf_main.h (HTTPD_CONF_OUTPUT_KEEPA_HDR): Added 
+	keep-alive-header config. option.
+
+	* src/httpd_conf_req.c (httpd__conf_req_d1): Fix vhost_prefix_len
+	when assigning into Location:.
+
+	* src/httpd_policy.h (httpd_policy_uri_mod_bwes): Fix code, tests are
+	good.
+	(httpd_policy_uri_mod_exts): Dito.
+
+	* src/httpd_policy.c (httpd_policy__build_path): Fix <url-*> ops
+	when allowing encoded /.
+	(httpd_policy__build_path): Fix <dirname> when using vhosts.
+
 2006-07-17  James Antill  <james@and.org>
 
 	* src/match_req.c (httpd_match_request_tst_d1): Fix bug with 

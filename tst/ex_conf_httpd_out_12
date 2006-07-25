@@ -14,551 +14,595 @@
   14. <Symbol> = conf-httpd-tst-12.1-<default>
   15. [Circular bracket list]
     16. <Symbol> = HTTP
-    17. <Symbol> = Server:
-    18. <Symbol> = Apache/1.0.0
-  19. [Circular bracket list]
-    20. <Symbol> = match-init
-    21. [Square bracket list]
-      22. <Symbol> = debug
-    23. <Symbol> = HTTP
-    24. <Symbol> = Server:
-    25. <Symbol> = +=
-    26. <Quoted string (single, RAW)> =  (
-    27. <Symbol> = Debug
-    28. <Quoted string (single, RAW)> = )
-  29. <Symbol> = unspecified-hostname
-  30. <Symbol> = foo.example.com
-  31. <Symbol> = unspecified-hostname-append-port
-  32. <Symbol> = off
-  33. <Symbol> = MIME/types-filename-xtra
-  34. [Circular bracket list]
-    35. <Symbol> = =
-    36. <Symbol> = ENV
-    37. <Symbol> = _MIMEDIR
-    38. <Symbol> = /mime_types_extra.txt
-  39. <Symbol> = virtual-hosts
-  40. <Symbol> = true
-  41. <Symbol> = document-root
-  42. <Quoted string (single, RAW)> = 
-  43. <Symbol> = request-configuration-directory
-  44. <Symbol> = ex_httpd_conf_root
-  45. <Symbol> = req-err-dir
-  46. <Symbol> = ex_httpd_err_conf_11_root
-47. [Circular bracket list]
-  48. <Symbol> = org.and.httpd-conf-main-1.0
-  49. <Symbol> = match-init
-  50. [Square bracket list]
-    51. <Symbol> = true
-  52. [Circular bracket list]
-    53. <Symbol> = match-error-response
-    54. <Quoted string (single, RAW)> = fixup .
-    55. [Square bracket list]
-      56. <Symbol> = error-response-code==
-      57. <Symbol> = <not-found>
-      58. <Symbol> = path-end
-      59. <Symbol> = .
-    60. <Symbol> = org.and.httpd-conf-req-1.0
-    61. <Symbol> = Location:
-    62. [Square bracket list]
-      63. <Symbol> = limit
-      64. <Symbol> = <path>-end
-      65. <Symbol> = .
-    66. <Quoted string (single, RAW)> = 
-    67. <Symbol> = return
-    68. <Symbol> = <permanent-redirect>
-  69. [Circular bracket list]
-    70. <Symbol> = match-error-response
-    71. <Quoted string (double, RAW)> = fixup _
-    72. [Square bracket list]
-      73. <Symbol> = error-response-code==
-      74. <Symbol> = 404
-      75. <Symbol> = path-end
-      76. <Symbol> = _
-    77. <Symbol> = org.and.httpd-conf-req-1.0
-    78. <Symbol> = Location:
-    79. [Square bracket list]
-      80. <Symbol> = limit
-      81. <Symbol> = <path>-end
-      82. <Symbol> = _
-    83. <Quoted string (single, RAW)> = 
-    84. <Symbol> = return
-    85. <Symbol> = <permanent-redirect>
-  86. [Circular bracket list]
-    87. <Symbol> = match-error-response
-    88. <Quoted string (double, RAW)> = fixup _
-    89. [Square bracket list]
-      90. <Symbol> = error-response-code==
-      91. <Symbol> = 404
-      92. <Symbol> = path-end
-      93. <Symbol> = _
-    94. <Symbol> = org.and.httpd-conf-req-1.0
-    95. <Symbol> = Location:
-    96. [Square bracket list]
-      97. <Symbol> = limit
-      98. <Symbol> = <path>-end
-      99. <Symbol> = _
-    100. <Quoted string (single, RAW)> = 
-    101. <Symbol> = return
-    102. <Symbol> = <permanent-redirect>
-  103. [Circular bracket list]
-    104. <Symbol> = match-error-response
-    105. <Quoted string (double, RAW)> = fixup ,
+    17. [Circular bracket list]
+      18. <Symbol> = strictness
+      19. [Circular bracket list]
+        20. <Symbol> = allow-encoded-dot
+      21. [Circular bracket list]
+        22. <Symbol> = allow-encoded-slash
+      23. [Circular bracket list]
+        24. <Symbol> = host
+        25. <Symbol> = validation
+        26. <Symbol> = virtual-hosts-error
+      27. <Symbol> = URL
+      28. [Circular bracket list]
+        29. <Symbol> = remove-fragment
+      30. <Symbol> = remove-query
+    31. [Circular bracket list]
+      32. <Symbol> = limit
+      33. <Symbol> = requests
+      34. <Symbol> = 99
+      35. <Symbol> = nodes
+      36. <Symbol> = Accept:
+      37. <Symbol> = 99
+      38. <Symbol> = Accept-Charset:
+      39. <Symbol> = 99
+      40. <Symbol> = Accept-Encoding:
+      41. <Symbol> = 99
+      42. <Symbol> = Accept-Language:
+      43. <Symbol> = 99
+      44. <Symbol> = Connection:
+      45. <Symbol> = 99
+      46. <Symbol> = ETag:
+      47. <Symbol> = 99
+      48. <Symbol> = Range:
+      49. <Symbol> = 0
+    50. <Symbol> = keep-alive-hdr
+    51. <Symbol> = TRUE
+    52. <Symbol> = Server:
+    53. <Symbol> = Apache/1.0.0
+  54. [Circular bracket list]
+    55. <Symbol> = limit
+    56. <Symbol> = req-conf-sz
+    57. <Symbol> = 9999
+    58. <Symbol> = nodes
+    59. <Symbol> = Accept:
+    60. <Symbol> = 9999
+    61. <Symbol> = Accept-Language:
+    62. <Symbol> = 9999
+  63. [Circular bracket list]
+    64. <Symbol> = match-init
+    65. [Square bracket list]
+      66. <Symbol> = debug
+    67. <Symbol> = HTTP
+    68. <Symbol> = Server:
+    69. <Symbol> = +=
+    70. <Quoted string (single, RAW)> =  (
+    71. <Symbol> = Debug
+    72. <Quoted string (single, RAW)> = )
+  73. <Symbol> = unspecified-hostname
+  74. <Symbol> = foo.example.com
+  75. <Symbol> = unspecified-hostname-append-port
+  76. <Symbol> = off
+  77. <Symbol> = MIME/types-filename-xtra
+  78. [Circular bracket list]
+    79. <Symbol> = =
+    80. <Symbol> = ENV
+    81. <Symbol> = _MIMEDIR
+    82. <Symbol> = /mime_types_extra.txt
+  83. <Symbol> = virtual-hosts
+  84. <Symbol> = true
+  85. <Symbol> = document-root
+  86. <Quoted string (single, RAW)> = 
+  87. <Symbol> = request-configuration-directory
+  88. <Symbol> = ex_httpd_conf_root
+  89. <Symbol> = req-err-dir
+  90. <Symbol> = ex_httpd_err_conf_11_root
+91. [Circular bracket list]
+  92. <Symbol> = org.and.httpd-conf-main-1.0
+  93. <Symbol> = match-init
+  94. [Square bracket list]
+    95. <Symbol> = true
+  96. [Circular bracket list]
+    97. <Symbol> = match-error-response
+    98. <Quoted string (single, RAW)> = fixup .
+    99. [Square bracket list]
+      100. <Symbol> = error-response-code==
+      101. <Symbol> = <not-found>
+      102. <Symbol> = path-end
+      103. <Symbol> = .
+    104. <Symbol> = org.and.httpd-conf-req-1.0
+    105. <Symbol> = Location:
     106. [Square bracket list]
-      107. <Symbol> = error-response-code==
-      108. <Symbol> = 404
-      109. <Symbol> = path-end
-      110. <Symbol> = ,
-    111. <Symbol> = org.and.httpd-conf-req-1.0
-    112. <Symbol> = Location:
-    113. [Square bracket list]
-      114. <Symbol> = limit
-      115. <Symbol> = <path>-end
-      116. <Symbol> = ,
-    117. <Quoted string (single, RAW)> = 
-    118. <Symbol> = return
-    119. <Symbol> = <permanent-redirect>
-  120. [Circular bracket list]
-    121. <Symbol> = match-error-response
-    122. <Quoted string (double, RAW)> = fixup !
+      107. <Symbol> = limit
+      108. <Symbol> = <path>-end
+      109. <Symbol> = .
+    110. <Quoted string (single, RAW)> = 
+    111. <Symbol> = return
+    112. <Symbol> = <permanent-redirect>
+  113. [Circular bracket list]
+    114. <Symbol> = match-error-response
+    115. <Quoted string (double, RAW)> = fixup _
+    116. [Square bracket list]
+      117. <Symbol> = error-response-code==
+      118. <Symbol> = 404
+      119. <Symbol> = path-end
+      120. <Symbol> = _
+    121. <Symbol> = org.and.httpd-conf-req-1.0
+    122. <Symbol> = Location:
     123. [Square bracket list]
-      124. <Symbol> = error-response-code==
-      125. <Symbol> = 404
-      126. <Symbol> = path-end
-      127. <Quoted string (single, RAW)> = !
-    128. <Symbol> = org.and.httpd-conf-req-1.0
-    129. <Symbol> = Location:
-    130. [Square bracket list]
-      131. <Symbol> = limit
-      132. <Symbol> = <path>-end
-      133. <Quoted string (single, RAW)> = !
-    134. <Quoted string (single, RAW)> = 
-    135. <Symbol> = return
-    136. <Symbol> = <permanent-redirect>
-  137. [Circular bracket list]
-    138. <Symbol> = match-error-response
-    139. <Quoted string (single, RAW)> = fixup >
+      124. <Symbol> = limit
+      125. <Symbol> = <path>-end
+      126. <Symbol> = _
+    127. <Quoted string (single, RAW)> = 
+    128. <Symbol> = return
+    129. <Symbol> = <permanent-redirect>
+  130. [Circular bracket list]
+    131. <Symbol> = match-error-response
+    132. <Quoted string (double, RAW)> = fixup _
+    133. [Square bracket list]
+      134. <Symbol> = error-response-code==
+      135. <Symbol> = 404
+      136. <Symbol> = path-end
+      137. <Symbol> = _
+    138. <Symbol> = org.and.httpd-conf-req-1.0
+    139. <Symbol> = Location:
     140. [Square bracket list]
-      141. <Symbol> = error-response-code==
-      142. <Symbol> = 404
-      143. <Symbol> = path-end
-      144. <Symbol> = >
-    145. <Symbol> = org.and.httpd-conf-req-1.0
-    146. <Symbol> = Location:
-    147. [Square bracket list]
-      148. <Symbol> = limit
-      149. <Symbol> = <path>-end
-      150. <Symbol> = >
-    151. <Quoted string (single, RAW)> = 
-    152. <Symbol> = return
-    153. <Symbol> = <permanent-redirect>
-  154. [Circular bracket list]
-    155. <Symbol> = match-error-response
-    156. <Quoted string (single, RAW)> = fixup )
+      141. <Symbol> = limit
+      142. <Symbol> = <path>-end
+      143. <Symbol> = _
+    144. <Quoted string (single, RAW)> = 
+    145. <Symbol> = return
+    146. <Symbol> = <permanent-redirect>
+  147. [Circular bracket list]
+    148. <Symbol> = match-error-response
+    149. <Quoted string (double, RAW)> = fixup ,
+    150. [Square bracket list]
+      151. <Symbol> = error-response-code==
+      152. <Symbol> = 404
+      153. <Symbol> = path-end
+      154. <Symbol> = ,
+    155. <Symbol> = org.and.httpd-conf-req-1.0
+    156. <Symbol> = Location:
     157. [Square bracket list]
-      158. <Symbol> = error-response-code==
-      159. <Symbol> = 404
-      160. <Symbol> = path-end
-      161. <Quoted string (single, RAW)> = )
-    162. <Symbol> = org.and.httpd-conf-req-1.0
-    163. <Symbol> = Location:
-    164. [Square bracket list]
-      165. <Symbol> = limit
-      166. <Symbol> = <path>-end
-      167. <Quoted string (single, RAW)> = )
-    168. <Quoted string (single, RAW)> = 
-    169. <Symbol> = return
-    170. <Symbol> = <permanent-redirect>
-  171. [Circular bracket list]
-    172. <Symbol> = match-error-response
-    173. <Quoted string (single, RAW)> = fixup ]
+      158. <Symbol> = limit
+      159. <Symbol> = <path>-end
+      160. <Symbol> = ,
+    161. <Quoted string (single, RAW)> = 
+    162. <Symbol> = return
+    163. <Symbol> = <permanent-redirect>
+  164. [Circular bracket list]
+    165. <Symbol> = match-error-response
+    166. <Quoted string (double, RAW)> = fixup !
+    167. [Square bracket list]
+      168. <Symbol> = error-response-code==
+      169. <Symbol> = 404
+      170. <Symbol> = path-end
+      171. <Quoted string (single, RAW)> = !
+    172. <Symbol> = org.and.httpd-conf-req-1.0
+    173. <Symbol> = Location:
     174. [Square bracket list]
-      175. <Symbol> = error-response-code==
-      176. <Symbol> = 404
-      177. <Symbol> = path-end
-      178. <Quoted string (single, RAW)> = ]
-    179. <Symbol> = org.and.httpd-conf-req-1.0
-    180. <Symbol> = Location:
-    181. [Square bracket list]
-      182. <Symbol> = limit
-      183. <Symbol> = <path>-end
-      184. <Quoted string (single, RAW)> = ]
-    185. <Quoted string (single, RAW)> = 
-    186. <Symbol> = return
-    187. <Symbol> = <permanent-redirect>
-  188. [Circular bracket list]
-    189. <Symbol> = match-error-response
-    190. <Quoted string (single, RAW)> = fixup "
+      175. <Symbol> = limit
+      176. <Symbol> = <path>-end
+      177. <Quoted string (single, RAW)> = !
+    178. <Quoted string (single, RAW)> = 
+    179. <Symbol> = return
+    180. <Symbol> = <permanent-redirect>
+  181. [Circular bracket list]
+    182. <Symbol> = match-error-response
+    183. <Quoted string (single, RAW)> = fixup >
+    184. [Square bracket list]
+      185. <Symbol> = error-response-code==
+      186. <Symbol> = 404
+      187. <Symbol> = path-end
+      188. <Symbol> = >
+    189. <Symbol> = org.and.httpd-conf-req-1.0
+    190. <Symbol> = Location:
     191. [Square bracket list]
-      192. <Symbol> = error-response-code==
-      193. <Symbol> = 404
-      194. <Symbol> = path-end
-      195. <Quoted string (single, RAW)> = "
-    196. <Symbol> = org.and.httpd-conf-req-1.0
-    197. <Symbol> = Location:
-    198. [Square bracket list]
-      199. <Symbol> = limit
-      200. <Symbol> = <path>-end
-      201. <Quoted string (single, RAW)> = "
-    202. <Quoted string (single, RAW)> = 
-    203. <Symbol> = return
-    204. <Symbol> = <permanent-redirect>
-  205. [Circular bracket list]
-    206. <Symbol> = match-error-response
-    207. <Quoted string (double, RAW)> = fixup '
+      192. <Symbol> = limit
+      193. <Symbol> = <path>-end
+      194. <Symbol> = >
+    195. <Quoted string (single, RAW)> = 
+    196. <Symbol> = return
+    197. <Symbol> = <permanent-redirect>
+  198. [Circular bracket list]
+    199. <Symbol> = match-error-response
+    200. <Quoted string (single, RAW)> = fixup )
+    201. [Square bracket list]
+      202. <Symbol> = error-response-code==
+      203. <Symbol> = 404
+      204. <Symbol> = path-end
+      205. <Quoted string (single, RAW)> = )
+    206. <Symbol> = org.and.httpd-conf-req-1.0
+    207. <Symbol> = Location:
     208. [Square bracket list]
-      209. <Symbol> = error-response-code==
-      210. <Symbol> = 404
-      211. <Symbol> = path-end
-      212. <Quoted string (double, RAW)> = '
-    213. <Symbol> = org.and.httpd-conf-req-1.0
-    214. <Symbol> = Location:
-    215. [Square bracket list]
-      216. <Symbol> = limit
-      217. <Symbol> = <path>-end
-      218. <Quoted string (double, RAW)> = '
-    219. <Quoted string (single, RAW)> = 
-    220. <Symbol> = return
-    221. <Symbol> = <permanent-redirect>
-  222. <Symbol> = match-error-response
-  223. <Quoted string (double, RAW)> = fixup <space>
-  224. [Square bracket list]
-    225. <Symbol> = error-response-code==
-    226. <Symbol> = <not-found>
-    227. <Symbol> = path-end
-    228. <Quoted string (double, RAW)> =  
-  229. <Symbol> = org.and.httpd-conf-req-1.0
-  230. <Symbol> = Location:
-  231. [Square bracket list]
-    232. <Symbol> = limit
-    233. <Symbol> = <path>-end
-    234. <Quoted string (double, RAW)> =  
-  235. <Quoted string (single, RAW)> = 
-  236. <Symbol> = return
-  237. <Symbol> = <permanent-redirect>
-238. [Circular bracket list]
-  239. <Symbol> = org.and.httpd-conf-main-1.0
-  240. <Symbol> = match-init
-  241. [Square bracket list]
-    242. <Symbol> = true
-  243. [Circular bracket list]
-    244. <Symbol> = match-request
-    245. <Quoted string (single, RAW)> = tester 12.1
-    246. [Square bracket list]
-      247. <Symbol> = policy-eq
-      248. <Symbol> = conf-httpd-tst-12.1-<default>
-      249. <Symbol> = path-beg
-      250. <Symbol> = /403
-    251. <Symbol> = org.and.httpd-conf-req-1.0
-    252. <Symbol> = return
-    253. <Symbol> = <forbidden>
-  254. [Circular bracket list]
-    255. <Symbol> = match-error-response
-    256. <Quoted string (single, RAW)> = tester 12.1
-    257. [Square bracket list]
-      258. <Symbol> = policy-eq
-      259. <Symbol> = conf-httpd-tst-12.1-<default>
-      260. [Circular bracket list]
-        261. <Symbol> = ||
-        262. <Symbol> = path-end
-        263. <Symbol> = /1
-        264. <Symbol> = path-end
-        265. <Symbol> = /*
-      266. <Symbol> = error-response-code==
-      267. <Symbol> = 403
-      268. <Symbol> = error-user-initiated==
-      269. <Symbol> = TRUE
-      270. <Symbol> = Accept-Encoding:
-    271. <Symbol> = org.and.httpd-conf-req-1.0
-    272. <Symbol> = return
-    273. <Symbol> = <gone>
-  274. [Circular bracket list]
-    275. <Symbol> = match-error-response
-    276. <Quoted string (single, RAW)> = tester 12.1.2
-    277. [Square bracket list]
-      278. <Symbol> = policy-eq
-      279. <Symbol> = conf-httpd-tst-12.1-<default>
-      280. [Circular bracket list]
-        281. <Symbol> = ||
-        282. <Symbol> = path-end
-        283. <Symbol> = /2
-        284. <Symbol> = path-end
-        285. <Symbol> = /*
-      286. <Symbol> = error-response-code==
-      287. <Symbol> = 403
-      288. <Symbol> = error-user-initiated==
-      289. <Symbol> = TRUE
-      290. <Symbol> = If-Modified-Since:
-      291. <Symbol> = foo
-    292. <Symbol> = org.and.httpd-conf-req-1.0
-    293. <Symbol> = return
-    294. <Symbol> = <gone>
-  295. [Circular bracket list]
-    296. <Symbol> = match-error-response
-    297. <Quoted string (single, RAW)> = tester 12.1.3
-    298. [Square bracket list]
-      299. <Symbol> = policy-eq
-      300. <Symbol> = conf-httpd-tst-12.1-<default>
-      301. [Circular bracket list]
-        302. <Symbol> = ||
-        303. <Symbol> = path-end
-        304. <Symbol> = /3
-        305. <Symbol> = path-end
-        306. <Symbol> = /*
-      307. <Symbol> = error-response-code==
-      308. <Symbol> = <forbidden>
-      309. <Symbol> = error-response-detail==
-      310. <Quoted string (double, RAW)> = Req conf
-      311. <Symbol> = If-Unmodified-Since:
-      312. <Symbol> = foo
-    313. <Symbol> = org.and.httpd-conf-req-1.0
-    314. <Symbol> = return
-    315. <Symbol> = <gone>
-  316. [Circular bracket list]
-    317. <Symbol> = match-error-response
-    318. <Quoted string (single, RAW)> = tester 12.1.4
-    319. [Square bracket list]
-      320. <Symbol> = policy-eq
-      321. <Symbol> = conf-httpd-tst-12.1-<default>
-      322. [Circular bracket list]
-        323. <Symbol> = ||
-        324. <Symbol> = path-end
-        325. <Symbol> = /4
+      209. <Symbol> = limit
+      210. <Symbol> = <path>-end
+      211. <Quoted string (single, RAW)> = )
+    212. <Quoted string (single, RAW)> = 
+    213. <Symbol> = return
+    214. <Symbol> = <permanent-redirect>
+  215. [Circular bracket list]
+    216. <Symbol> = match-error-response
+    217. <Quoted string (single, RAW)> = fixup ]
+    218. [Square bracket list]
+      219. <Symbol> = error-response-code==
+      220. <Symbol> = 404
+      221. <Symbol> = path-end
+      222. <Quoted string (single, RAW)> = ]
+    223. <Symbol> = org.and.httpd-conf-req-1.0
+    224. <Symbol> = Location:
+    225. [Square bracket list]
+      226. <Symbol> = limit
+      227. <Symbol> = <path>-end
+      228. <Quoted string (single, RAW)> = ]
+    229. <Quoted string (single, RAW)> = 
+    230. <Symbol> = return
+    231. <Symbol> = <permanent-redirect>
+  232. [Circular bracket list]
+    233. <Symbol> = match-error-response
+    234. <Quoted string (single, RAW)> = fixup "
+    235. [Square bracket list]
+      236. <Symbol> = error-response-code==
+      237. <Symbol> = 404
+      238. <Symbol> = path-end
+      239. <Quoted string (single, RAW)> = "
+    240. <Symbol> = org.and.httpd-conf-req-1.0
+    241. <Symbol> = Location:
+    242. [Square bracket list]
+      243. <Symbol> = limit
+      244. <Symbol> = <path>-end
+      245. <Quoted string (single, RAW)> = "
+    246. <Quoted string (single, RAW)> = 
+    247. <Symbol> = return
+    248. <Symbol> = <permanent-redirect>
+  249. [Circular bracket list]
+    250. <Symbol> = match-error-response
+    251. <Quoted string (double, RAW)> = fixup '
+    252. [Square bracket list]
+      253. <Symbol> = error-response-code==
+      254. <Symbol> = 404
+      255. <Symbol> = path-end
+      256. <Quoted string (double, RAW)> = '
+    257. <Symbol> = org.and.httpd-conf-req-1.0
+    258. <Symbol> = Location:
+    259. [Square bracket list]
+      260. <Symbol> = limit
+      261. <Symbol> = <path>-end
+      262. <Quoted string (double, RAW)> = '
+    263. <Quoted string (single, RAW)> = 
+    264. <Symbol> = return
+    265. <Symbol> = <permanent-redirect>
+  266. <Symbol> = match-error-response
+  267. <Quoted string (double, RAW)> = fixup <space>
+  268. [Square bracket list]
+    269. <Symbol> = error-response-code==
+    270. <Symbol> = <not-found>
+    271. <Symbol> = path-end
+    272. <Quoted string (double, RAW)> =  
+  273. <Symbol> = org.and.httpd-conf-req-1.0
+  274. <Symbol> = Location:
+  275. [Square bracket list]
+    276. <Symbol> = limit
+    277. <Symbol> = <path>-end
+    278. <Quoted string (double, RAW)> =  
+  279. <Quoted string (single, RAW)> = 
+  280. <Symbol> = return
+  281. <Symbol> = <permanent-redirect>
+282. [Circular bracket list]
+  283. <Symbol> = org.and.httpd-conf-main-1.0
+  284. <Symbol> = match-init
+  285. [Square bracket list]
+    286. <Symbol> = true
+  287. [Circular bracket list]
+    288. <Symbol> = match-request
+    289. <Quoted string (single, RAW)> = tester 12.1
+    290. [Square bracket list]
+      291. <Symbol> = policy-eq
+      292. <Symbol> = conf-httpd-tst-12.1-<default>
+      293. <Symbol> = path-beg
+      294. <Symbol> = /403
+    295. <Symbol> = org.and.httpd-conf-req-1.0
+    296. <Symbol> = return
+    297. <Symbol> = <forbidden>
+  298. [Circular bracket list]
+    299. <Symbol> = match-error-response
+    300. <Quoted string (single, RAW)> = tester 12.1
+    301. [Square bracket list]
+      302. <Symbol> = policy-eq
+      303. <Symbol> = conf-httpd-tst-12.1-<default>
+      304. [Circular bracket list]
+        305. <Symbol> = ||
+        306. <Symbol> = path-end
+        307. <Symbol> = /1
+        308. <Symbol> = path-end
+        309. <Symbol> = /*
+      310. <Symbol> = error-response-code==
+      311. <Symbol> = 403
+      312. <Symbol> = error-user-initiated==
+      313. <Symbol> = TRUE
+      314. <Symbol> = Accept-Encoding:
+    315. <Symbol> = org.and.httpd-conf-req-1.0
+    316. <Symbol> = return
+    317. <Symbol> = <gone>
+  318. [Circular bracket list]
+    319. <Symbol> = match-error-response
+    320. <Quoted string (single, RAW)> = tester 12.1.2
+    321. [Square bracket list]
+      322. <Symbol> = policy-eq
+      323. <Symbol> = conf-httpd-tst-12.1-<default>
+      324. [Circular bracket list]
+        325. <Symbol> = ||
         326. <Symbol> = path-end
-        327. <Symbol> = /*
-      328. <Symbol> = error-response-code==
-      329. <Symbol> = 403
-      330. <Symbol> = If-Range:
-      331. <Symbol> = foo
-    332. <Symbol> = org.and.httpd-conf-req-1.0
-    333. <Symbol> = return
-    334. <Symbol> = <gone>
-  335. [Circular bracket list]
-    336. <Symbol> = match-error-response
-    337. <Quoted string (single, RAW)> = tester 12.1.5
-    338. [Square bracket list]
-      339. <Symbol> = policy-eq
-      340. <Symbol> = conf-httpd-tst-12.1-<default>
-      341. [Circular bracket list]
-        342. <Symbol> = ||
-        343. <Symbol> = path-end
-        344. <Symbol> = /5
-        345. <Symbol> = path-end
-        346. <Symbol> = /*
-      347. <Symbol> = error-response-code==
-      348. <Symbol> = 403
-      349. [Circular bracket list]
-        350. <Symbol> = !
-        351. <Symbol> = error-user-initiated==
-        352. <Symbol> = FALSE
-      353. <Symbol> = If-Match:
-      354. <Symbol> = foo
-    355. <Symbol> = org.and.httpd-conf-req-1.0
-    356. <Symbol> = return
-    357. <Symbol> = <gone>
-  358. [Circular bracket list]
-    359. <Symbol> = match-error-response
-    360. <Quoted string (single, RAW)> = tester 12.1.6
-    361. [Square bracket list]
-      362. <Symbol> = policy-eq
-      363. <Symbol> = conf-httpd-tst-12.1-<default>
-      364. [Circular bracket list]
-        365. <Symbol> = ||
-        366. <Symbol> = path-end
-        367. <Symbol> = /6
+        327. <Symbol> = /2
+        328. <Symbol> = path-end
+        329. <Symbol> = /*
+      330. <Symbol> = error-response-code==
+      331. <Symbol> = 403
+      332. <Symbol> = error-user-initiated==
+      333. <Symbol> = TRUE
+      334. <Symbol> = If-Modified-Since:
+      335. <Symbol> = foo
+    336. <Symbol> = org.and.httpd-conf-req-1.0
+    337. <Symbol> = return
+    338. <Symbol> = <gone>
+  339. [Circular bracket list]
+    340. <Symbol> = match-error-response
+    341. <Quoted string (single, RAW)> = tester 12.1.3
+    342. [Square bracket list]
+      343. <Symbol> = policy-eq
+      344. <Symbol> = conf-httpd-tst-12.1-<default>
+      345. [Circular bracket list]
+        346. <Symbol> = ||
+        347. <Symbol> = path-end
+        348. <Symbol> = /3
+        349. <Symbol> = path-end
+        350. <Symbol> = /*
+      351. <Symbol> = error-response-code==
+      352. <Symbol> = <forbidden>
+      353. <Symbol> = error-response-detail==
+      354. <Quoted string (double, RAW)> = Req conf
+      355. <Symbol> = If-Unmodified-Since:
+      356. <Symbol> = foo
+    357. <Symbol> = org.and.httpd-conf-req-1.0
+    358. <Symbol> = return
+    359. <Symbol> = <gone>
+  360. [Circular bracket list]
+    361. <Symbol> = match-error-response
+    362. <Quoted string (single, RAW)> = tester 12.1.4
+    363. [Square bracket list]
+      364. <Symbol> = policy-eq
+      365. <Symbol> = conf-httpd-tst-12.1-<default>
+      366. [Circular bracket list]
+        367. <Symbol> = ||
         368. <Symbol> = path-end
-        369. <Symbol> = /*
-      370. <Symbol> = error-response-code==
-      371. <Symbol> = 403
-      372. [Circular bracket list]
-        373. <Symbol> = !
-        374. <Symbol> = error-user-initiated==
-        375. <Symbol> = FALSE
-      376. <Symbol> = If-None-Match:
-      377. <Symbol> = foo
-    378. <Symbol> = org.and.httpd-conf-req-1.0
-    379. <Symbol> = return
-    380. <Symbol> = <not-found>
-  381. [Circular bracket list]
-    382. <Symbol> = match-error-response
-    383. <Quoted string (single, RAW)> = tester 12.1.7
-    384. [Square bracket list]
-      385. <Symbol> = policy-eq
-      386. <Symbol> = conf-httpd-tst-12.1-<default>
-      387. [Circular bracket list]
-        388. <Symbol> = !
-        389. <Symbol> = port-eq
-        390. <Symbol> = 1
-      391. [Circular bracket list]
-        392. <Symbol> = ||
-        393. <Symbol> = path-end
-        394. <Symbol> = /7
-        395. <Symbol> = path-end
-        396. <Symbol> = /*
-      397. <Symbol> = error-response-code==
-      398. <Symbol> = 403
-      399. [Circular bracket list]
-        400. <Symbol> = !
-        401. <Symbol> = error-user-initiated==
-        402. <Symbol> = FALSE
-      403. <Symbol> = X-Moz:
-    404. <Symbol> = org.and.httpd-conf-req-1.0
-    405. <Symbol> = return
-    406. <Symbol> = <gone>
-  407. [Circular bracket list]
-    408. <Symbol> = match-error-response
-    409. <Quoted string (single, RAW)> = tester 12.1.8
-    410. [Square bracket list]
-      411. <Symbol> = policy-eq
-      412. <Symbol> = conf-httpd-tst-12.1-<default>
-      413. [Circular bracket list]
-        414. <Symbol> = !
-        415. <Symbol> = port-eq
-        416. <Symbol> = 2
-      417. [Circular bracket list]
-        418. <Symbol> = ||
-        419. <Symbol> = path-end
-        420. <Symbol> = /8
-        421. <Symbol> = path-end
-        422. <Symbol> = /*
-      423. <Symbol> = error-response-code==
-      424. <Symbol> = 403
-      425. [Circular bracket list]
-        426. <Symbol> = !
-        427. <Symbol> = error-user-initiated==
-        428. <Symbol> = FALSE
-      429. <Symbol> = user-agent-search-eq
-      430. <Symbol> = foo
-      431. <Symbol> = User-Agent:
-      432. <Symbol> = blah_foo_
-    433. <Symbol> = org.and.httpd-conf-req-1.0
-    434. <Symbol> = return
-    435. <Symbol> = <not-found>
-  436. [Circular bracket list]
-    437. <Symbol> = match-error-response
-    438. <Quoted string (single, RAW)> = tester 12.1.9
-    439. [Square bracket list]
-      440. <Symbol> = policy-eq
-      441. <Symbol> = conf-httpd-tst-12.1-<default>
-      442. [Circular bracket list]
-        443. <Symbol> = !
-        444. <Symbol> = port-eq
-        445. <Symbol> = 2
-      446. [Circular bracket list]
-        447. <Symbol> = ||
-        448. <Symbol> = path-end
-        449. <Symbol> = /9
-        450. <Symbol> = path-end
-        451. <Symbol> = /*
-      452. <Symbol> = error-response-code==
-      453. <Symbol> = 403
-      454. [Circular bracket list]
-        455. <Symbol> = !
-        456. <Symbol> = error-user-initiated==
-        457. <Symbol> = FALSE
-      458. <Symbol> = referrer-beg
-      459. <Symbol> = news:
-      460. <Symbol> = referrer-search-eq
-      461. <Symbol> = x1234
-      462. <Symbol> = method-eq
-      463. <Symbol> = HEAD
-      464. <Symbol> = Referer:
-      465. <Symbol> = news:_x1234
-    466. <Symbol> = org.and.httpd-conf-req-1.0
-    467. <Symbol> = return
-    468. <Symbol> = <gone>
-  469. <Symbol> = match-error-response
-  470. <Quoted string (single, RAW)> = tester 12.1.x
-  471. [Square bracket list]
-    472. <Symbol> = policy-eq
-    473. <Symbol> = conf-httpd-tst-12.1-<default>
-    474. <Symbol> = error-response-code==
-    475. <Symbol> = <bad>
-    476. <Symbol> = error-response-detail==
-    477. <Quoted string (double, RAW)> = Double header User-Agent
-    478. <Symbol> = error-user-initiated==
-    479. <Symbol> = FALSE
-    480. [Circular bracket list]
-      481. <Symbol> = !
-      482. <Symbol> = tm-dow==
-      483. <Symbol> = 8
-    484. [Circular bracket list]
-      485. <Symbol> = !
-      486. <Symbol> = basename-without-extension-beg
-      487. <Symbol> = xxxx
-    488. [Circular bracket list]
-      489. <Symbol> = !
-      490. <Symbol> = basename-without-extension-end
-      491. <Symbol> = xxxx
-    492. [Circular bracket list]
-      493. <Symbol> = !
-      494. <Symbol> = basename-without-extension-eq
-      495. <Symbol> = xxxx
-    496. [Circular bracket list]
-      497. <Symbol> = !
-      498. <Symbol> = basename-without-extensions-beg
-      499. <Symbol> = xxxx
-    500. [Circular bracket list]
-      501. <Symbol> = !
-      502. <Symbol> = basename-without-extensions-end
-      503. <Symbol> = xxxx
-    504. [Circular bracket list]
-      505. <Symbol> = !
-      506. <Symbol> = basename-without-extensions-eq
-      507. <Symbol> = xxxx
-    508. [Circular bracket list]
-      509. <Symbol> = !
-      510. <Symbol> = basename-beg
-      511. <Symbol> = xxxx
-    512. [Circular bracket list]
-      513. <Symbol> = !
-      514. <Symbol> = basename-end
-      515. <Symbol> = xxxx
-    516. [Circular bracket list]
-      517. <Symbol> = !
-      518. <Symbol> = basename-eq
-      519. <Symbol> = xxxx
-    520. [Circular bracket list]
-      521. <Symbol> = !
-      522. <Symbol> = extension-beg
-      523. <Symbol> = xxxx
+        369. <Symbol> = /4
+        370. <Symbol> = path-end
+        371. <Symbol> = /*
+      372. <Symbol> = error-response-code==
+      373. <Symbol> = 403
+      374. <Symbol> = If-Range:
+      375. <Symbol> = foo
+    376. <Symbol> = org.and.httpd-conf-req-1.0
+    377. <Symbol> = return
+    378. <Symbol> = <gone>
+  379. [Circular bracket list]
+    380. <Symbol> = match-error-response
+    381. <Quoted string (single, RAW)> = tester 12.1.5
+    382. [Square bracket list]
+      383. <Symbol> = policy-eq
+      384. <Symbol> = conf-httpd-tst-12.1-<default>
+      385. [Circular bracket list]
+        386. <Symbol> = ||
+        387. <Symbol> = path-end
+        388. <Symbol> = /5
+        389. <Symbol> = path-end
+        390. <Symbol> = /*
+      391. <Symbol> = error-response-code==
+      392. <Symbol> = 403
+      393. [Circular bracket list]
+        394. <Symbol> = !
+        395. <Symbol> = error-user-initiated==
+        396. <Symbol> = FALSE
+      397. <Symbol> = If-Match:
+      398. <Symbol> = foo
+    399. <Symbol> = org.and.httpd-conf-req-1.0
+    400. <Symbol> = return
+    401. <Symbol> = <gone>
+  402. [Circular bracket list]
+    403. <Symbol> = match-error-response
+    404. <Quoted string (single, RAW)> = tester 12.1.6
+    405. [Square bracket list]
+      406. <Symbol> = policy-eq
+      407. <Symbol> = conf-httpd-tst-12.1-<default>
+      408. [Circular bracket list]
+        409. <Symbol> = ||
+        410. <Symbol> = path-end
+        411. <Symbol> = /6
+        412. <Symbol> = path-end
+        413. <Symbol> = /*
+      414. <Symbol> = error-response-code==
+      415. <Symbol> = 403
+      416. [Circular bracket list]
+        417. <Symbol> = !
+        418. <Symbol> = error-user-initiated==
+        419. <Symbol> = FALSE
+      420. <Symbol> = If-None-Match:
+      421. <Symbol> = foo
+    422. <Symbol> = org.and.httpd-conf-req-1.0
+    423. <Symbol> = return
+    424. <Symbol> = <not-found>
+  425. [Circular bracket list]
+    426. <Symbol> = match-error-response
+    427. <Quoted string (single, RAW)> = tester 12.1.7
+    428. [Square bracket list]
+      429. <Symbol> = policy-eq
+      430. <Symbol> = conf-httpd-tst-12.1-<default>
+      431. [Circular bracket list]
+        432. <Symbol> = !
+        433. <Symbol> = port-eq
+        434. <Symbol> = 1
+      435. [Circular bracket list]
+        436. <Symbol> = ||
+        437. <Symbol> = path-end
+        438. <Symbol> = /7
+        439. <Symbol> = path-end
+        440. <Symbol> = /*
+      441. <Symbol> = error-response-code==
+      442. <Symbol> = 403
+      443. [Circular bracket list]
+        444. <Symbol> = !
+        445. <Symbol> = error-user-initiated==
+        446. <Symbol> = FALSE
+      447. <Symbol> = X-Moz:
+    448. <Symbol> = org.and.httpd-conf-req-1.0
+    449. <Symbol> = return
+    450. <Symbol> = <gone>
+  451. [Circular bracket list]
+    452. <Symbol> = match-error-response
+    453. <Quoted string (single, RAW)> = tester 12.1.8
+    454. [Square bracket list]
+      455. <Symbol> = policy-eq
+      456. <Symbol> = conf-httpd-tst-12.1-<default>
+      457. [Circular bracket list]
+        458. <Symbol> = !
+        459. <Symbol> = port-eq
+        460. <Symbol> = 2
+      461. [Circular bracket list]
+        462. <Symbol> = ||
+        463. <Symbol> = path-end
+        464. <Symbol> = /8
+        465. <Symbol> = path-end
+        466. <Symbol> = /*
+      467. <Symbol> = error-response-code==
+      468. <Symbol> = 403
+      469. [Circular bracket list]
+        470. <Symbol> = !
+        471. <Symbol> = error-user-initiated==
+        472. <Symbol> = FALSE
+      473. <Symbol> = user-agent-search-eq
+      474. <Symbol> = foo
+      475. <Symbol> = User-Agent:
+      476. <Symbol> = blah_foo_
+    477. <Symbol> = org.and.httpd-conf-req-1.0
+    478. <Symbol> = return
+    479. <Symbol> = <not-found>
+  480. [Circular bracket list]
+    481. <Symbol> = match-error-response
+    482. <Quoted string (single, RAW)> = tester 12.1.9
+    483. [Square bracket list]
+      484. <Symbol> = policy-eq
+      485. <Symbol> = conf-httpd-tst-12.1-<default>
+      486. [Circular bracket list]
+        487. <Symbol> = !
+        488. <Symbol> = port-eq
+        489. <Symbol> = 2
+      490. [Circular bracket list]
+        491. <Symbol> = ||
+        492. <Symbol> = path-end
+        493. <Symbol> = /9
+        494. <Symbol> = path-end
+        495. <Symbol> = /*
+      496. <Symbol> = error-response-code==
+      497. <Symbol> = 403
+      498. [Circular bracket list]
+        499. <Symbol> = !
+        500. <Symbol> = error-user-initiated==
+        501. <Symbol> = FALSE
+      502. <Symbol> = referrer-beg
+      503. <Symbol> = news:
+      504. <Symbol> = referrer-search-eq
+      505. <Symbol> = x1234
+      506. <Symbol> = method-eq
+      507. <Symbol> = HEAD
+      508. <Symbol> = Referer:
+      509. <Symbol> = news:_x1234
+    510. <Symbol> = org.and.httpd-conf-req-1.0
+    511. <Symbol> = return
+    512. <Symbol> = <gone>
+  513. <Symbol> = match-error-response
+  514. <Quoted string (single, RAW)> = tester 12.1.x
+  515. [Square bracket list]
+    516. <Symbol> = policy-eq
+    517. <Symbol> = conf-httpd-tst-12.1-<default>
+    518. <Symbol> = error-response-code==
+    519. <Symbol> = <bad>
+    520. <Symbol> = error-response-detail==
+    521. <Quoted string (double, RAW)> = Double header User-Agent
+    522. <Symbol> = error-user-initiated==
+    523. <Symbol> = FALSE
     524. [Circular bracket list]
       525. <Symbol> = !
-      526. <Symbol> = extension-end
-      527. <Symbol> = xxxx
+      526. <Symbol> = tm-dow==
+      527. <Symbol> = 8
     528. [Circular bracket list]
       529. <Symbol> = !
-      530. <Symbol> = extension-eq
+      530. <Symbol> = basename-without-extension-beg
       531. <Symbol> = xxxx
     532. [Circular bracket list]
       533. <Symbol> = !
-      534. <Symbol> = extensions-beg
+      534. <Symbol> = basename-without-extension-end
       535. <Symbol> = xxxx
     536. [Circular bracket list]
       537. <Symbol> = !
-      538. <Symbol> = extensions-end
+      538. <Symbol> = basename-without-extension-eq
       539. <Symbol> = xxxx
     540. [Circular bracket list]
       541. <Symbol> = !
-      542. <Symbol> = extensions-eq
+      542. <Symbol> = basename-without-extensions-beg
       543. <Symbol> = xxxx
     544. [Circular bracket list]
       545. <Symbol> = !
-      546. <Symbol> = content-lang-eq
-      547. <Symbol> = abcd
+      546. <Symbol> = basename-without-extensions-end
+      547. <Symbol> = xxxx
     548. [Circular bracket list]
       549. <Symbol> = !
-      550. <Symbol> = content-lang-ext-eq
-      551. <Symbol> = abcd
+      550. <Symbol> = basename-without-extensions-eq
+      551. <Symbol> = xxxx
     552. [Circular bracket list]
       553. <Symbol> = !
-      554. <Symbol> = content-type-eq
-      555. <Symbol> = abcd
+      554. <Symbol> = basename-beg
+      555. <Symbol> = xxxx
     556. [Circular bracket list]
       557. <Symbol> = !
-      558. <Symbol> = content-type-ext-eq
-      559. <Symbol> = abcd
-    560. <Symbol> = method-eq
-    561. <Symbol> = GET
-  562. <Symbol> = org.and.httpd-conf-req-1.0
-  563. <Symbol> = return
-  564. <Symbol> = <not-found>
+      558. <Symbol> = basename-end
+      559. <Symbol> = xxxx
+    560. [Circular bracket list]
+      561. <Symbol> = !
+      562. <Symbol> = basename-eq
+      563. <Symbol> = xxxx
+    564. [Circular bracket list]
+      565. <Symbol> = !
+      566. <Symbol> = extension-beg
+      567. <Symbol> = xxxx
+    568. [Circular bracket list]
+      569. <Symbol> = !
+      570. <Symbol> = extension-end
+      571. <Symbol> = xxxx
+    572. [Circular bracket list]
+      573. <Symbol> = !
+      574. <Symbol> = extension-eq
+      575. <Symbol> = xxxx
+    576. [Circular bracket list]
+      577. <Symbol> = !
+      578. <Symbol> = extensions-beg
+      579. <Symbol> = xxxx
+    580. [Circular bracket list]
+      581. <Symbol> = !
+      582. <Symbol> = extensions-end
+      583. <Symbol> = xxxx
+    584. [Circular bracket list]
+      585. <Symbol> = !
+      586. <Symbol> = extensions-eq
+      587. <Symbol> = xxxx
+    588. [Circular bracket list]
+      589. <Symbol> = !
+      590. <Symbol> = content-lang-eq
+      591. <Symbol> = abcd
+    592. [Circular bracket list]
+      593. <Symbol> = !
+      594. <Symbol> = content-lang-ext-eq
+      595. <Symbol> = abcd
+    596. [Circular bracket list]
+      597. <Symbol> = !
+      598. <Symbol> = content-type-eq
+      599. <Symbol> = abcd
+    600. [Circular bracket list]
+      601. <Symbol> = !
+      602. <Symbol> = content-type-ext-eq
+      603. <Symbol> = abcd
+    604. <Symbol> = method-eq
+    605. <Symbol> = GET
+  606. <Symbol> = org.and.httpd-conf-req-1.0
+  607. <Symbol> = return
+  608. <Symbol> = <not-found>

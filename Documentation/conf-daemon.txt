@@ -38,6 +38,14 @@ org.and.daemon-conf-1.0
 . drop-privs
 . dumpable
 . listen
+.. defer-accept
+.. port
+.. addr | address
+.. cong | congestion
+.. policy
+.. queue-length
+.. filter
+.. max-connections
 . parent-death-signal
 . pid-file
 . processes | procs

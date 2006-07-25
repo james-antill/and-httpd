@@ -19,10 +19,26 @@
    policy conf-httpd-tst-12.1-<default>
 
     (HTTP
+       (strictness (allow-encoded-dot) (allow-encoded-slash)
+                   (host validation virtual-hosts-error)
+                    URL (remove-fragment) remove-query)
+       (limit requests 99
+              nodes  Accept: 99
+                     Accept-Charset: 99
+                     Accept-Encoding: 99
+                     Accept-Language: 99
+                     Connection: 99
+                     ETag: 99
+                     Range:  0)
+        keep-alive-hdr TRUE
         Server: Apache/1.0.0)
+    (limit req-conf-sz 9999
+           nodes  Accept: 9999
+                  Accept-Language: 9999)
     (match-init [debug]
      HTTP
      Server: += ' (' Debug ')')
+
      unspecified-hostname foo.example.com ; -- so we always match in tests
      unspecified-hostname-append-port off
      MIME/types-filename-xtra (= ENV _MIMEDIR /mime_types_extra.txt)

@@ -156,6 +156,9 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     OPT_SERV_X_TOGGLE(opts->use_keep_alive);
   else if (OPT_SERV_SYM_EQ("keep-alive-1.0"))
     OPT_SERV_X_TOGGLE(opts->use_keep_alive_1_0);
+  else if (OPT_SERV_SYM_EQ("keep-alive-hdr") ||
+           OPT_SERV_SYM_EQ("keep-alive-header"))
+    OPT_SERV_X_TOGGLE(opts->output_keep_alive_hdr);
   else if (OPT_SERV_SYM_EQ("range"))
     OPT_SERV_X_TOGGLE(opts->use_range);
   else if (OPT_SERV_SYM_EQ("range-1.0"))
@@ -298,9 +301,9 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
              OPT_SERV_SYM_EQ("req-conf-sz"))
       OPT_SERV_X_UINT(opts->max_req_conf_sz);
     else if (OPT_SERV_SYM_EQ("nodes"))
-    {
+    { /* this limts how much you can have in the configs., not over HTTP */
       CONF_SC_MAKE_CLIST_BEG(nodes, clist);
-        
+      
       else if (OPT_SERV_SYM_EQ("Accept:"))
         OPT_SERV_X_UINT(opts->max_neg_A_nodes);
       else if (OPT_SERV_SYM_EQ("Accept-Language:"))

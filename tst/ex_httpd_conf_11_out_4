@@ -3,7 +3,7 @@ Date:
 Server: foo/1.2.3
 Last-Modified:
 Content-Type: text/plain
-Content-Length: 62
+Content-Length: 61
 Location: http://foo.example.com/A">X</A><SCRIPT>...</SCRIPT>,VALIDATE
 
 http://foo.example.com/A">X</A><SCRIPT>...</SCRIPT>,VALIDATE
@@ -32,7 +32,7 @@ Server: foo/1.2.3
 Last-Modified:
 Connection: close
 Content-Type: text/plain
-Content-Length: 62
+Content-Length: 61
 Location: http://foo.example.com/a">x</a><script>...</script>,validate
 
 http://foo.example.com/a">x</a><script>...</script>,validate

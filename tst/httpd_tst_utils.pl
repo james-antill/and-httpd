@@ -9,6 +9,7 @@ our $tst_DBG;
 our $root      = "ex_httpd_root";
 our $conf_root = "ex_httpd_conf_root";
 my $err_conf_7_root  = "ex_httpd_err_conf_7_root";
+my $err_conf_13_root  = "ex_httpd_err_conf_13_root";
 
 our $truncate_segv = 0;
 
@@ -363,7 +364,8 @@ sub cleanup
 
     rmtree([$root,
 	    $conf_root,
-	    $err_conf_7_root]);
+	    $err_conf_7_root,
+	    $err_conf_13_root]);
   }
 
 sub setup
@@ -386,7 +388,8 @@ sub setup
 	    $conf_root . "/foo.example.com/conf2",
 	    $conf_root . "/foo.example.com/conf3",
 	    $conf_root . "/foo.example.com/conf4",
-	    $err_conf_7_root . "/foo.example.com"]);
+	    $err_conf_7_root  . "/foo.example.com",
+	    $err_conf_13_root . "/foo.example.com"]);
 
     my @conf_httpd_tsts = glob("$ENV{_TSTDIR}/ex_conf_httpd_tst_*");
     for (1..scalar(@conf_httpd_tsts))
@@ -473,6 +476,8 @@ sub setup
     make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
     make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
 
+    make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
+
 # Can't be tested because it's based on "now" ... *sigh*.
     make_conf("Expires: <day>",
 	      "$conf_root/foo.example.com/conf4/exp1");
@@ -481,15 +486,35 @@ sub setup
     make_conf("Expires: 4_0 <years>",
 	      "$conf_root/foo.example.com/conf4/exp2");
 
-# Copied from err/406
-my $err_conf_406 = <<EOL;
-   content-lang-ext .en   ; If we don't accept anything, pretend it's english
-   content-type-ext .bin  ; If we don't accept anything
-   Content-Type: application/octet-stream
-  (content-lang-negotiate (en .en) (fr .fr) (de .de) (es .es) (it .it) (jp .jp))
-  (content-type-negotiate (text/plain .txt) (text/html .html))
-   filename [limit path-end .html] = <content-lang-ext> <content-type-ext>
+my $err_conf_build_path = <<EOL;
+   Location: [] (= B: <basename> | <url-basename> " && "
+                   BE: <basename-without-extension> |
+                   <url-basename-without-extension> " && "
+                   BES: <basename-without-extensions> |
+                   <url-basename-without-extensions> " && "
+                   D: <dirname> | <url-dirname> " && "
+                   DR: <doc-root> | <doc-root/..> " && "
+                   E: <extension> | <url-extension> " && "
+                   ES: <extensions> | <url-extensions> " && "
+                   RC: <req-conf-dir> | <req-conf-dir/..> " && "
+                   RE: <req-err-dir> | <req-err-dir/..> " && "
+                   U: <url-path>)
+   return 301
 EOL
+
+    make_conf($err_conf_build_path, "$conf_root/foo.example.com/bp.x.y");
+
+    make_line(0, "ERROR 400 it/txt",
+	      "$err_conf_13_root/foo.example.com/400.it.txt");
+
+    make_html(0, "ERROR 404 en/html",
+	      "$err_conf_13_root/foo.example.com/404.en.html");
+    make_html(0, "ERROR 404 fr/html",
+	      "$err_conf_13_root/foo.example.com/404.fr.html");
+    make_line(0, "ERROR 404 en/txt",
+	      "$err_conf_13_root/foo.example.com/404.en.txt");
+    make_line(0, "ERROR 404 es/txt",
+	      "$err_conf_13_root/foo.example.com/404.es.txt");
 
     make_html(0, "ERROR 406 en/html",
 	      "$err_conf_7_root/foo.example.com/406.en.html");
@@ -499,12 +524,34 @@ EOL
 	      "$err_conf_7_root/foo.example.com/406.en.txt");
     make_line(0, "ERROR 406 fr/txt",
 	      "$err_conf_7_root/foo.example.com/406.fr.txt");
+
+    make_line(0, "neg fr/html",
+	      "$conf_root/foo.example.com/neg.fr.html");
     make_data(1, "", "$err_conf_7_root/foo.example.com/406.en.bin");
     make_data(1, "", "$err_conf_7_root/foo.example.com/406.fr.bin");
+    make_data(1, "", "$err_conf_13_root/foo.example.com/404.en.bin");
+    make_data(1, "", "$err_conf_13_root/foo.example.com/406.es.bin");
+    make_data(1, "", "$conf_root/foo.example.com/neg.es.bin");
 
-    make_conf($err_conf_406, "$err_conf_7_root/foo.example.com/406");
+# Copied from err/406
+my $err_conf_neg = <<EOL;
+   content-lang-ext .en   ; If we don't accept anything, pretend it's english
+   content-type-ext .bin  ; If we don't accept anything
+   Content-Type: application/octet-stream
+  (content-lang-negotiate (en .en) (fr .fr) (de .de) (es .es) (it .it) (jp .jp))
+  (content-type-negotiate (text/plain .txt) (text/html .html))
+   filename [limit path-end .html] = <content-lang-ext> <content-type-ext>
+EOL
+
+    make_conf($err_conf_neg, "$err_conf_7_root/foo.example.com/406");
+
+    make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/400");
+    make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/404");
+    make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/406");
+    make_conf($err_conf_neg, "$conf_root/foo.example.com/neg");
 
     system("$ENV{_TOOLSDIR}/gzip-r --force --type=all $err_conf_7_root");
+    system("$ENV{_TOOLSDIR}/gzip-r --force --type=all $err_conf_13_root");
 
     system("mkfifo $root/default/fifo");
 
@@ -561,6 +608,8 @@ if (@ARGV)
 	  { all_conf_x_tsts(11); $y = 1; }
 	elsif ($arg eq "conf_12")
 	  { all_conf_x_tsts(12); $y = 1; }
+	elsif ($arg eq "conf_13")
+	  { all_conf_x_tsts(13); $y = 1; }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -634,7 +683,7 @@ sub conf_tsts
 	    all_none_tsts();
 	  }
 	elsif (($_ == 5) || ($_ == 6) || ($_ == 7) ||
-	       ($_ == 10) || ($_ == 11) || ($_ == 12))
+	       ($_ == 10) || ($_ == 11) || ($_ == 12) || ($_ == 13))
 	  {
 	    all_conf_x_tsts($_);
 	  }

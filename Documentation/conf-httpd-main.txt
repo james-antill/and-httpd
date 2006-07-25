@@ -53,6 +53,7 @@ org.and.httpd-conf-main-1.0
 ... encoded-content-replacement
 ... keep-alive
 ... keep-alive-1.0
+... keep-alive-hdr
 ... range
 ... range-1.0
 ... trace-operation | trace-op
@@ -87,7 +88,6 @@ org.and.httpd-conf-main-1.0
 .[ client-ipv4-cidr-eq
 .[ server-ipv4-cidr-eq
 .[ server-ipv4-port-eq
-.[ :
 .[ Accept-Encoding:
 .[ If-Modified-Since:
 .[ If-Unmodified-Since:
@@ -101,11 +101,22 @@ org.and.httpd-conf-main-1.0
 .[ Referer: | Referrer:
 .[ referrer-beg
 .[ referrer-search-eq | referrer-srch-eq
-.[ http-0.9-eq
-.[ http-1.0-eq
-.[ http-1.1-eq
+.[ http-vers-eq-0.9 | http-vers==0.9 | http-version-eq-0.9 | http-version==0.9
+  True if the request is a HTTP/0.9 request.
+.[ http-vers-eq-1.0 | http-vers==1.0 | http-version-eq-1.0 | http-version==1.0
+  True if the request is a HTTP/1.0 request.
+.[ http-vers-eq-1.1 | http-vers==1.1 | http-version-eq-1.1 | http-version==1.1
+  True if the request is a HTTP/1.1 request.
+.[ http-vers>=1.0 | http-version>=1.0
+  True if the request is a HTTP/1.0 request, or higher 1.x request.
+.[ http-vers>1.0  | http-version>1.0 | http-vers>=1.1 | http-version>=1.1
+  True if the request is a HTTP/1.1 request, or higher 1.x request.
+.[ http-vers>=1.2 | http-version>=1.2
+  True if the request is a HTTP/1.2 request, or higher 1.x request.
 .[ method-eq
+  True if the method is the same as the next argument.
 .[ tm-dow-eq
+  True if the UTC Day of Week is the same as the next argument.
 .[ content-language-eq | content-lang-eq
 .[ content-language-extension-eq | content-lang-ext-eq
 .[ content-type-eq
@@ -135,4 +146,9 @@ org.and.httpd-conf-main-1.0
 .. connection-tag
 .. tag
 .. org.and.httpd-conf-req-1.0
-
+. match-error-response
+.[ error-response-code-eq | error-response-code==
+.[ error-response-detail-eq | error-response-detail==
+.[ error-user-initiated-eq | error-user-initiated==
+.[/match-request
+./match-request

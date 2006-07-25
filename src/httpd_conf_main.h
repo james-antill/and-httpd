@@ -54,7 +54,7 @@
 #define HTTPD_CONF_USE_REMOVE_QUERY FALSE
 #define HTTPD_CONF_USE_SECURE_DIRS TRUE
 #define HTTPD_CONF_USE_FRIENDLY_DIRS TRUE
-#define HTTPD_CONF_USE_POSIX_FADVISE TRUE /* NOTE that this SEGV's on FC1 */
+#define HTTPD_CONF_USE_POSIX_FADVISE TRUE
 #define HTTPD_CONF_USE_TCP_CORK TRUE
 #define HTTPD_CONF_USE_REQ_CONF TRUE
 #define HTTPD_CONF_USE_ALLOW_HDR_SPLIT TRUE
@@ -64,6 +64,7 @@
 #define HTTPD_CONF_USE_CHK_ENCODED_DOT TRUE
 #define HTTPD_CONF_USE_NOATIME FALSE /* can't easily enable due to "security" */
 #define HTTPD_CONF_USE_TEXT_PLAIN_REDIRECT FALSE
+#define HTTPD_CONF_OUTPUT_KEEPA_HDR FALSE
 #define HTTPD_CONF_ADD_DEF_PORT TRUE
 #define HTTPD_CONF_MAX_REQUESTS           0
 #define HTTPD_CONF_MAX_NEG_A_NODES        8
@@ -141,7 +142,9 @@ typedef struct Httpd_policy_opts
 
  unsigned int use_noatime : 1;
 
- unsigned int use_text_plain_redirect : 1; /* 36th bitfield */
+ unsigned int use_text_plain_redirect : 1;
+
+ unsigned int output_keep_alive_hdr : 1; /* 37th bitfield */
 
  unsigned int max_header_sz;
 

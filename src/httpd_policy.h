@@ -549,9 +549,10 @@ HTTPD_POLICY__EI void httpd_policy_uri_mod_exts(const Vstr_base *s1,
 
   srch1 = vstr_srch_chr_fwd(s1, *pos, *len, '.');
   srch2 = vstr_srch_case_cstr_buf_fwd(s1, *pos, *len, "%2e");
+  if (!srch1) srch1 = srch2;  
+  if (!srch2) srch2 = srch1;  
   
-  if (srch1 > srch2)
-    srch1 = srch2;
+  if (srch1 > srch2) srch1 = srch2;
 
   if (srch1)
   { /* include '.' or "%2e" */
@@ -570,21 +571,16 @@ HTTPD_POLICY__EI void httpd_policy_uri_mod_bwen(const Vstr_base *s1,
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
-  unsigned int num = 1;
 
   httpd_policy_uri_mod_name(s1, pos, len);
 
   srch1 = vstr_srch_chr_rev(s1, *pos, *len, '.');
   srch2 = vstr_srch_case_cstr_buf_rev(s1, *pos, *len, "%2e");
-  
-  if (srch1 < srch2)
-  {
-    srch1 = srch2;
-    num   = 3;
-  }
+
+  if (srch1 < srch2) srch1 = srch2;
   
   if (srch1)
-    *len = vstr_sc_posdiff(*pos, srch1) - num; /* don't include '.' */
+    *len = vstr_sc_posdiff(*pos, srch1) - 1; /* don't include '.' */
 }
 
 HTTPD_POLICY__EI void httpd_policy_uri_mod_bwes(const Vstr_base *s1,
@@ -592,21 +588,18 @@ HTTPD_POLICY__EI void httpd_policy_uri_mod_bwes(const Vstr_base *s1,
 {
   size_t srch1 = 0;
   size_t srch2 = 0;
-  unsigned int num = 1;
 
   httpd_policy_uri_mod_name(s1, pos, len);
 
   srch1 = vstr_srch_chr_fwd(s1, *pos, *len, '.');
   srch2 = vstr_srch_case_cstr_buf_fwd(s1, *pos, *len, "%2e");
+  if (!srch1) srch1 = srch2;  
+  if (!srch2) srch2 = srch1;
   
-  if (srch1 > srch2)
-  {
-    srch1 = srch2;
-    num   = 3;
-  }
+  if (srch1 > srch2) srch1 = srch2;
   
   if (srch1)
-    *len = vstr_sc_posdiff(*pos, srch1) - num; /* don't include '.' */
+    *len = vstr_sc_posdiff(*pos, srch1) - 1; /* don't include '.' */
 }
 
 HTTPD_POLICY__EI int httpd_policy_uri_lim_eq(const Vstr_base *s1,
