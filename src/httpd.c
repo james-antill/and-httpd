@@ -368,6 +368,18 @@ static void httpd__disable_mmap(void)
   }
 }
 
+void httpd_disable_getxattr(void)
+{
+  Opt_serv_policy_opts *scan = httpd_opts->s->def_policy;
+  
+  while (scan)
+  {
+    Httpd_policy_opts *tmp = (Httpd_policy_opts *)scan;
+    tmp->use_mime_xattr = FALSE;
+    scan = scan->next;
+  }
+}
+
 static void httpd_serv_call_mmap(struct Con *con, struct Httpd_req_data *req,
                                  struct File_sect *fs)
 {
@@ -867,6 +879,8 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
       http_app_err_file(con, req, fname, &vhost_prefix_len);
 
       req->content_type_vs1 = NULL;
+      req->content_type_pos = 0;
+      req->content_type_len = 0;
       req->error_code = 0;
       req->skip_document_root = FALSE;
       req->direct_uri = FALSE;
@@ -958,11 +972,15 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
   }
 
   if (!cust_err_msg)
+  {
     req->content_type_vs1 = NULL;
-
+    req->content_type_pos = 0;
+    req->content_type_len = 0;
+  }
+  
   /* HEAD op might seem normal, but again HTTP asks that GET and HEAD
      produce identical headers */
-  if (!req->policy->use_text_plain_redirect)
+  if (!req->policy->use_text_redirect)
     switch (req->error_code)
     { /* make sure browsers don't allow XSS */
       case 301:
@@ -1013,7 +1031,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     switch (req->error_code)
     {
       case 301: case 302: case 303: case 307:
-        if (req->policy->use_text_plain_redirect)
+        if (req->policy->use_text_redirect)
           content_type = "text/plain";
         else /* make sure browsers don't allow XSS */
           http__safe_html_url(req->fname);
@@ -1077,7 +1095,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     switch (req->error_code)
     {
       case 301:
-        if (!req->policy->use_text_plain_redirect)
+        if (!req->policy->use_text_redirect)
         {
           ASSERT(req->error_len == CONF_MSG_LEN_301(loc));
           vstr_add_fmt(out, out->len, CONF_MSG_FMT_301,
@@ -1087,7 +1105,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
           break;
         }
       case 302:
-        if (!req->policy->use_text_plain_redirect)
+        if (!req->policy->use_text_redirect)
         {
           ASSERT(req->error_len == CONF_MSG_LEN_302(loc));
           vstr_add_fmt(out, out->len, CONF_MSG_FMT_302,
@@ -1097,7 +1115,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
           break;
         }
       case 303:
-        if (!req->policy->use_text_plain_redirect)
+        if (!req->policy->use_text_redirect)
         {
           ASSERT(req->error_len == CONF_MSG_LEN_303(loc));
           vstr_add_fmt(out, out->len, CONF_MSG_FMT_303,
@@ -1107,7 +1125,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
           break;
         }
       case 307:
-        if (!req->policy->use_text_plain_redirect)
+        if (!req->policy->use_text_redirect)
         {
           ASSERT(req->error_len == CONF_MSG_LEN_307(loc));
           vstr_add_fmt(out, out->len, CONF_MSG_FMT_307,
@@ -1349,10 +1367,21 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
     return (FALSE);
   if (req->error_code)
     return (http_fin_err_req(con, req));
-    
+  
+  /* Add the document root now, this must be at least . so
+   * "///foo" becomes ".///foo" ... this is done now
+   * so nothing has to deal with document_root values */
+  if (!req->skip_document_root)
+    http_prepend_doc_root(fname, req);
+  
+  fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len);
+  
+  if (fname->conf->malloc_bad)
+    goto malloc_err;
+
   if (!http_req_content_type(req))
     return (http_fin_err_req(con, req));
-
+  
   /* don't change vary_a/vary_al just because of 406 */
   if (req->parse_accept)
   {
@@ -1369,17 +1398,6 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
       HTTPD_ERR_MSG_RET(req, 406, "Language", http_fin_err_req(con, req));
   }
   
-  /* Add the document root now, this must be at least . so
-   * "///foo" becomes ".///foo" ... this is done now
-   * so nothing has to deal with document_root values */
-  if (!req->skip_document_root)
-    http_prepend_doc_root(fname, req);
-  
-  fname_cstr = vstr_export_cstr_ptr(fname, 1, fname->len);
-  
-  if (fname->conf->malloc_bad)
-    goto malloc_err;
-
   if (req->policy->use_noatime)
     open_flags |= O_NOATIME;
   
@@ -1441,7 +1459,7 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
   if (!S_ISREG(req->f_stat->st_mode))
     HTTPD_ERR_MSG_RET(req, 403, "File not ISREG",
                       http_fin_err_close_req(con, req));
-  
+
   con->fs->len = req->f_stat->st_size;
   
   if (req->ver_0_9)

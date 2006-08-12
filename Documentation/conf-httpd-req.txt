@@ -22,7 +22,7 @@ org.and.httpd-conf-req-1.0
 . filename
 . parse-accept
 . parse-accept-language
-. allow-accept-encoding
+. parse-accept-encoding | allow-accept-encoding
 . Vary:_*
 . Vary:_Accept
 . Vary:_Accept-Charset

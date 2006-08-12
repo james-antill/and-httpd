@@ -45,6 +45,9 @@
 
 http://www.sans.org/top20/#u2
 
+	test md5 base64 auto encoding
+	test http_req_xtra_content() etc.
+	test new conf_tmpl files
 	doc converter, manual
         change gethostbyname() to the new BS.
           IPv6 (and flying cars)

@@ -120,6 +120,8 @@
 
 #undef HAVE_SIGACTION
 
+#undef HAVE_GETXATTR
+
 
 #undef HAVE_INET_NTOP
 

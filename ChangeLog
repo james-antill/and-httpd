@@ -1,3 +1,41 @@
+2006-08-08  James Antill  <james@and.org>
+
+	* tools/mime_types_extra.txt: Add WPF mime/type mappings.
+
+	* conf_tmpl/REDIR: Add examples of things you can do.
+
+	* conf_tmpl/GONE: Add examples of things you can do.
+
+	* conf_tmpl/CONDITION: Add examples of things you can do.
+
+	* conf_tmpl/rm-extra-): Not needed anymore due to
+	_fixup-url-pasting.conf
+
+	* conf_tmpl/rm-extra->: Not needed anymore due to
+	_fixup-url-pasting.conf
+
+	* conf_tmpl/rm-extra-]: Not needed anymore due to
+	_fixup-url-pasting.conf
+
+	* tools/and-httpd.conf: Change auth example to use auto base64'ing
+	conf. version.
+
+2006-08-07  James Antill  <james@and.org>
+
+	* src/httpd_app.c (http_app_hdr_vstr_md5): Added function for auto
+	base64'ing of MD5 headers (if they are unencoded -- Ie. output from
+	md5sum).
+
+	* src/httpd_conf_main.c (httpd__conf_main_policy_http_d1): Add
+	basic-single auth, which does convertion to base64 automatically.
+	
+	* src/base64.c (vstr_x_conv_base64_encode): Add base64 encoder.
+
+2006-07-26  James Antill  <james@and.org>
+
+	* src/httpd_req.c (http_req_content_type): Added mime_type xattr
+	support.
+
 2006-07-24  James Antill  <james@and.org>
 
 	* src/opt_serv.c (opt_serv_merge_addrs): Allow changes to (listen ...)

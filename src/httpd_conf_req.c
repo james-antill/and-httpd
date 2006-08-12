@@ -14,7 +14,7 @@
 #define EX_UTILS_RET_FAIL     1
 #include "ex_utils.h"
 
-#define HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(x) do {                   \
+#define HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(x) do {                         \
       if (!httpd__conf_req_single_str(req, conf, token,                 \
                                       &req-> x ## _vs1,                 \
                                       &req-> x ## _pos,                 \
@@ -22,7 +22,7 @@
         return (FALSE);                                                 \
     } while (FALSE)
 
-#define HTTPD_CONF_REQ__X_CONTENT_VSTR(x) do {                          \
+#define HTTPD_CONF_REQ__X_CONTENT_VSTR(x) do {                                \
       if (!httpd__conf_req_make_str(req, conf, token,                   \
                                     &req-> x ## _vs1,                   \
                                     &req-> x ## _pos,                   \
@@ -30,21 +30,6 @@
         return (FALSE);                                                 \
     } while (FALSE)
 
-
-#define HTTPD_CONF_REQ__X_HDR_CHK(x, y, z) do {                 \
-      if (!req->policy->allow_hdr_split &&                      \
-          vstr_srch_cstr_chrs_fwd(x, y, z, HTTP_EOL))           \
-        return (FALSE);                                         \
-      if (!req->policy->allow_hdr_nil &&                        \
-          vstr_srch_chr_fwd(x, y, z, 0))                        \
-        return (FALSE);                                         \
-    } while (FALSE)
-
-#define HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(x)                            \
-    HTTPD_CONF_REQ__X_HDR_CHK(req-> x ## _vs1, req-> x ## _pos, req-> x ## _len)
-
-#define HTTP__CONTENT_PARAMS(req, x)                            \
-    (req)-> x ## _vs1, (req)-> x ## _pos, (req)-> x ## _len
 
 
 #define HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP   0
@@ -57,16 +42,21 @@ static int httpd__conf_req_single_str(Httpd_req_data *req,
                                       size_t *pos, size_t *len)
 {
   Vstr_base *xs1 = req->xtra_content;
-  size_t xpos = 0;
   
   ASSERT(s1 && pos && len);
   ASSERT((*s1 == xs1) || !*s1);
-  
+
+  /* always delete, so don't call http_req_xtra_content() as it might do a
+     copy */
   if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
     return (FALSE);
   xs1 = req->xtra_content;
+
+  if (*len && (vstr_sc_poslast(*pos, *len) == xs1->len))
+    vstr_del(req->xtra_content, *pos, *len);
   
-  xpos = xs1->len;
+  *pos = xs1->len;
+  *len = 0;
   if (conf_sc_token_app_vstr(conf, token, xs1, s1, pos, len))
     return (FALSE);
 
@@ -89,33 +79,18 @@ static int httpd__conf_req_make_str(Httpd_req_data *req,
                                     size_t *pos, size_t *len)
 {
   Opt_serv_opts *opts = req->policy->s->beg;
-  Vstr_base *xs1 = req->xtra_content;
+  Vstr_base *xs1 = NULL;
   size_t xpos = 0;
-  
-  ASSERT(s1 && pos && len);
-  ASSERT((*s1 == xs1) || !*s1);
-  
-  if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
-    return (FALSE);
+
+  xpos = http_req_xtra_content(req, *s1, *pos, len);
   xs1 = req->xtra_content;
   
-  xpos = xs1->len;
-  if (*s1 && (vstr_sc_poslast(*pos, *len) == xpos))
-    xpos = *pos; /* we are the last bit */
-  else if (*s1)
-  {
-    if (!vstr_add_vstr(xs1, xs1->len, *s1, *pos, *len, VSTR_TYPE_ADD_BUF_REF))
-      return (FALSE); /* we aren't, so copy */
-    xpos = xs1->len;
-  }
-  /* else not allocated at all ... so use pos == len + 1 and len == 0 */
-  
-  if (!opt_serv_sc_make_str(opts, conf, token, xs1, xpos + 1, xs1->len - xpos))
+  if (!opt_serv_sc_make_str(opts, conf, token, xs1, xpos, *len))
     return (FALSE);
   
   *s1  = xs1;
-  *pos = xpos + 1;
-  *len = xs1->len - xpos;
+  *pos = xpos;
+  *len = (xs1->len - xpos) + 1;
 
   return (TRUE);
 }
@@ -445,25 +420,12 @@ static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
 static int httpd__content_location_valid(Httpd_req_data *req,
                                          size_t *ret_pos, size_t *ret_len)
 {
-  size_t pos = 0;
-  size_t len = 0;
+  *ret_pos = req->content_location_pos;
+  *ret_len = req->content_location_len;
   
-  ASSERT(req->content_location_vs1);
-  
-  pos = req->content_location_pos;
-  len = req->content_location_len;
-  if (vstr_sc_poslast(pos, len) != req->xtra_content->len)
-  {
-    size_t tmp = req->xtra_content->len + 1;
-    if (!HTTPD_APP_REF_VSTR(req->xtra_content, req->xtra_content, pos, len))
-      return (FALSE);
-    pos = tmp;
-    ASSERT(len == vstr_sc_posdiff(pos, req->xtra_content->len));
-  }
-  *ret_pos = pos;
-  *ret_len = len;
-  
-  return (TRUE);
+  *ret_pos = http_req_xtra_content(req, req->xtra_content, *ret_pos, ret_len);
+
+  return (!!*ret_pos);
 }
 
 /* we negotiate a few items, and this is the loop for all of them... */
@@ -514,9 +476,9 @@ static int httpd__content_location_valid(Httpd_req_data *req,
 /* match with an 's' is it's > 1, otherwise without ... zero special cased */
 #define HTTPD__EXPIRES_CMP(x, y)                                        \
     (((num == 1) &&                                                     \
-      vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y ">")) ||     \
+      vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, x), "<" y ">")) ||     \
      ((num > 1) &&                                                      \
-      vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, x), "<" y "s>")))
+      vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, x), "<" y "s>")))
 
 #define HTTPD__CONF_REDIR(req, code) do {                               \
       if ((req)->direct_uri) {                                          \
@@ -691,7 +653,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     req->vhost_prefix_len = 0;
     
     req->direct_uri = TRUE;
-    HTTPD_CONF_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);
+    HTTP_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);
 
     if (canon)
       httpd_req_absolute_uri(con, req, req->fname, 1, req->fname->len);
@@ -724,24 +686,24 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       httpd__conf_req_reset_cache_control(req, (num * 60 * 60 * 24 * 7));
     else if (!ern) /* must be one of the above symbols */
       return (FALSE);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+    else if (vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, cache_control),
                               "<expires-now>"))
       httpd__conf_req_reset_cache_control(req, 0);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, cache_control),
+    else if (vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, cache_control),
                               "<expires-never>"))
       httpd__conf_req_reset_cache_control(req, (60 * 60 * 24 * 365));
     else
-      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(cache_control);
+      HTTP_REQ__X_CONTENT_HDR_CHK(cache_control);
   }
   else if (OPT_SERV_SYM_EQ("Content-Disposition:"))
   {
     HTTPD_CONF_REQ__X_CONTENT_VSTR(content_disposition);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_disposition);
+    HTTP_REQ__X_CONTENT_HDR_CHK(content_disposition);
   }
   else if (OPT_SERV_SYM_EQ("Content-Language:"))
   {
     HTTPD_CONF_REQ__X_CONTENT_VSTR(content_language);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_language);
+    HTTP_REQ__X_CONTENT_HDR_CHK(content_language);
   }
   else if (OPT_SERV_SYM_EQ("Content-Location:"))
   {
@@ -753,23 +715,8 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     if (req->direct_uri || req->direct_filename)
       return (FALSE);
 
-    if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
+    if (!httpd__content_location_valid(req, &pos, &len))
       return (FALSE);
-  
-    if (req->content_location_vs1)
-    {
-      if (!httpd__content_location_valid(req, &pos, &len))
-        return (FALSE);
-    }
-    else
-    {
-      pos = req->xtra_content->len + 1;
-      if (!HTTPD_APP_REF_VSTR(req->xtra_content,
-                              con->evnt->io_r, req->path_pos, req->path_len))
-        return (FALSE);
-      ASSERT(pos <= req->xtra_content->len);
-      len = vstr_sc_posdiff(pos, req->xtra_content->len);
-    }
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     if (!httpd__meta_build_path(con, req, conf, token, NULL, NULL, &lim, &ref))
@@ -786,50 +733,50 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     req->content_location_vs1 = req->xtra_content;
     req->content_location_pos = pos;
     req->content_location_len = len;
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_location);
+    HTTP_REQ__X_CONTENT_HDR_CHK(content_location);
   }
   else if (OPT_SERV_SYM_EQ("Content-MD5:") ||
            OPT_SERV_SYM_EQ("identity/Content-MD5:"))
   {
     req->content_md5_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(content_md5);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_md5);
+    HTTP_REQ__X_CONTENT_HDR_CHK(content_md5);
   }
   else if (OPT_SERV_SYM_EQ("gzip/Content-MD5:"))
   { 
     req->content_md5_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(gzip_content_md5);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(gzip_content_md5);
+    HTTP_REQ__X_CONTENT_HDR_CHK(gzip_content_md5);
   }
   else if (OPT_SERV_SYM_EQ("bzip2/Content-MD5:"))
   { 
     req->content_md5_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(bzip2_content_md5);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(bzip2_content_md5);
+    HTTP_REQ__X_CONTENT_HDR_CHK(bzip2_content_md5);
   }
   else if (OPT_SERV_SYM_EQ("Content-Type:"))
   {
     HTTPD_CONF_REQ__X_CONTENT_VSTR(content_type);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_type);
+    HTTP_REQ__X_CONTENT_HDR_CHK(content_type);
   }
   else if (OPT_SERV_SYM_EQ("ETag:") ||
            OPT_SERV_SYM_EQ("identity/ETag:"))
   {
     req->etag_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(etag);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(etag);
+    HTTP_REQ__X_CONTENT_HDR_CHK(etag);
   }
   else if (OPT_SERV_SYM_EQ("gzip/ETag:"))
   {
     req->etag_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(gzip_etag);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(gzip_etag);
+    HTTP_REQ__X_CONTENT_HDR_CHK(gzip_etag);
   }
   else if (OPT_SERV_SYM_EQ("bzip2/ETag:"))
   {
     req->etag_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(bzip2_etag);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(bzip2_etag);
+    HTTP_REQ__X_CONTENT_HDR_CHK(bzip2_etag);
   }
   else if (OPT_SERV_SYM_EQ("Expires:"))
   { /* note that rfc2616 says only go upto a year into the future */
@@ -861,25 +808,25 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       httpd__conf_req_reset_expires(req, (num * 60 * 60 * 24 * 7));
     else if (!ern) /* must be one of the above symbols */
       return (FALSE);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<now>"))
+    else if (vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, expires), "<now>"))
       httpd__conf_req_reset_expires(req, 0);
-    else if (vstr_cmp_cstr_eq(HTTP__CONTENT_PARAMS(req, expires), "<never>"))
+    else if (vstr_cmp_cstr_eq(HTTP_REQ__CONT_PARAMS(req, expires), "<never>"))
       httpd__conf_req_reset_expires(req, (60 * 60 * 24 * 365));
     else
     {
       req->expires_time = file_timestamp;
-      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(expires);
+      HTTP_REQ__X_CONTENT_HDR_CHK(expires);
     }
   }
   else if (OPT_SERV_SYM_EQ("Link:")) /* rfc2068 -- old, but still honored */
   {
     HTTPD_CONF_REQ__X_CONTENT_VSTR(link);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(link);
+    HTTP_REQ__X_CONTENT_HDR_CHK(link);
   }
   else if (OPT_SERV_SYM_EQ("P3P:")) /* http://www.w3.org/TR/P3P/ */
   {
     HTTPD_CONF_REQ__X_CONTENT_VSTR(p3p);
-    HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(p3p);
+    HTTP_REQ__X_CONTENT_HDR_CHK(p3p);
   }
   else if (OPT_SERV_SYM_EQ("filename"))
   {
@@ -909,7 +856,8 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     OPT_SERV_X_TOGGLE(req->parse_accept);
   else if (OPT_SERV_SYM_EQ("parse-accept-language"))
     OPT_SERV_X_TOGGLE(req->parse_accept_language);
-  else if (OPT_SERV_SYM_EQ("allow-accept-encoding"))
+  else if (OPT_SERV_SYM_EQ("allow-accept-encoding") ||
+           OPT_SERV_SYM_EQ("parse-accept-encoding"))
     OPT_SERV_X_TOGGLE(req->allow_accept_encoding);
   else if (OPT_SERV_SYM_EQ("Vary:_*"))
     OPT_SERV_X_TOGGLE(req->vary_star);
@@ -963,7 +911,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       *token = save;
       conf_parse_num_token(conf, token, qual_num);
       HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(content_type);
-      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_type);
+      HTTP_REQ__X_CONTENT_HDR_CHK(content_type);
       HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(ext_vary_a);
       conf_parse_num_token(conf, token, last);
     }
@@ -991,7 +939,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
       *token = save;
       conf_parse_num_token(conf, token, qual_num);
       HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(content_language);
-      HTTPD_CONF_REQ__X_CONTENT_HDR_CHK(content_language);
+      HTTP_REQ__X_CONTENT_HDR_CHK(content_language);
       HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(ext_vary_al);
       conf_parse_num_token(conf, token, last);
     }

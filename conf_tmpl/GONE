@@ -1,0 +1,9 @@
+; Super version of 404, can be cached.
+(org.and.httpd-conf-req-1.0
+   return <gone>)
+; Can also use any of:
+;; <bad-request>           = pretend there was something wrong on the client end
+;; <forbidden>             = says "you don't have access and can't get it"
+;; <not-found>             = 404
+;; <internal-server-error> = pretend something bad happened in the server
+;; <service-unavailable>   = pretend a config. problem happened

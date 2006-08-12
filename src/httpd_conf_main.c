@@ -9,6 +9,8 @@
 
 #include "match_con.h"
 
+#include "base64.h"
+
 static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
                                            Conf_parse *conf,
                                            Conf_token *token)
@@ -23,21 +25,44 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     unsigned int depth = token->depth_num;
 
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (OPT_SERV_SYM_EQ("off"))
+
+    if (0) { }
+    
+    else if (OPT_SERV_SYM_EQ("off"))
     {
       vstr_del(opts->auth_realm, 1, opts->auth_realm->len);
       vstr_del(opts->auth_token, 1, opts->auth_token->len);
-      return (TRUE);
     }
-    if (!OPT_SERV_SYM_EQ("basic-encoded")) return (FALSE);
-    CONF_SC_MAKE_CLIST_MID(depth, clist);
+    else if (OPT_SERV_SYM_EQ("basic-encoded"))
+    { /* echo -n foo:bar | openssl enc -base64
+         echo Zm9vOmJhcg== | openssl enc -d -base64 && echo */
+      CONF_SC_MAKE_CLIST_MID(depth, clist);
+      
+      else if (OPT_SERV_SYM_EQ("realm"))
+        OPT_SERV_X_VSTR(opts->s->beg, opts->auth_realm);
+      else if (OPT_SERV_SYM_EQ("token"))
+        OPT_SERV_X_VSTR(opts->s->beg, opts->auth_token);
+      
+      CONF_SC_MAKE_CLIST_END();
+    }
+    else if (OPT_SERV_SYM_EQ("basic-single"))
+    {
+      CONF_SC_MAKE_CLIST_MID(depth, clist);
+      
+      else if (OPT_SERV_SYM_EQ("realm"))
+        OPT_SERV_X_VSTR(opts->s->beg, opts->auth_realm);
+      else if (OPT_SERV_SYM_EQ("token"))
+        OPT_SERV_X_SINGLE_VSTR(conf->tmp);
+      
+      CONF_SC_MAKE_CLIST_END();
 
-    else if (OPT_SERV_SYM_EQ("realm"))
-      OPT_SERV_X_VSTR(opts->s->beg, opts->auth_realm);
-    else if (OPT_SERV_SYM_EQ("token"))
-      OPT_SERV_X_VSTR(opts->s->beg, opts->auth_token);
-    
-    CONF_SC_MAKE_CLIST_END();
+      vstr_del(opts->auth_token, 1, opts->auth_token->len);
+      if (!vstr_x_conv_base64_encode(opts->auth_token, 0,
+                                     conf->tmp, 1, conf->tmp->len, 0))
+        return (FALSE);
+    }
+    else
+      return (FALSE);
   }
   else if (OPT_SERV_SYM_EQ("strictness"))
   {
@@ -149,7 +174,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
   }
   
   else if (OPT_SERV_SYM_EQ("text-plain-redirect"))
-    OPT_SERV_X_TOGGLE(opts->use_text_plain_redirect);
+    OPT_SERV_X_TOGGLE(opts->use_text_redirect);
   else if (OPT_SERV_SYM_EQ("encoded-content-replacement")) /* allow gzip */
     OPT_SERV_X_TOGGLE(opts->use_enc_content_replacement);
   else if (OPT_SERV_SYM_EQ("keep-alive"))

@@ -30,6 +30,14 @@
 #include "httpd.h"
 #include "httpd_policy.h"
 
+#include <syslog.h>
+
+#if !defined(HAVE_GETXATTR)
+# define getxattr(w, x, y, z) (errno = ENOSYS, -1)
+#else
+# include <attr/xattr.h>
+#endif
+
 #if ! COMPILE_DEBUG
 # define HTTP_CONF_MMAP_LIMIT_MIN (16 * 1024) /* a couple of pages */
 # define HTTP_CONF_SAFE_PRINT_REQ TRUE
@@ -75,8 +83,6 @@
       req-> x ## _pos = 0;                      \
       req-> x ## _len = 0;                      \
     } while (FALSE)
-
-#include <syslog.h>
 
 static Vlg *vlg = NULL;
 
@@ -516,7 +522,11 @@ void http_req_split_hdrs(struct Con *con, struct Httpd_req_data *req)
   }
 }
 
-/* Lookup content type for filename, If this lookup "fails" it still returns
+/* try to set the content-type,
+ * . first if it's manually set leave it,
+ * . next try looking it up in the xattr for the file.
+ * . next do a real "lookup" based on the filename
+ * NOTE: If this lookup "fails" it still returns
  * the default content-type. So we just have to determine if we want to use
  * it or not. Can also return "content-types" like /404/ which returns a 404
  * error for the request */
@@ -529,6 +539,51 @@ int http_req_content_type(Httpd_req_data *req)
   if (req->content_type_vs1) /* manually set */
     return (TRUE);
 
+  if (req->policy->use_mime_xattr)
+  { /* lookup mime/type in the xattr of the filename -- this is racey
+     * but we want to parse the accept line before, open(), so we can't use
+     * fgetxattr() anyway. */
+    static const char key[] = "user.mime_type";
+    char buf[1024]; /* guess */
+    ssize_t ret = -1;
+    const char *fname_cstr = NULL;
+    
+    if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
+      return (FALSE);
+
+    fname_cstr = vstr_export_cstr_ptr(req->fname, 1, req->fname->len);
+    ASSERT(fname_cstr); /* must have been done before call */
+
+    if ((ret = getxattr(fname_cstr, key, buf, sizeof(buf))) != -1)
+    {
+      pos = req->xtra_content->len + 1;
+      len = ret;
+      if (!vstr_add_buf(req->xtra_content, req->xtra_content->len, buf, len))
+        return (FALSE);
+
+      req->content_type_vs1 = req->xtra_content;
+      req->content_type_pos = pos;
+      req->content_type_len = len;
+      
+      HTTP_REQ__X_CONTENT_HDR_CHK(content_type);
+      
+      return (TRUE);
+    }
+    else if (errno == ENOSYS)
+      httpd_disable_getxattr();
+    else if ((errno == EOPNOTSUPP) || (errno == EPERM))
+    { /* time limit the warn messages... */
+      static time_t last = -1;
+      time_t now = evnt_sc_time();
+
+      if ((last == -1) || (difftime(last, now) > (10 * 60)))
+      {
+        vlg_warn(vlg, "getxattr($<vstr.all:%p>, %s): %m\n", req->fname, key);
+        last = now;
+      }
+    }
+  }
+  
   mime_types_match(req->policy->mime_types,
                    req->fname, 1, req->fname->len, &vs1, &pos, &len);
   if (!len)
@@ -891,3 +946,30 @@ int http_req_make_path(struct Con *con, Httpd_req_data *req)
   return (TRUE);
 }
 
+size_t http_req_xtra_content(Httpd_req_data *req, const Vstr_base *s1,
+                             size_t pos, size_t *len)
+{
+  Vstr_base *xs1 = req->xtra_content;
+  size_t ret = 0;
+  
+  ASSERT(len);
+  ASSERT((s1 == xs1) || !s1);
+  ASSERT(s1 || !*len);
+  
+  if (!req->xtra_content && !(req->xtra_content = vstr_make_base(NULL)))
+    return (0);
+  xs1 = req->xtra_content;
+
+  if (!s1 || !*len)
+    return (xs1->len + 1);
+  
+  if (vstr_sc_poslast(pos, *len) == xs1->len)
+    return (pos); /* we are last, so just overwrite */
+
+  /* we aren't, so copy to last place */
+  ret = xs1->len + 1;
+  if (!vstr_add_vstr(xs1, xs1->len, s1, pos, *len, VSTR_TYPE_ADD_BUF_REF))
+    return (0);
+
+  return (ret);
+}

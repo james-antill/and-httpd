@@ -1,0 +1,8 @@
+; Just redirect this link to whatever...
+(org.and.httpd-conf-req-1.0
+   Location: http://www.example.com/foo
+   return <permanent-redirect>)
+; Can also use any of:
+;; <found>              = old temporary redirect (confuses some clients)
+;; <see-other>          = new style permanent redirect
+;; <temporary-redirect> = new style temporary redirect (should use)

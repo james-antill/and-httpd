@@ -25,12 +25,18 @@ application/vnd.oasis.opendocument.formula-template      otf
 application/vnd.oasis.opendocument.chart                 odc
 application/vnd.oasis.opendocument.chart-template        otc
 
+# These are for WPF apps.
+application/manifest .manifest
+application/xaml+xml .xaml
+application/x-ms-application .application
+application/x-ms-xbap .xbap
+application/octet-stream .deploy
 
 #  These are needed because, unlike apache-httpd, jhttpd doesn't default to
 # text/plain MIME type
 text/plain  C c cc cpp cxx H h hh txt
 
-#  This is an extension with the jhttpd parser, mainly needed because
+#  This is an extension with the And-httpd parser, mainly needed because
 # we don't default to text/plain like Apache
 text/plain  ./AUTHORS ./BUGS ./COPYING ./COPYING.LIB ./INSTALL
 text/plain  ./Makefile ./Makefile.am ./Makefile.in ./NEWS

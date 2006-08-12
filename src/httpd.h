@@ -273,6 +273,9 @@ extern int http_fmt_add_vstr_add_vstr(Vstr_conf *, const char *);
 extern int http_fmt_add_vstr_add_sect_vstr(Vstr_conf *, const char *);
 
 
+extern void httpd_disable_getxattr(void);
+
+    
 extern int httpd_serv_send(struct Con *);
 extern int httpd_serv_recv(struct Con *);
 

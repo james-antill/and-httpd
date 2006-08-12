@@ -56,7 +56,7 @@ and_httpd_SOURCES      = mime_types.c httpd_conf_main.c httpd_conf_req.c \
                          match_con.c match_req.c match_resp.c \
                          $(DAEMON_FILES_SRCS) \
                          httpd.c httpd_app.c httpd_parse.c httpd_req.c \
-                         and-httpd.c
+                         base64.c and-httpd.c
 and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                          httpd_policy.h \
                          match_con.h match_req.h \

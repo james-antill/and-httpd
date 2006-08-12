@@ -547,7 +547,9 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
 
   opts->use_noatime        = HTTPD_CONF_USE_NOATIME;
   
-  opts->use_text_plain_redirect = HTTPD_CONF_USE_TEXT_PLAIN_REDIRECT;
+  opts->use_text_redirect  = HTTPD_CONF_USE_TEXT_REDIRECT;
+  
+  opts->use_mime_xattr     = HTTPD_CONF_USE_MIME_XATTR;
   
   opts->output_keep_alive_hdr = HTTPD_CONF_OUTPUT_KEEPA_HDR;
   
@@ -672,7 +674,8 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(chk_encoded_dot);
   HTTPD_POLICY_CP_VAL(add_def_port);
   HTTPD_POLICY_CP_VAL(use_noatime);
-  HTTPD_POLICY_CP_VAL(use_text_plain_redirect);
+  HTTPD_POLICY_CP_VAL(use_text_redirect);
+  HTTPD_POLICY_CP_VAL(use_mime_xattr);
   HTTPD_POLICY_CP_VAL(output_keep_alive_hdr);
 
   HTTPD_POLICY_CP_VAL(max_header_sz);

@@ -30,6 +30,8 @@
 #include "httpd.h"
 #include "httpd_policy.h"
 
+#include "base64.h"
+
 #if ! COMPILE_DEBUG
 # define HTTP_CONF_MMAP_LIMIT_MIN (16 * 1024) /* a couple of pages */
 # define HTTP_CONF_SAFE_PRINT_REQ TRUE
@@ -123,7 +125,7 @@ void http_app_hdr_vstr(Vstr_base *out, const char *hdr,
 }
 
 void http_app_hdr_vstr_def(Vstr_base *out, const char *hdr,
-                                  const Vstr_base *s1, size_t vpos, size_t vlen)
+                           const Vstr_base *s1, size_t vpos, size_t vlen)
 {
   if (!vlen) return; /* don't allow "empty" headers, use a single space */
   
@@ -133,7 +135,7 @@ void http_app_hdr_vstr_def(Vstr_base *out, const char *hdr,
 }
 
 void http_app_hdr_conf_vstr(Vstr_base *out, const char *hdr,
-                                   const Vstr_base *s1)
+                            const Vstr_base *s1)
 {
   if (!s1->len) return; /* don't allow "empty" headers, a single space */
   
@@ -141,6 +143,58 @@ void http_app_hdr_conf_vstr(Vstr_base *out, const char *hdr,
   vstr_add_vstr(out, out->len, s1, 1, s1->len, VSTR_TYPE_ADD_DEF);
   http__app_hdr_eol(out);
 }
+
+/* convert a 4byte number into 4 bytes... */
+#define APP_BUF4(x) do {                                       \
+      buf[(x * 4) + 0] = (num[x] >>  0) & 0xFF;                \
+      buf[(x * 4) + 1] = (num[x] >>  8) & 0xFF;                \
+      buf[(x * 4) + 2] = (num[x] >> 16) & 0xFF;                \
+      buf[(x * 4) + 3] = (num[x] >> 14) & 0xFF;                \
+    } while (FALSE)
+static void http_app_hdr_vstr_md5(struct Con *con, Httpd_req_data *req,
+                                  const Vstr_base *s1, size_t vpos, size_t vlen)
+{
+  Vstr_base *out = con->evnt->io_w;
+  
+  if (!vlen) return; /* don't allow "empty" headers, use a single space */
+  
+  http__app_hdr_hdr(out, "Content-MD5");
+
+  if (vlen == (128 / 8)) /* raw bytes ... */
+    vstr_x_conv_base64_encode(out, out->len, s1, vpos, vlen, 0);
+  else if (vlen != (128 / 4)) /* just output... */
+    vstr_add_vstr(out, out->len, s1, vpos, vlen, VSTR_TYPE_ADD_DEF);
+  else /* hex encoded bytes... */
+  { /* NOTE: lots of work, should be compiled to raw bytes in the conf */
+    Vstr_base *xc = req->xtra_content;
+    size_t pos = 0;
+    unsigned int nflags = VSTR_FLAG02(PARSE_NUM_NO, BEG_PM, NEGATIVE);
+    unsigned int num[4];
+    unsigned char buf[128 / 8];
+    
+    ASSERT(xc); /* must be true, if the MD5 headers are used */
+
+    num[0] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
+    num[1] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
+    num[2] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
+    num[3] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
+    
+    APP_BUF4(0);
+    APP_BUF4(1);
+    APP_BUF4(2);
+    APP_BUF4(3);
+    
+    pos = xc->len + 1;
+    if (!vstr_add_buf(xc, xc->len, buf, sizeof(buf)))
+      return;
+
+    /* raw bytes now... */
+    ASSERT(vstr_sc_posdiff(pos, xc->len) == sizeof(buf));
+                           
+    vstr_x_conv_base64_encode(out, out->len, xc, pos, sizeof(buf), 0);
+  }
+}
+#undef APP_BUF4
 
 void http_app_hdr_fmt(Vstr_base *out, const char *hdr, const char *fmt, ...)
 {
@@ -344,17 +398,17 @@ void http_app_hdrs_file(struct Con *con, Httpd_req_data *req)
   if (req->content_encoding_bzip2)
   {
     if (req->bzip2_content_md5_vs1 && (req->content_md5_time > enc_mtime))
-      http_app_hdr_vstr_def(out, "Content-MD5",
+      http_app_hdr_vstr_md5(con, req,
                             HTTP__XTRA_HDR_PARAMS(req, bzip2_content_md5));
   }
   else if (req->content_encoding_gzip)
   {
     if (req->gzip_content_md5_vs1 && (req->content_md5_time > enc_mtime))
-      http_app_hdr_vstr_def(out, "Content-MD5",
+      http_app_hdr_vstr_md5(con, req,
                             HTTP__XTRA_HDR_PARAMS(req, gzip_content_md5));
   }
   else if (req->content_md5_vs1 && (req->content_md5_time > mtime))
-    http_app_hdr_vstr_def(out, "Content-MD5",
+    http_app_hdr_vstr_md5(con, req,
                           HTTP__XTRA_HDR_PARAMS(req, content_md5));
   
   if (req->content_encoding_bzip2)

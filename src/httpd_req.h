@@ -1,6 +1,22 @@
 #ifndef HTTPD_REQ_H
 #define HTTPD_REQ_H 1
 
+#define HTTP_REQ__X_HDR_CHK(x, y, z) do {                       \
+      if (!req->policy->allow_hdr_split &&                      \
+          vstr_srch_cstr_chrs_fwd(x, y, z, HTTP_EOL))           \
+        return (FALSE);                                         \
+      if (!req->policy->allow_hdr_nil &&                        \
+          vstr_srch_chr_fwd(x, y, z, 0))                        \
+        return (FALSE);                                         \
+    } while (FALSE)
+
+#define HTTP_REQ__X_CONTENT_HDR_CHK(x)                                  \
+    HTTP_REQ__X_HDR_CHK(req-> x ## _vs1, req-> x ## _pos, req-> x ## _len)
+
+#define HTTP_REQ__CONT_PARAMS(req, x)                        \
+    (req)-> x ## _vs1, (req)-> x ## _pos, (req)-> x ## _len
+
+
 extern void httpd_req_init(Vlg *);
 extern void httpd_req_exit(void);
 
@@ -28,5 +44,8 @@ extern int http_req_1_x(struct Con *, Httpd_req_data *,
                         unsigned int *, const char **);
 
 extern int http_req_make_path(struct Con *, Httpd_req_data *);
+
+extern size_t http_req_xtra_content(Httpd_req_data *, const Vstr_base *,
+                                    size_t, size_t *);
 
 #endif

@@ -321,18 +321,8 @@ AC_FUNC_ALLOCA
 AC_FUNC_STRFTIME
 AC_FUNC_VFORK
 
-# L_IBOBJS is spelt with an _ because autoconf uses grep and doesn't know
-# the below are in comments...
-# now autoconf barfs on the L_IBOBJS stuff below...
-AC_CHECK_FUNCS(memcmp, AC_DEFINE(HAVE_MEMCMP),)
-# L_IBOBJS=""
-# AC_FUNC_MEMCMP
-# if test "x$L_IBOBJS" = "x"; then
-#  AC_DEFINE(HAVE_MEMCMP)
-# fi
-# L_IBOBJS=""
-
 # C String functions...
+AC_CHECK_FUNCS(memcmp, AC_DEFINE(HAVE_MEMCMP),)
 AC_CHECK_FUNCS(memchr, AC_DEFINE(HAVE_MEMCHR),)
 AC_CHECK_FUNCS(memrchr, AC_DEFINE(HAVE_MEMRCHR),)
 AC_CHECK_FUNCS(memcpy, AC_DEFINE(HAVE_MEMCPY),)
@@ -362,6 +352,9 @@ AC_CHECK_FUNCS(sigemptyset, AC_DEFINE(HAVE_SIGEMPTYSET),)
 AC_CHECK_FUNCS(difftime, AC_DEFINE(HAVE_DIFFTIME),)
 AC_CHECK_FUNCS(sigaction, AC_DEFINE(HAVE_SIGACTION),
                           AC_MSG_ERROR(Need sigaction))
+AC_CHECK_FUNCS(getxattr,  AC_DEFINE(HAVE_GETXATTR),)
+# lgetxattr() doesn't work on ext3 anyway
+
 
 AC_CHECK_FUNCS(inet_ntop, AC_DEFINE(HAVE_INET_NTOP),
 AC_CHECK_LIB(nsl, inet_ntop,

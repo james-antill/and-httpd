@@ -1,0 +1,16 @@
+; Do conditional tests when parsing the file configuration...
+(org.and.httpd-conf-req-1.0
+  (match-request [protect-vary ! client-ipv4-cidr-eq 127.0.0.1/8]
+     (match-request [protect-vary ! referrer-search-eq www.example.com]
+         filename (+= bad-no-ref) ; Give a custom "don't deep link page"
+         return <gone>)
+      ; Only gets here if the above return isn't run, so no need for [else]
+      Link: (= </images/prefetch-img.jpeg> ';' rel=prefetch)
+      match-request [true]) ; for fool [else]
+
+   Link: (+= ,</images/next.html> ';' rel=next)
+   Link: (+= ,</images/index.html> ';' rel=index)
+   Link: (+= ,</images/prev.html> ';' rel=prev)
+
+   match-request [else]
+      parse-accept-encoding FALSE) ; Don't gzip to localhost

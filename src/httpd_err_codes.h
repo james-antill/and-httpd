@@ -162,7 +162,7 @@
 #define HTTPD_REDIR_MSG(req, code, xmsg) do {                     \
       (req)->error_xmsg  = xmsg;                                  \
       (req)->error_code = (code);                                 \
-      if (!req->policy->use_text_plain_redirect)                  \
+      if (!req->policy->use_text_redirect)                        \
         (req)->error_len  = CONF_MSG_LEN_ ## code ((req)->fname); \
       else                                                        \
         (req)->error_len  = (req)->fname->len + 1;                \
