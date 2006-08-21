@@ -53,7 +53,7 @@ gzip-r --zero --type=bzip2 --output $TARGET $SOURCE')
         and_httpd_tools_path += '/libexec/and-httpd-@VERSION@-tools'
 
     and_highlight_bld = bldr(action = '\
-and-highlight --css-file=http://www.and.org/f_c.css $HIGHARGS $SOURCE > $TARGET')
+and-highlight --css-file=http://www.and.org/f_c-1.0.css $HIGHARGS $SOURCE > $TARGET')
 
     and_ssi_bld       = bldr(action = '\
 and-ssi $SSIARGS $SOURCE > $TARGET')
@@ -124,7 +124,9 @@ def gen_dif_idx(env, data, x, rec=False):
             gen__name(x + '/' + os.path.basename(y))
     return gen__name
 
-def apply_dif_idx(data, Make_indx, LN, conf_gen_html, Zip=None):
+def apply_dif_idx(data, Make_indx, LN, conf_gen_html=None, Zip=None):
+    if conf_gen_html is None:
+        conf_gen_html = "conf_tmpl/GENERATED_HTML"
     for i in data:
         Make_indx(i[0], i[1])
         LN(i[2], conf_gen_html)
@@ -185,7 +187,13 @@ def apply_sam_idx(data, env, Make_indx, Zip=None):
 
 
 # Special code for the examples dir.
-def apply_sam_examples_code(data, Highlight, LN, ex_neg, ex_txt, Zip=None):
+def apply_sam_examples_code(data, Highlight, LN, 
+                            ex_neg=None, ex_txt=None, Zip=None):
+    if ex_neg is None:
+        ex_neg="conf_tmpl/negotiate-plain_html"
+    if ex_txt is None:
+        ex_txt="conf_tmpl/UNCOOL_URI-txt"
+        
     for pat in data:
         for i in glob.glob(conf['ROOT_DIR'] + pat[0] + pat[1]):
             Highlight(i + ".html", i)

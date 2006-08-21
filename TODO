@@ -45,8 +45,7 @@
 
 http://www.sans.org/top20/#u2
 
-	test md5 base64 auto encoding
-	test http_req_xtra_content() etc.
+	test auto base64 auto encoding
 	test new conf_tmpl files
 	doc converter, manual
         change gethostbyname() to the new BS.
@@ -56,8 +55,13 @@ http://www.sans.org/top20/#u2
          ,tools explanation
          README for scons and tools etc.
          generic config. manual etc.
+        test expires
+        scons
+          pictures
+          index, ATOM/NETSTR
+            mod_rssindex - and-dir_list2html outputs atom?
+          md5sum
 
-        mod_rssindex - and-dir_list2html outputs atom?
 	man pages
 	http://people.apache.org/~pquerna/modules/mod_flvx.c
         tst zsync

@@ -448,7 +448,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
            OPT_SERV_SYM_EQ("http-vers>=1.1") ||
            OPT_SERV_SYM_EQ("http-version>=1.1"))
   {
-    *matches = HTTPD_VER_1_x(req);
+    *matches = HTTPD_VER_GE_1_1(req);
     ASSERT(!req->ver_0_9 || !*matches);
   }
   else if (OPT_SERV_SYM_EQ("http-vers>1.1") ||

@@ -6,10 +6,14 @@ int opt_toggle(int val, const char *opt)
   { val = !val; }
   else if (!strcasecmp("on", optarg))    val = 1;
   else if (!strcasecmp("true", optarg))  val = 1;
+  else if (!strcasecmp("yes", optarg))   val = 1;
   else if (!strcmp("1", optarg))         val = 1;
   else if (!strcasecmp("false", optarg)) val = 0;
   else if (!strcasecmp("off", optarg))   val = 0;
+  else if (!strcasecmp("no", optarg))    val = 0;
   else if (!strcmp("0", optarg))         val = 0;
+  else
+  { val = !val; } /* error ? */
 
   return (val);
 }

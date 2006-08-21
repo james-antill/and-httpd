@@ -14,7 +14,7 @@
 #define EX_UTILS_RET_FAIL     1
 #include "ex_utils.h"
 
-#define HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(x) do {                         \
+#define HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(x) do {                   \
       if (!httpd__conf_req_single_str(req, conf, token,                 \
                                       &req-> x ## _vs1,                 \
                                       &req-> x ## _pos,                 \
@@ -22,7 +22,7 @@
         return (FALSE);                                                 \
     } while (FALSE)
 
-#define HTTPD_CONF_REQ__X_CONTENT_VSTR(x) do {                                \
+#define HTTPD_CONF_REQ__X_CONTENT_VSTR(x) do {                          \
       if (!httpd__conf_req_make_str(req, conf, token,                   \
                                     &req-> x ## _vs1,                   \
                                     &req-> x ## _pos,                   \
@@ -79,18 +79,17 @@ static int httpd__conf_req_make_str(Httpd_req_data *req,
                                     size_t *pos, size_t *len)
 {
   Opt_serv_opts *opts = req->policy->s->beg;
-  Vstr_base *xs1 = NULL;
   size_t xpos = 0;
 
-  xpos = http_req_xtra_content(req, *s1, *pos, len);
-  xs1 = req->xtra_content;
-  
-  if (!opt_serv_sc_make_str(opts, conf, token, xs1, xpos, *len))
+  if (!(xpos = http_req_xtra_content(req, *s1, *pos, len)))
     return (FALSE);
   
-  *s1  = xs1;
+  if (!opt_serv_sc_make_str(opts, conf, token, req->xtra_content, xpos, *len))
+    return (FALSE);
+  
+  *s1  = req->xtra_content;
   *pos = xpos;
-  *len = (xs1->len - xpos) + 1;
+  *len = (req->xtra_content->len - xpos) + 1;
 
   return (TRUE);
 }
@@ -739,19 +738,19 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
            OPT_SERV_SYM_EQ("identity/Content-MD5:"))
   {
     req->content_md5_time = file_timestamp;
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(content_md5);
+    HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(content_md5);
     HTTP_REQ__X_CONTENT_HDR_CHK(content_md5);
   }
   else if (OPT_SERV_SYM_EQ("gzip/Content-MD5:"))
   { 
     req->content_md5_time = file_timestamp;
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(gzip_content_md5);
+    HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(gzip_content_md5);
     HTTP_REQ__X_CONTENT_HDR_CHK(gzip_content_md5);
   }
   else if (OPT_SERV_SYM_EQ("bzip2/Content-MD5:"))
   { 
     req->content_md5_time = file_timestamp;
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(bzip2_content_md5);
+    HTTPD_CONF_REQ__X_CONTENT_SINGLE_VSTR(bzip2_content_md5);
     HTTP_REQ__X_CONTENT_HDR_CHK(bzip2_content_md5);
   }
   else if (OPT_SERV_SYM_EQ("Content-Type:"))
@@ -759,24 +758,11 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     HTTPD_CONF_REQ__X_CONTENT_VSTR(content_type);
     HTTP_REQ__X_CONTENT_HDR_CHK(content_type);
   }
-  else if (OPT_SERV_SYM_EQ("ETag:") ||
-           OPT_SERV_SYM_EQ("identity/ETag:"))
+  else if (OPT_SERV_SYM_EQ("ETag:"))
   {
     req->etag_time = file_timestamp;
     HTTPD_CONF_REQ__X_CONTENT_VSTR(etag);
     HTTP_REQ__X_CONTENT_HDR_CHK(etag);
-  }
-  else if (OPT_SERV_SYM_EQ("gzip/ETag:"))
-  {
-    req->etag_time = file_timestamp;
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(gzip_etag);
-    HTTP_REQ__X_CONTENT_HDR_CHK(gzip_etag);
-  }
-  else if (OPT_SERV_SYM_EQ("bzip2/ETag:"))
-  {
-    req->etag_time = file_timestamp;
-    HTTPD_CONF_REQ__X_CONTENT_VSTR(bzip2_etag);
-    HTTP_REQ__X_CONTENT_HDR_CHK(bzip2_etag);
   }
   else if (OPT_SERV_SYM_EQ("Expires:"))
   { /* note that rfc2616 says only go upto a year into the future */

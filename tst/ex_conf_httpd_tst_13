@@ -20,7 +20,7 @@
 
    policy conf-httpd-tst-13.1-<default>
 
-    (HTTP
+    (HTTP ETag: auto-size-mtime
      Server: assign foo-conf/13)
     (match-init [debug]
      HTTP

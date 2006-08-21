@@ -84,6 +84,8 @@ typedef struct Httpd_req_data
  
  Vstr_sects *sects;
  struct stat64 f_stat[1];
+ off64_t f_stat_st_size; /* output file size */
+ 
  size_t orig_io_w_len;
  Vstr_base *f_mmap;
  Vstr_base *xtra_content;
@@ -98,12 +100,10 @@ typedef struct Httpd_req_data
  HTTPD__DECL_XTRA_HDR(bzip2_content_md5);
  time_t               bzip2_content_md5_time;
  HTTPD__DECL_XTRA_HDR(content_type);
- HTTPD__DECL_XTRA_HDR(etag);
+ HTTPD__DECL_XTRA_HDR(etag); /* in theory ETag is like Content-MD5, and
+                                needs gzip/bzip2 versions however it doesn't
+                                matter if we reuse them ... so we do */
  time_t               etag_time;
- HTTPD__DECL_XTRA_HDR(gzip_etag);
- time_t               gzip_etag_time;
- HTTPD__DECL_XTRA_HDR(bzip2_etag);
- time_t               bzip2_etag_time;
  HTTPD__DECL_XTRA_HDR(expires);
  time_t               expires_time;
  HTTPD__DECL_XTRA_HDR(ext_vary_a);
@@ -228,6 +228,11 @@ struct Con
 #define HTTP_1_0_KEEP_ALIVE 1
 #define HTTP_1_1_KEEP_ALIVE 2
 
+#define HTTPD_ETAG_TYPE_AUTO_NONE 0
+#define HTTPD_ETAG_TYPE_AUTO_SM   1
+#define HTTPD_ETAG_TYPE_AUTO_ISM  2
+#define HTTPD_ETAG_TYPE_AUTO_DISM 3
+
 /* Linear Whitespace, a full stds. check for " " and "\t" */
 #define HTTP_LWS " \t"
 
@@ -290,8 +295,7 @@ extern int http_serv_add_vhost(struct Con *, Httpd_req_data *,
 extern void httpd_serv_call_file_init(struct Con *, Httpd_req_data *,
                                       unsigned int *,
                                       const char ** );
-extern void httpd_serv_file_sects_none(struct Con *con, Httpd_req_data *req,
-                                       struct stat64 *f_stat);
+extern void httpd_serv_file_sects_none(struct Con *, Httpd_req_data *, off64_t);
 extern uintmax_t http_serv_file_len(struct Con *, Httpd_req_data *);
 
 #endif

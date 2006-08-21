@@ -550,7 +550,7 @@ int main(int argc, char *argv[])
     else if (!strcmp("--version", argv[count]))
     { /* print version and exit */
       vstr_add_fmt(s1, 0, "%s", "\
-jhighlight 1.0.0\n\
+and-highlight 1.0.0\n\
 Written by James Antill\n\
 \n\
 Uses Vstr string library.\n\

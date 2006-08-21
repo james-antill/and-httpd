@@ -10,21 +10,18 @@
 #include "date.h"
 
 /* **** defaults for runtime conf **** */
-#ifndef HTTPD_CONF_VERSION
-# error "Set the version (via. configure.in)"
+#ifndef VERSION
+# error "Set the version (normally done via. configure.in)"
 #endif
 
 /* note that the strings are assigned in httpd_main_conf.c */
 
-#define HTTPD_CONF_PROG_NAME "and-httpd"
 #if COMPILE_DEBUG
 # define HTTPD_CONF_SERVER_COMMENT " (Debug)"
 #else
 # define HTTPD_CONF_SERVER_COMMENT ""
 #endif
-#define HTTPD_CONF_DEF_SERVER_NAME \
-    HTTPD_CONF_PROG_NAME "/"       \
-    HTTPD_CONF_VERSION HTTPD_CONF_SERVER_COMMENT
+#define HTTPD_CONF_DEF_SERVER_NAME PACKAGE "/" VERSION HTTPD_CONF_SERVER_COMMENT
 #define HTTPD_CONF_USE_MMAP FALSE
 #define HTTPD_CONF_USE_SENDFILE TRUE
 #define HTTPD_CONF_USE_KEEPA TRUE
@@ -64,8 +61,13 @@
 #define HTTPD_CONF_USE_CHK_ENCODED_DOT TRUE
 #define HTTPD_CONF_USE_NOATIME FALSE /* can't easily enable due to "security" */
 #define HTTPD_CONF_USE_TEXT_REDIRECT FALSE
-#define HTTPD_CONF_USE_MIME_XATTR TRUE
+#if (defined(HAVE_GETXATTR) && defined(HAVE_SYS_XATTR_H))
+# define HTTPD_CONF_USE_MIME_XATTR TRUE
+#else
+# define HTTPD_CONF_USE_MIME_XATTR FALSE
+#endif
 #define HTTPD_CONF_OUTPUT_KEEPA_HDR FALSE
+#define HTTPD_CONF_ETAG_TYPE_AUTO HTTPD_ETAG_TYPE_AUTO_ISM
 #define HTTPD_CONF_ADD_DEF_PORT TRUE
 #define HTTPD_CONF_MAX_REQUESTS           0
 #define HTTPD_CONF_MAX_NEG_A_NODES        8
@@ -149,6 +151,9 @@ typedef struct Httpd_policy_opts
 
  unsigned int output_keep_alive_hdr : 1; /* 38th bitfield */
 
+ /* [[[dev] inode] size mtime] */
+ unsigned int etag_auto_type : 2; /* 39-40th bitfield */
+ 
  unsigned int max_header_sz;
 
  unsigned int max_requests;
@@ -192,7 +197,7 @@ typedef struct Httpd_opts
 #define HTTPD_CONF_MAIN_DECL_OPTS(N)                            \
     Httpd_opts N[1] = {                                         \
      {                                                          \
-      {{OPT_SERV_CONF_INIT_OPTS(HTTPD_CONF_PROG_NAME, HTTPD_CONF_VERSION)}}, \
+      {{OPT_SERV_CONF_INIT_OPTS(PACKAGE, VERSION)}},            \
       (time_t)-1,                                               \
       NULL,                                                     \
       NULL,                                                     \

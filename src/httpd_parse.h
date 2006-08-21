@@ -15,8 +15,9 @@
       http_parse_skip_lws(s1, &p, &l);                                       \
     } while (FALSE)
 
-/* test for 1.1 or 1.2, 1.3, 1.n requests */
-#define HTTPD_VER_1_x(x) ((x)->ver_1_1 || (x)->ver_1_x)
+/* test for >= 1.1 ... so 1.2, 1.3, 1.n requests, 1.0 doesn't work */
+/* 2.x doesn't work... */
+#define HTTPD_VER_GE_1_1(x) ((x)->ver_1_1 || (x)->ver_1_x)
 
 
 extern void httpd_parse_init(Vlg *);
@@ -45,7 +46,8 @@ extern int httpd_match_etags(Httpd_req_data *,
                              int);
 
 extern void httpd_parse_sc_try_fd_encoding(struct Con *, Httpd_req_data *,
-                                           struct stat64 *, Vstr_base *);
+                                           const struct stat64 *, off64_t *,
+                                           Vstr_base *);
 
 extern int http_parse_range(struct Con *, Httpd_req_data *);
 

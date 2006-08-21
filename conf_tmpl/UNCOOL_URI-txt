@@ -1,0 +1,5 @@
+; Remove a (presumably) .txt from the end of the path, and use this file
+; As text/plain (overrides auto mime/type and extended attribs).
+(org.and.httpd-conf-req-1.0
+   Content-Type: text/plain
+   filename [limit <extension>] '')

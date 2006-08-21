@@ -28,6 +28,7 @@ confd_DATA = README \
 
 wwwdir   =  $(localstatedir)/www
 www_DATA = scons_and_httpd_helpers.py
+www_SCRIPTS = SConstruct-tmpl
 
 # Generated from autoconf
 CLEANFILES = $(initd_SCRIPTS)

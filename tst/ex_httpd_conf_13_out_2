@@ -1,0 +1,308 @@
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+foo.example.com/conf-tst13/hex indentity
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+foo.example.com/conf-tst13/hex indentity
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+foo.example.com/conf-tst13/hex indentity
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+conf-tst13/hex gzipxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+conf-tst13/hex gzipxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+conf-tst13/hex gzipxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+hex bz2
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+hex bz2
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+hex bz2
+HTTP/1.1 412 Precondition Failed
+Date:
+Server: foo-conf/13
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 393
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>412 Precondition Failed</title>
+  </head>
+  <body>
+    <h1>412 Precondition Failed</h1>
+    <p>The precondition given in one or more of the request-header fields evaluated to false.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+foo.example.com/conf-tst13/hex indentity
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 412 Precondition Failed
+Date:
+Server: foo-conf/13
+Last-Modified:
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 393
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>412 Precondition Failed</title>
+  </head>
+  <body>
+    <h1>412 Precondition Failed</h1>
+    <p>The precondition given in one or more of the request-header fields evaluated to false.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+hex bz2
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+hex bz2
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+conf-tst13/hex gzipxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+foo.example.com/conf-tst13/hex indentity
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+HTTP/1.1 304 Not Modified
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+HTTP/1.1 206 Partial content
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 1
+Content-Range: bytes 1-1/28
+Content-MD5: qqqqqru7u7vMzMzM3d3d3Q==
+ETag: "79-416b8180"
+
+oHTTP/1.1 206 Partial content
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Vary: Accept-Encoding
+Content-Encoding: bzip2
+Content-Length: 1
+Content-Range: bytes 1-1/8
+Content-MD5: AAAAABEREREzMzMzVVVVVQ==
+ETag: "79-416b8180"
+
+eHTTP/1.1 206 Partial content
+Date:
+Server: foo-conf/13
+Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
+Connection: close
+Vary: Accept-Encoding
+Content-Length: 1
+Content-Range: bytes 1-1/121
+Content-MD5: Qq31joZp8o5XztDwzdjmxg==
+ETag: "79-416b8180"
+
+o

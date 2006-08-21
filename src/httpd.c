@@ -702,13 +702,13 @@ void httpd_serv_call_file_init(struct Con *con, Httpd_req_data *req,
 }
 
 void httpd_serv_file_sects_none(struct Con *con, Httpd_req_data *req,
-                                struct stat64 *f_stat)
+                                off64_t len)
 {
   con->use_mpbr = FALSE;
   con->fs_num   = 1;
   con->fs->off  = 0;
-  con->fs->len  = f_stat->st_size;
-  req->fs_len   = f_stat->st_size;
+  con->fs->len  = len;
+  req->fs_len   = len;
 }
                                       
 /* if the attacker gives a user a URL like:
@@ -951,10 +951,10 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     req->fs_len  = 0;
     
     if (!req->ver_0_9)
-      httpd_parse_sc_try_fd_encoding(con, req, f_stat, fname);
+      httpd_parse_sc_try_fd_encoding(con, req, f_stat, &f_stat->st_size, fname);
 
     /* FIXME: gzipped error documents weren't tested for */
-    httpd_serv_file_sects_none(con, req, f_stat);
+    httpd_serv_file_sects_none(con, req, f_stat->st_size);
     
     con->use_mmap = FALSE;
     
@@ -1042,7 +1042,7 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
     
     if (req->error_code == 416)
       http_app_hdr_fmt(out, "Content-Range", "%s */%ju", "bytes",
-                          (uintmax_t)req->f_stat->st_size);
+                          (uintmax_t)req->f_stat_st_size);
 
     if (req->error_code == 401)
       http_app_hdr_fmt(out, "WWW-Authenticate",
@@ -1444,6 +1444,7 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
   }
   if (fstat64(con->fs->fd, req->f_stat) == -1)
     HTTPD_ERR_MSG_RET(req, 500, "fstat()", http_fin_err_close_req(con, req));
+  req->f_stat_st_size = req->f_stat->st_size;
   if (req->policy->use_public_only && !(req->f_stat->st_mode & S_IROTH))
     HTTPD_ERR_MSG_RET(req, 403, "Filename is not PUBLIC",
                       http_fin_err_close_req(con, req));
@@ -1460,11 +1461,11 @@ int http_req_op_get(struct Con *con, Httpd_req_data *req)
     HTTPD_ERR_MSG_RET(req, 403, "File not ISREG",
                       http_fin_err_close_req(con, req));
 
-  con->fs->len = req->f_stat->st_size;
+  con->fs->len = req->f_stat_st_size;
   
   if (req->ver_0_9)
   {
-    httpd_serv_file_sects_none(con, req, req->f_stat);
+    httpd_serv_file_sects_none(con, req, req->f_stat_st_size);
     httpd_serv_call_file_init(con, req, &http_ret_code, &http_ret_line);
     http_ret_line = "OK - HTTP/0.9";
   }

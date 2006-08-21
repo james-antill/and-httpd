@@ -220,6 +220,7 @@ PERL_USR_BIN_AVAIL_FALSE = @PERL_USR_BIN_AVAIL_FALSE@
 PERL_USR_BIN_AVAIL_TRUE = @PERL_USR_BIN_AVAIL_TRUE@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+SCONS_PATH = @SCONS_PATH@
 SED_PATH = @SED_PATH@
 SENDMAIL_PATH = @SENDMAIL_PATH@
 SET_MAKE = @SET_MAKE@
@@ -337,7 +338,7 @@ and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                          httpd_err_codes.h
 
 and_httpd_CFLAGS = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(XTIMER_Q_CFLAGS) \
-                     -DHTTPD_CONF_VERSION='"@VERSION@"'
+                     -DPATH_SYSCONFDIR='"@sysconfdir@"'
 
 and_httpd_LDADD = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) \
 	$(XTIMER_Q_LDLIBS) $(am__append_1)

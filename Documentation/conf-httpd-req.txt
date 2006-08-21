@@ -13,9 +13,7 @@ org.and.httpd-conf-req-1.0
 . gzip/Content-MD5:
 . bzip2/Content-MD5:
 . Content-Type:
-. ETag: | identity/ETag:
-. gzip/ETag:
-. bzip2/ETag:
+. ETag:
 . Expires:
 . Link:
 . P3P:

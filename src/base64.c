@@ -92,9 +92,11 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
   return (FALSE);
 }
 
+#if 0
 int vstr_x_conv_base64_decode(Vstr_base *dst, size_t dpos,
                               const Vstr_base *src, size_t spos, size_t slen)
 {
   assert(FALSE);
   return (FALSE);
 }
+#endif

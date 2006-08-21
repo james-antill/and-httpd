@@ -1,0 +1,4 @@
+; Move from looking in conf/foo and html/foo ... to generated_html/foo
+(org.and.httpd-conf-req-1.0
+   filename [skip-document-root true
+             limit <none>] = <doc-root/..> generated_html <path>)

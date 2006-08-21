@@ -32,10 +32,10 @@
 
 #include <syslog.h>
 
-#if !defined(HAVE_GETXATTR)
+#if ! HTTPD_CONF_USE_MIME_XATTR
 # define getxattr(w, x, y, z) (errno = ENOSYS, -1)
 #else
-# include <attr/xattr.h>
+# include <sys/xattr.h>
 #endif
 
 #if ! COMPILE_DEBUG
@@ -144,6 +144,8 @@ Httpd_req_data *http_req_make(struct Con *con)
 
   req->fs_len     = 0;
 
+  req->f_stat_st_size = 0;
+
   req->sects->num = 0;
   /* f_stat */
   if (con)
@@ -197,7 +199,7 @@ Httpd_req_data *http_req_make(struct Con *con)
   
   req->neg_content_type_done = FALSE;
   req->neg_content_lang_done = FALSE;
-
+      
   req->conf_secure_dirs   = FALSE;
   req->conf_friendly_file = FALSE;
   req->conf_friendly_dirs = FALSE;
@@ -554,6 +556,7 @@ int http_req_content_type(Httpd_req_data *req)
     fname_cstr = vstr_export_cstr_ptr(req->fname, 1, req->fname->len);
     ASSERT(fname_cstr); /* must have been done before call */
 
+    /* don't use lgetxattr() as it does nothing on Linux */
     if ((ret = getxattr(fname_cstr, key, buf, sizeof(buf))) != -1)
     {
       pos = req->xtra_content->len + 1;
@@ -624,6 +627,57 @@ int http_req_content_type(Httpd_req_data *req)
   return (TRUE);
 }
 
+static void httpd__req_etag_hex_num(Vstr_base *vs1, uintmax_t val, int more)
+{
+  char buf[(sizeof(uintmax_t) * CHAR_BIT) + 1];
+  size_t len = 0;
+
+  len = vstr_sc_conv_num_uintmax(buf, sizeof(buf), val, "0123456789abcdef", 16);
+  vstr_add_buf(vs1, vs1->len, buf, len);
+  if (more)
+    vstr_add_cstr_buf(vs1, vs1->len, "-");
+}
+
+static int httpd__req_etag_auto(struct Httpd_req_data *req)
+{
+  size_t xpos = 0;
+  Vstr_base *vs1 = NULL;
+  
+  ASSERT(!req->etag_vs1 && req->policy->etag_auto_type);
+  
+  if (!(xpos = http_req_xtra_content(req, NULL, 0, &req->etag_len)))
+    return (FALSE);
+  vs1 = req->xtra_content;
+
+  /* If it's too soon, make it weak */
+  if (difftime(req->now, req->f_stat->st_mtime) <= 1)
+    vstr_add_cstr_buf(vs1, vs1->len, "W/");
+  
+  vstr_add_cstr_buf(vs1, vs1->len, "\"");
+  switch (req->policy->etag_auto_type)
+  {
+    case HTTPD_ETAG_TYPE_AUTO_DISM:
+      httpd__req_etag_hex_num(vs1, req->f_stat->st_dev,   TRUE);
+      /* FALL THROUGH */
+    case HTTPD_ETAG_TYPE_AUTO_ISM:
+      httpd__req_etag_hex_num(vs1, req->f_stat->st_ino,   TRUE);
+      /* FALL THROUGH */      
+    case HTTPD_ETAG_TYPE_AUTO_SM:
+      httpd__req_etag_hex_num(vs1, req->f_stat->st_size,  TRUE);
+      httpd__req_etag_hex_num(vs1, req->f_stat->st_mtime, FALSE);
+      /* Use st_mtime.tv_nsec ? */
+      
+      ASSERT_NO_SWITCH_DEF();
+  }
+  vstr_add_cstr_buf(vs1, vs1->len, "\"");
+
+  req->etag_vs1 = vs1;
+  req->etag_pos = xpos;
+  req->etag_len = (req->xtra_content->len - xpos) + 1;
+
+  return (!vs1->conf->malloc_bad);
+}
+
 #define HTTPD__HD_EQ(x)                                 \
     VEQ(hdrs, h_ ## x ->pos,  h_ ## x ->len,  date)
 
@@ -649,22 +703,22 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
   int cached_output = FALSE;
   const char *date = NULL;
   
-  if (HTTPD_VER_1_x(req) && h_iums->pos)
+  if (HTTPD_VER_GE_1_1(req) && h_iums->pos)
     h_iums_tst = TRUE;
 
-  if (HTTPD_VER_1_x(req) && h_ir->pos && h_r->pos)
+  if (HTTPD_VER_GE_1_1(req) && h_ir->pos && h_r->pos)
     h_ir_tst = TRUE;
   
   /* assumes time doesn't go backwards ... From rfc2616:
    *
-   Note: When handling an If-Modified-Since header field, some
-   servers will use an exact date comparison function, rather than a
-   less-than function, for deciding whether to send a 304 (Not
-   Modified) response. To get best results when sending an If-
-   Modified-Since header field for cache validation, clients are
-   advised to use the exact date string received in a previous Last-
-   Modified header field whenever possible.
-  */
+   * Note: When handling an If-Modified-Since header field, some
+   * servers will use an exact date comparison function, rather than a
+   * less-than function, for deciding whether to send a 304 (Not
+   * Modified) response. To get best results when sending an If-
+   * Modified-Since header field for cache validation, clients are
+   * advised to use the exact date string received in a previous Last-
+   * Modified header field whenever possible.
+   */
   if (difftime(req->now, mtime) > 0)
   { /* if mtime in future, or now ... don't allow checking */
     Date_store *ds = httpd_opts->date;
@@ -694,31 +748,23 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
       req_if_range = TRUE;
   }
 
-  if (HTTPD_VER_1_x(req))
+  if (HTTPD_VER_GE_1_1(req))
   {
     const Vstr_base *vs1 = NULL;
     size_t pos = 0;
     size_t len = 0;
 
-    if (req->content_encoding_bzip2) /* point to any entity tags we have */
+    if (req->policy->etag_auto_type && !req->etag_vs1)
     {
-      if (req->bzip2_etag_vs1 && (req->etag_time > mtime))
+      if (!httpd__req_etag_auto(req))
       {
-        vs1 = req->bzip2_etag_vs1;
-        pos = req->bzip2_etag_pos;
-        len = req->bzip2_etag_len;
+        con->evnt->io_w->conf->malloc_bad = TRUE;
+        return (TRUE); /* dealt with in http_req_op_get, can't continue */
       }
+
+      req->etag_time = mtime;
     }
-    else if (req->content_encoding_gzip)
-    {
-      if (req->gzip_etag_vs1 && (req->etag_time > mtime))
-      {
-        vs1 = req->gzip_etag_vs1;
-        pos = req->gzip_etag_pos;
-        len = req->gzip_etag_len;
-      }
-    }
-    else if (req->etag_vs1 && (req->etag_time > mtime))
+    if (req->etag_vs1 && (req->etag_time >= mtime))
     {
       vs1 = req->etag_vs1;
       pos = req->etag_pos;
@@ -737,7 +783,7 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
     if (h_inm->pos && (VEQ(hdrs, h_inm->pos, h_inm->len, "*") ||
                        httpd_match_etags(req, comb, h_inm->pos, h_inm->len,
                                          vs1, pos, len, !h_r->pos)))
-      cached_output = TRUE;
+      cached_output = TRUE; /* Note: should return 412 for POST/PUT */
 
     /* #14.24 says: must use strong comparison, and also...
        If the request would, without the If-Match header field, result in
@@ -775,12 +821,13 @@ int http_req_1_x(struct Con *con, Httpd_req_data *req,
   Vstr_sect_node *h_r = req->http_hdrs->hdr_range;
   time_t mtime = -1;
   
-  if (HTTPD_VER_1_x(req) && req->http_hdrs->hdr_expect->len)
+  if (HTTPD_VER_GE_1_1(req) && req->http_hdrs->hdr_expect->len)
     /* I'm pretty sure we can ignore 100-continue, as no request will
      * have a body */
     HTTPD_ERR_RET(req, 417, FALSE);
           
-  httpd_parse_sc_try_fd_encoding(con, req, req->f_stat, req->fname);
+  httpd_parse_sc_try_fd_encoding(con, req, req->f_stat, &req->f_stat_st_size,
+                                 req->fname);
   
   if (req->policy->use_err_406 &&
       !req->content_encoding_identity &&
@@ -792,7 +839,7 @@ int http_req_1_x(struct Con *con, Httpd_req_data *req,
     int ret_code = 0;
 
     if (!(req->policy->use_range &&
-	  (HTTPD_VER_1_x(req) || req->policy->use_range_1_0)))
+	  (HTTPD_VER_GE_1_1(req) || req->policy->use_range_1_0)))
       h_r->pos = 0;
     else if (!(ret_code = http_parse_range(con, req)))
       h_r->pos = 0;
@@ -809,7 +856,7 @@ int http_req_1_x(struct Con *con, Httpd_req_data *req,
     HTTPD_ERR_RET(req, 412, FALSE);
 
   if (!h_r->pos)
-    httpd_serv_file_sects_none(con, req, req->f_stat);
+    httpd_serv_file_sects_none(con, req, req->f_stat_st_size);
   
   httpd_serv_call_file_init(con, req, http_ret_code, http_ret_line);
 
@@ -822,7 +869,7 @@ int http_req_1_x(struct Con *con, Httpd_req_data *req,
   if (h_r->pos && !con->use_mpbr)
     http_app_hdr_fmt(out, "Content-Range", "%s %ju-%ju/%ju", "bytes",
                      con->fs->off, con->fs->off + (con->fs->len - 1),
-                     (uintmax_t)req->f_stat->st_size);
+                     (uintmax_t)req->f_stat_st_size);
   if (req->content_location_vs1)
     http_app_hdr_vstr_def(out, "Content-Location",
                           HTTP__XTRA_HDR_PARAMS(req, content_location));
@@ -833,7 +880,7 @@ int http_req_1_x(struct Con *con, Httpd_req_data *req,
 
   if (!req->head_op && h_r->pos && con->use_mpbr)
   {
-    con->mpbr_fs_len = req->f_stat->st_size;
+    con->mpbr_fs_len = req->f_stat_st_size;
     http_app_hdrs_mpbr(con, con->fs);
   }
   

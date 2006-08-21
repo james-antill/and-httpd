@@ -39,6 +39,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = tools
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/SConstruct-tmpl.in $(srcdir)/and-httpd-status.in \
 	$(srcdir)/and-httpd.in $(srcdir)/and-httpd_gzip.in \
 	$(srcdir)/and-httpd_logs.in $(srcdir)/and-httpd_status.in \
 	$(srcdir)/make_index.in \
@@ -50,15 +51,18 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/autoconf.h
 CONFIG_CLEAN_FILES = and-httpd and-httpd_gzip and-httpd_logs \
-	and-httpd_status make_index scons_and_httpd_helpers.py
+	and-httpd_status and-httpd-status make_index \
+	scons_and_httpd_helpers.py SConstruct-tmpl
 am__installdirs = "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" \
-	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" \
-	"$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" \
-	"$(DESTDIR)$(wwwdir)"
+	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwdir)" \
+	"$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" \
+	"$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwdir)"
 crondSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 initdSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 toolsmainSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(crond_SCRIPTS) $(initd_SCRIPTS) $(toolsmain_SCRIPTS)
+wwwSCRIPT_INSTALL = $(INSTALL_SCRIPT)
+SCRIPTS = $(crond_SCRIPTS) $(initd_SCRIPTS) $(toolsmain_SCRIPTS) \
+	$(www_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -148,6 +152,7 @@ PERL_USR_BIN_AVAIL_FALSE = @PERL_USR_BIN_AVAIL_FALSE@
 PERL_USR_BIN_AVAIL_TRUE = @PERL_USR_BIN_AVAIL_TRUE@
 PKG_CONFIG = @PKG_CONFIG@
 RANLIB = @RANLIB@
+SCONS_PATH = @SCONS_PATH@
 SED_PATH = @SED_PATH@
 SENDMAIL_PATH = @SENDMAIL_PATH@
 SET_MAKE = @SET_MAKE@
@@ -245,6 +250,7 @@ confd_DATA = README \
 
 wwwdir = $(localstatedir)/www
 www_DATA = scons_and_httpd_helpers.py
+www_SCRIPTS = SConstruct-tmpl
 
 # Generated from autoconf
 CLEANFILES = $(initd_SCRIPTS)
@@ -288,9 +294,13 @@ and-httpd_logs: $(top_builddir)/config.status $(srcdir)/and-httpd_logs.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 and-httpd_status: $(top_builddir)/config.status $(srcdir)/and-httpd_status.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+and-httpd-status: $(top_builddir)/config.status $(srcdir)/and-httpd-status.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 make_index: $(top_builddir)/config.status $(srcdir)/make_index.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 scons_and_httpd_helpers.py: $(top_builddir)/config.status $(srcdir)/scons_and_httpd_helpers.py.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+SConstruct-tmpl: $(top_builddir)/config.status $(srcdir)/SConstruct-tmpl.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-crondSCRIPTS: $(crond_SCRIPTS)
 	@$(NORMAL_INSTALL)
@@ -348,6 +358,25 @@ uninstall-toolsmainSCRIPTS:
 	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
 	  echo " rm -f '$(DESTDIR)$(toolsmaindir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(toolsmaindir)/$$f"; \
+	done
+install-wwwSCRIPTS: $(www_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	test -z "$(wwwdir)" || $(mkdir_p) "$(DESTDIR)$(wwwdir)"
+	@list='$(www_SCRIPTS)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f $$d$$p; then \
+	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	    echo " $(wwwSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(wwwdir)/$$f'"; \
+	    $(wwwSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(wwwdir)/$$f"; \
+	  else :; fi; \
+	done
+
+uninstall-wwwSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(www_SCRIPTS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
+	  echo " rm -f '$(DESTDIR)$(wwwdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(wwwdir)/$$f"; \
 	done
 
 mostlyclean-libtool:
@@ -465,7 +494,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwdir)"; do \
+	for dir in "$(DESTDIR)$(cronddir)" "$(DESTDIR)$(initddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwdir)" "$(DESTDIR)$(confdir)" "$(DESTDIR)$(confddir)" "$(DESTDIR)$(toolsmaindir)" "$(DESTDIR)$(wwwdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -513,7 +542,8 @@ info-am:
 
 install-data-am: install-confDATA install-confdDATA \
 	install-crondSCRIPTS install-initdSCRIPTS \
-	install-toolsmainDATA install-toolsmainSCRIPTS install-wwwDATA
+	install-toolsmainDATA install-toolsmainSCRIPTS install-wwwDATA \
+	install-wwwSCRIPTS
 
 install-exec-am:
 
@@ -542,7 +572,8 @@ ps-am:
 uninstall-am: uninstall-confDATA uninstall-confdDATA \
 	uninstall-crondSCRIPTS uninstall-info-am \
 	uninstall-initdSCRIPTS uninstall-toolsmainDATA \
-	uninstall-toolsmainSCRIPTS uninstall-wwwDATA
+	uninstall-toolsmainSCRIPTS uninstall-wwwDATA \
+	uninstall-wwwSCRIPTS
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
@@ -551,13 +582,14 @@ uninstall-am: uninstall-confDATA uninstall-confdDATA \
 	install-data install-data-am install-exec install-exec-am \
 	install-info install-info-am install-initdSCRIPTS install-man \
 	install-strip install-toolsmainDATA install-toolsmainSCRIPTS \
-	install-wwwDATA installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	uninstall uninstall-am uninstall-confDATA uninstall-confdDATA \
-	uninstall-crondSCRIPTS uninstall-info-am \
-	uninstall-initdSCRIPTS uninstall-toolsmainDATA \
-	uninstall-toolsmainSCRIPTS uninstall-wwwDATA
+	install-wwwDATA install-wwwSCRIPTS installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-confDATA uninstall-confdDATA uninstall-crondSCRIPTS \
+	uninstall-info-am uninstall-initdSCRIPTS \
+	uninstall-toolsmainDATA uninstall-toolsmainSCRIPTS \
+	uninstall-wwwDATA uninstall-wwwSCRIPTS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

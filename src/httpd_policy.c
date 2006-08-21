@@ -553,6 +553,8 @@ int httpd_policy_init(Httpd_opts *beg, Httpd_policy_opts *opts)
   
   opts->output_keep_alive_hdr = HTTPD_CONF_OUTPUT_KEEPA_HDR;
   
+  opts->etag_auto_type     = HTTPD_CONF_ETAG_TYPE_AUTO;
+  
   opts->max_header_sz      = HTTPD_CONF_INPUT_MAXSZ;
 
   opts->max_requests       = HTTPD_CONF_MAX_REQUESTS;
@@ -677,6 +679,7 @@ int httpd_policy_copy(Opt_serv_policy_opts *sdst,
   HTTPD_POLICY_CP_VAL(use_text_redirect);
   HTTPD_POLICY_CP_VAL(use_mime_xattr);
   HTTPD_POLICY_CP_VAL(output_keep_alive_hdr);
+  HTTPD_POLICY_CP_VAL(etag_auto_type);
 
   HTTPD_POLICY_CP_VAL(max_header_sz);
   HTTPD_POLICY_CP_VAL(max_requests);

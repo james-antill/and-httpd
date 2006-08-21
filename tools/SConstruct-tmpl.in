@@ -1,0 +1,67 @@
+#! @SCONS_PATH@
+
+## Copy this to a file named SConstruct, and alter to your taste..
+
+## This means it doesn't create .sconsign files in each dir.
+SConsignFile(".scons-signatures.tmp")
+
+import scons_and_httpd_helpers as hlprs
+env = hlprs.init(Builder, Environment)
+
+def ui_range(start, end=None, step=None):
+	"""\
+	Gives numbers from start (default 1) to end, with increments of step, inclusive."""
+	if end is None:
+		end = start
+		start = 1
+	assert start <= end, "Start must be less than end."
+	if step is None:
+		step = 1
+	return xrange(start, end + 1, step)
+
+## Use this to drop the CPU utilization, but maybe screwup rebuilds...
+## SourceSignatures('timestamp')
+
+srcs = []
+
+## Index all files under /var/www/html/example.com/foo and [...]/bar
+## This is recursive, so an index file is generated for:
+##  /var/www/html/example.com/foo/baz/abcd/index.html
+#
+# idx = hlprs.gen_dif_idx(env, srcs, 'example.com', True)
+# idx('foo')
+# idx('bar')
+#
+##  Also do pub/x1 pub/x2 pub/x3 pub/x4, but not pub/ itself
+#
+# for i in ui_range(4):
+#         idx('pub/x%d' % i)
+
+##  Apply the above using the default "make index" and "link" functions (and
+## the default configuration for the generated html).
+hlprs.apply_dif_idx(srcs, env.Make_indx, env.LN)
+srcs = []
+
+
+## Generate some html for code samples...
+example_dirs = [["example.com/foo/examples/", "*.[ch]"],
+                ["example.net/bar/abcd/", "*.[c]"]]
+
+# hlprs.apply_sam_examples_code(example_dirs, env.Highlight, env.LN)
+# hlprs.apply_sam_examples_idx(example_dirs,  env, env.Make_ex_indx)
+
+## Highlight a single file...
+#
+# env.Highlight("html/x.example.org/hacks/bar.c.html",
+#               "html/x.example.org/hacks/bar.c")
+# env.LN("conf/x.example.org/hacks/bar.c",     "conf_tmpl/negotiate-plain_html")
+# env.LN("conf/x.example.org/hacks/bar.c.txt", "conf_tmpl/UNCOOL_URI-txt")
+#
+## Do the negotiation between plain and html text, depending on URL:
+##
+## http://x.example.org/hacks/bar.c      == neg. (default == plain)
+## http://x.example.org/hacks/bar.c.html == html
+## http://x.example.org/hacks/bar.c.txt  == plain
+##
+##  This makes pointing a browser at it do the right thing, as does using
+## wget/curl.

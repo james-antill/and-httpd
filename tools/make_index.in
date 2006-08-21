@@ -1,4 +1,4 @@
-#! /usr/bin/perl -w
+#! @PERL_PATH@ -w
 
 use strict;
 
@@ -25,7 +25,7 @@ my $filter_args = $filter_def_args;
 
 my $sort_def_args = "--sort=version";
 my $sort_args = $sort_def_args;
-my $html_def_args = "--css-filename http://www.and.org/dir_list.css";
+my $html_def_args = "--css-filename http://www.and.org/dir_list-1.0.css";
 my $html_args = $html_def_args;
 my $index_loc = undef;
 

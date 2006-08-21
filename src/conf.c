@@ -811,18 +811,27 @@ int conf_sc_conv_unesc(Vstr_base *s1, size_t pos, size_t len,
       else if (chr == 'r') { SUB2(s1, pos, "\r"); --len; --*ret_len; }
       else if (chr == 'n') { SUB2(s1, pos, "\n"); --len; --*ret_len; }
       else if (chr == 'b') { SUB2(s1, pos, "\b"); --len; --*ret_len; }
-      else if (chr == '0')
-      { /* \0 == NIL \0x0 == NIL */
+      else if ((chr >= '0') && (chr <= '9'))
+      { /* \0 == NIL \377 | \0377 == UCHAR_MAX */
         unsigned char val = 0;
-        unsigned int nflags = VSTR_FLAG02(PARSE_NUM, OVERFLOW, SEP);
-
-        if (chr != '0') nflags |= 8;
-
+        unsigned int nflags =  8 | VSTR_FLAG_PARSE_NUM_OVERFLOW;
+        unsigned int nlen = min_t(unsigned int, 4, len - 1);
+        
         /* FIXME: ... parse uchar */
-        val = vstr_parse_ushort(s1, pos + 1, len - 1, nflags, &plen, NULL);
+        val = vstr_parse_ushort(s1, pos + 1, nlen, nflags, &plen, NULL);
         vstr_sub_rep_chr(s1, pos, plen + 1, val, 1);
         len      -= plen; /* byte == \ ... so not plen + 1 */
         *ret_len -= plen;
+      }
+      else if ((chr == 'x') && (len >= 4))
+      { /* \x00 == NIL \xff == UCHAR_MAX */
+        unsigned char val = 0;
+        unsigned int nflags = 16 | VSTR_FLAG_PARSE_NUM_OVERFLOW;
+        
+        val = vstr_parse_ushort(s1, pos + 2, 2, nflags, NULL, NULL);
+        vstr_sub_rep_chr(s1, pos, 4, val, 1);
+        len      -= 3; /* byte == \ ... so not 4 */
+        *ret_len -= 3;
       }
       else
       { /* rm \ ... Eg. \" == " and \\ == \ */

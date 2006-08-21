@@ -175,6 +175,25 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
   
   else if (OPT_SERV_SYM_EQ("text-plain-redirect"))
     OPT_SERV_X_TOGGLE(opts->use_text_redirect);
+  else if (OPT_SERV_SYM_EQ("ETag:"))
+  {
+    CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
+
+    if (0) { }
+    
+    else if (OPT_SERV_SYM_EQ("auto-dev-inode-size-mtime"))
+      opts->etag_auto_type = HTTPD_ETAG_TYPE_AUTO_DISM;
+    else if (OPT_SERV_SYM_EQ("auto-inode-size-mtime"))
+      opts->etag_auto_type = HTTPD_ETAG_TYPE_AUTO_ISM;
+    else if (OPT_SERV_SYM_EQ("auto-size-mtime"))
+      opts->etag_auto_type = HTTPD_ETAG_TYPE_AUTO_SM;
+    else if (OPT_SERV_SYM_EQ("auto-off")  || OPT_SERV_SYM_EQ("auto-false") ||
+             OPT_SERV_SYM_EQ("auto-no")   || OPT_SERV_SYM_EQ("auto-none"))
+      opts->etag_auto_type = HTTPD_ETAG_TYPE_AUTO_NONE;
+
+    else
+      return (FALSE);
+  }
   else if (OPT_SERV_SYM_EQ("encoded-content-replacement")) /* allow gzip */
     OPT_SERV_X_TOGGLE(opts->use_enc_content_replacement);
   else if (OPT_SERV_SYM_EQ("keep-alive"))

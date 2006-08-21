@@ -221,8 +221,6 @@ void http_parse_clear_hdrs(struct Httpd_req_data *req)
   HTTP__XTRA_HDR_INIT(bzip2_content_md5);
   HTTP__XTRA_HDR_INIT(cache_control);
   HTTP__XTRA_HDR_INIT(etag);
-  HTTP__XTRA_HDR_INIT(gzip_etag);
-  HTTP__XTRA_HDR_INIT(bzip2_etag);
   HTTP__XTRA_HDR_INIT(expires);
   HTTP__XTRA_HDR_INIT(link);
   HTTP__XTRA_HDR_INIT(p3p);
@@ -540,7 +538,7 @@ void http_parse_connection(struct Con *con, struct Httpd_req_data *req)
   pos = req->http_hdrs->multi->hdr_connection->pos;
   len = req->http_hdrs->multi->hdr_connection->len;
 
-  if (HTTPD_VER_1_x(req))
+  if (HTTPD_VER_GE_1_1(req))
     con->keep_alive = HTTP_1_1_KEEP_ALIVE;
 
   if (!len)
@@ -552,7 +550,7 @@ void http_parse_connection(struct Con *con, struct Httpd_req_data *req)
                                          HTTP_EOL HTTP_LWS ",");
 
     ++num;
-    if (HTTPD_VER_1_x(req))
+    if (HTTPD_VER_GE_1_1(req))
     { /* this is all we have to do for HTTP/1.1 ... proxies understand it */
       if (VIEQ(data, pos, tmp, "close"))
         con->keep_alive = HTTP_NON_KEEP_ALIVE;
@@ -612,10 +610,10 @@ int http_parse_1_x(struct Con *con, struct Httpd_req_data *req)
 
   if (req->policy->max_requests &&
       (req->policy->max_requests <= con->evnt->acct.req_got) &&
-      HTTPD_VER_1_x(req))
+      HTTPD_VER_GE_1_1(req))
     return (TRUE);
 
-  if (!req->policy->use_keep_alive && HTTPD_VER_1_x(req))
+  if (!req->policy->use_keep_alive && HTTPD_VER_GE_1_1(req))
     return (TRUE);
 
   http_parse_connection(con, req);
@@ -1232,7 +1230,8 @@ int http_parse_accept_encoding(struct Httpd_req_data *req, int force)
 
 /* try to use gzip content-encoding on entity */
 static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
-                                     struct stat64 *req_f_stat,
+                                     const struct stat64 *req_f_stat,
+                                     off64_t *req_f_stat_st_size,
                                      Vstr_base *fname,
                                      const char *zip_ext, size_t zip_len)
 {
@@ -1267,7 +1266,7 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
              (S_ISDIR(f_stat->st_mode)) || (!S_ISREG(f_stat->st_mode)) ||
              (req_f_stat->st_mtime >  f_stat->st_mtime) ||
              !f_stat->st_size || /* zero sized compressed files aren't valid */
-             (req_f_stat->st_size  <= f_stat->st_size))
+             (*req_f_stat_st_size  <= f_stat->st_size))
     { /* ignore the encoded version */ }
     else
     {
@@ -1275,7 +1274,7 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
       SWAP_TYPE(con->fs->fd, fd, int);
       
       /* _only_ copy the new size over, mtime etc. is from the original file */
-      con->fs->len = req_f_stat->st_size = f_stat->st_size;
+      con->fs->len = *req_f_stat_st_size = f_stat->st_size;
       req->encoded_mtime = f_stat->st_mtime;
       ret = TRUE;
     }
@@ -1289,7 +1288,9 @@ static int http__try_encoded_content(struct Con *con, Httpd_req_data *req,
 }  
 
 void httpd_parse_sc_try_fd_encoding(struct Con *con, Httpd_req_data *req,
-                                    struct stat64 *fs, Vstr_base *fname)
+                                    const struct stat64 *fs,
+                                    off64_t *req_f_stat_st_size,
+                                    Vstr_base *fname)
 { /* Might normally add "!req->head_op && ..." but
    * http://www.w3.org/TR/chips/#gl6 says that's bad */
   if (http_parse_accept_encoding(req, FALSE))
@@ -1297,25 +1298,29 @@ void httpd_parse_sc_try_fd_encoding(struct Con *con, Httpd_req_data *req,
     if (req->content_enc_bzip2 >= req->content_enc_gzip)
     { /* try bzip2, then gzip */
       if (req->content_encoding_bzip2 &&
-          !http__try_encoded_content(con, req, fs, fname, ".bz2", CLEN(".bz2")))
+          !http__try_encoded_content(con, req, fs, req_f_stat_st_size,
+                                     fname, ".bz2", CLEN(".bz2")))
         req->content_encoding_bzip2 = FALSE;
 
       if (req->content_encoding_bzip2) req->content_encoding_gzip = FALSE;
 
       if (req->content_encoding_gzip &&
-          !http__try_encoded_content(con, req, fs, fname, ".gz", CLEN(".gz")))
+          !http__try_encoded_content(con, req, fs, req_f_stat_st_size,
+                                     fname, ".gz", CLEN(".gz")))
         req->content_encoding_gzip = FALSE;
     }
     else
     { /* try gzip, then bzip2 */
       if (req->content_encoding_gzip &&
-          !http__try_encoded_content(con, req, fs, fname, ".gz", CLEN(".gz")))
+          !http__try_encoded_content(con, req, fs, req_f_stat_st_size,
+                                     fname, ".gz", CLEN(".gz")))
         req->content_encoding_gzip = FALSE;
 
       if (req->content_encoding_gzip) req->content_encoding_bzip2 = FALSE;
 
       if (req->content_encoding_bzip2 &&
-          !http__try_encoded_content(con, req, fs, fname, ".bz2", CLEN(".bz2")))
+          !http__try_encoded_content(con, req, fs, req_f_stat_st_size,
+                                     fname, ".bz2", CLEN(".bz2")))
         req->content_encoding_bzip2 = FALSE;
     }
 
@@ -1402,7 +1407,7 @@ int http_parse_range(struct Con *con, Httpd_req_data *req)
   Vstr_sect_node *h_r = req->http_hdrs->hdr_range;
   size_t pos = h_r->pos;
   size_t len = h_r->len;
-  uintmax_t fsize = req->f_stat->st_size;
+  uintmax_t fsize = req->f_stat_st_size;
   unsigned int num_flags = 10 | (VSTR_FLAG_PARSE_NUM_NO_BEG_PM |
                                  VSTR_FLAG_PARSE_NUM_OVERFLOW);
   size_t num_len = 0;

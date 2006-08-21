@@ -1,3 +1,38 @@
+2006-08-19  James Antill  <james@and.org>
+
+	* src/conf.c (conf_sc_conv_unesc): Add hex escaping to strings.
+
+	* src/httpd_app.c (http_app_hdr_vstr_md5): End header ... duh!
+
+	* src/opt.c (opt_toggle): Add yes/no to toggle.
+
+	* src/httpd_req.c (httpd__req_etag_auto): Generate automatic ETag
+	headers based on [[[device], inode], size and mtime].
+
+	* src/and-httpd.c (POPT_TOGGLE_ARG): Toggle all policy options, when
+	passed on cmd line.
+
+2006-08-18  James Antill  <james@and.org>
+
+	* tools/make_index.in: Move to dir_list-1.0.css.
+
+	* tools/scons_and_httpd_helpers.py.in (init_builders): Move to 
+	f_c-1.0.css.
+
+2006-08-14  James Antill  <james@and.org>
+
+	* tools/SConstruct-tmpl.in: Added example template file for
+	autogeneration of directory indexes.
+
+	* src/and-httpd.c (serv_def_conf): Add a default configuration, to make
+	the cmd line version even more user friendly.
+
+	* src/httpd_conf_main.h (HTTPD_CONF_DEF_SERVER_NAME): Convert to using
+	PACKAGE and VERSION generic autoconf/automake vars.
+
+	* tools/and-httpd.in: Swap /etc HC out for @sysconfdir@, for
+	sysconfig/and-httpd.
+
 2006-08-08  James Antill  <james@and.org>
 
 	* tools/mime_types_extra.txt: Add WPF mime/type mappings.

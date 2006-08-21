@@ -146,10 +146,10 @@ void http_app_hdr_conf_vstr(Vstr_base *out, const char *hdr,
 
 /* convert a 4byte number into 4 bytes... */
 #define APP_BUF4(x) do {                                       \
-      buf[(x * 4) + 0] = (num[x] >>  0) & 0xFF;                \
-      buf[(x * 4) + 1] = (num[x] >>  8) & 0xFF;                \
-      buf[(x * 4) + 2] = (num[x] >> 16) & 0xFF;                \
-      buf[(x * 4) + 3] = (num[x] >> 14) & 0xFF;                \
+      buf[(x * 4) + 0] = (num[x] >> 24) & 0xFF;                \
+      buf[(x * 4) + 1] = (num[x] >> 16) & 0xFF;                \
+      buf[(x * 4) + 2] = (num[x] >>  8) & 0xFF;                \
+      buf[(x * 4) + 3] = (num[x] >>  0) & 0xFF;                \
     } while (FALSE)
 static void http_app_hdr_vstr_md5(struct Con *con, Httpd_req_data *req,
                                   const Vstr_base *s1, size_t vpos, size_t vlen)
@@ -162,22 +162,22 @@ static void http_app_hdr_vstr_md5(struct Con *con, Httpd_req_data *req,
 
   if (vlen == (128 / 8)) /* raw bytes ... */
     vstr_x_conv_base64_encode(out, out->len, s1, vpos, vlen, 0);
-  else if (vlen != (128 / 4)) /* just output... */
+  else if (vlen != (128 / 4)) /* just output, and hope... */
     vstr_add_vstr(out, out->len, s1, vpos, vlen, VSTR_TYPE_ADD_DEF);
   else /* hex encoded bytes... */
   { /* NOTE: lots of work, should be compiled to raw bytes in the conf */
     Vstr_base *xc = req->xtra_content;
     size_t pos = 0;
-    unsigned int nflags = VSTR_FLAG02(PARSE_NUM_NO, BEG_PM, NEGATIVE);
+    unsigned int nflags = VSTR_FLAG_PARSE_NUM_NO_BEG_PM;
     unsigned int num[4];
     unsigned char buf[128 / 8];
     
     ASSERT(xc); /* must be true, if the MD5 headers are used */
 
-    num[0] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
-    num[1] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
-    num[2] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
-    num[3] = vstr_parse_uint(s1, vpos, 8, 16 | nflags, NULL, NULL);
+    num[0] = vstr_parse_uint(s1, vpos +  0, 8, 16 | nflags, NULL, NULL);
+    num[1] = vstr_parse_uint(s1, vpos +  8, 8, 16 | nflags, NULL, NULL);
+    num[2] = vstr_parse_uint(s1, vpos + 16, 8, 16 | nflags, NULL, NULL);
+    num[3] = vstr_parse_uint(s1, vpos + 24, 8, 16 | nflags, NULL, NULL);
     
     APP_BUF4(0);
     APP_BUF4(1);
@@ -193,6 +193,8 @@ static void http_app_hdr_vstr_md5(struct Con *con, Httpd_req_data *req,
                            
     vstr_x_conv_base64_encode(out, out->len, xc, pos, sizeof(buf), 0);
   }
+  
+  http__app_hdr_eol(out);
 }
 #undef APP_BUF4
 
@@ -372,7 +374,7 @@ void http_app_hdrs_url(struct Con *con, Httpd_req_data *req)
 {
   Vstr_base *out = con->evnt->io_w;
   
-  if (req->cache_control_vs1)
+  if (HTTPD_VER_GE_1_1(req) && req->cache_control_vs1)
     http_app_hdr_vstr_def(out, "Cache-Control",
                           HTTP__XTRA_HDR_PARAMS(req, cache_control));
   if (req->expires_vs1 && (req->expires_time > req->f_stat->st_mtime))
@@ -395,35 +397,25 @@ void http_app_hdrs_file(struct Con *con, Httpd_req_data *req)
   if (req->content_language_vs1)
     http_app_hdr_vstr_def(out, "Content-Language",
                           HTTP__XTRA_HDR_PARAMS(req, content_language));
+
   if (req->content_encoding_bzip2)
   {
-    if (req->bzip2_content_md5_vs1 && (req->content_md5_time > enc_mtime))
+    if (req->bzip2_content_md5_vs1 && (req->content_md5_time >= enc_mtime))
       http_app_hdr_vstr_md5(con, req,
                             HTTP__XTRA_HDR_PARAMS(req, bzip2_content_md5));
   }
   else if (req->content_encoding_gzip)
   {
-    if (req->gzip_content_md5_vs1 && (req->content_md5_time > enc_mtime))
+    if (req->gzip_content_md5_vs1 && (req->content_md5_time >= enc_mtime))
       http_app_hdr_vstr_md5(con, req,
                             HTTP__XTRA_HDR_PARAMS(req, gzip_content_md5));
   }
-  else if (req->content_md5_vs1 && (req->content_md5_time > mtime))
+  else if (req->content_md5_vs1 && (req->content_md5_time >= mtime))
     http_app_hdr_vstr_md5(con, req,
                           HTTP__XTRA_HDR_PARAMS(req, content_md5));
-  
-  if (req->content_encoding_bzip2)
-  {
-    if (req->bzip2_etag_vs1 && (req->etag_time > enc_mtime))
-      http_app_hdr_vstr_def(out, "ETag",
-                            HTTP__XTRA_HDR_PARAMS(req, bzip2_etag));
-  }
-  else if (req->content_encoding_gzip)
-  {
-    if (req->gzip_etag_vs1 && (req->etag_time > enc_mtime))
-      http_app_hdr_vstr_def(out, "ETag",
-                            HTTP__XTRA_HDR_PARAMS(req, gzip_etag));
-  }
-  else if (req->etag_vs1 && (req->etag_time > mtime))
+
+  /* we only obey IM and INM when in version 1.1+, but who cares... */
+  if (req->etag_vs1 && (req->etag_time >= mtime))
     http_app_hdr_vstr_def(out, "ETag", HTTP__XTRA_HDR_PARAMS(req, etag));
   
   if (req->link_vs1)

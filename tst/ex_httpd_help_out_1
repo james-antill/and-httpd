@@ -5,6 +5,10 @@
     --config-file  -C - Load configuration file specified.
     --configuration-directory
     --config-dir      - Load <dir>/*.conf as configuration files.
+    --default-configuration
+    --def-configuration
+                      - Do the default configuration, which is done if no
+                        options are given.
 
     --configuration-data-daemon
                       - Parse configuration given in the

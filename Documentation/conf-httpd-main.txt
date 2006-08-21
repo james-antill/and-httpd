@@ -33,23 +33,92 @@ org.and.httpd-conf-main-1.0
 .... Accept-Language:
 .. HTTP | http
 ... authorization | auth
+ Set some authorization to be required for all requests served from this
+profile.
+ Eg. (auth basic-single realm 'text' token u:p)
+ Would require the username of 'u' and the password of 'p', displaying the
+context for the autorization or 'text'.
 ... strictness
 .... headers | hdrs
 ..... allow-double | allow-dbl | allow-*2
+ Allow headers that shouldn't be repeated, which And-httpd understands, to be
+repeated. This is used in HTTP response splitting attacks, for instance.
 ..... allow-missing-length
+ Allow Content headers (like Content-Type) without an associated
+Content-Length header. There is no good reason to do this, and implies the
+client is activley attacking or just stupid. However there do appear to be
+a significant number of stupid clients. The default is still to disallow it.
 ..... allow-spaces
 .... hostname | host
 ..... canonize | make-canonical
+ Making a hostname canonical involves removing a "www." from the begining, if
+there is one, and removing any '.' characters from the end of a hostname. The
+later will often happen by stupid clients, due to the way DNS hostnames
+are resolved.
 ..... validation
 .... allow-HTTP/0.9
+ This option allows the extremely old and deprecated HTTP/0.9 protocol. This is
+currently enabled for "compatibility", because basically every webserver
+allows it and it's extremely simple. However there is no problem with disabling
+it.
 .... allow-dot-directory | allow-dot-dir | allow-.-dir
+ This option allows clients to send /./ as a path seperator, this means that
+multiple urls will now point to the same resource. And it looks horrible.
 .... allow-encoded-slash | allow-enc-/
+ This option allows clients to send a '/' in encoded form, there is no reason to
+do this and it means And-httpd has to search for the encoded and normal form
+when looking for basenames etc. (so it will be slower).
+ However some broken clients will encode anything that isn't just a letter or
+number.
 .... allow-encoded-dot | allow-enc-.
+ This option allows clients to send a '.' in encoded form, there is no reason to
+do this and it means And-httpd has to search for the encoded and normal form
+when looking for extensions etc. (so it will be slower).
+ However some broken clients will encode anything that isn't just a letter or
+number.
 .... error-406-not-acceptable | error-not-acceptable | error-406
+ Normally And-httpd will send a 406 error response if the normal response is
+not acceptable to the client (the client can specify that any response would
+be, if it wishes). This ignores the client and sends the data anyway (some
+broken clients actually expect this).
 .... URL | url
 ..... remove-fragment
+ Some broken clients will send badly formed URLs that include fragments,
+this feature fixes that up.
 ..... remove-query
+ Normally queries parameters and their data are passed through to the
+filesystem request, this removes them.
+... ETag:
+.... <auto-dev-inode-size-mtime>
+ Automatically generate an ETag, using the device; inode; size and mtime of
+the file, for files that don't have one configured, by the time request
+processing is finished.
+ This does the same as <auto-inode-size-mtime>, but will also detect changes
+where a symlink or a bind mount is used to change the file and both files have
+the same inode, are the same size and were last modified in the same second.
+ This shouldn't need to be used much.
+.... <auto-inode-size-mtime>
+ Automatically generate an ETag, using the inode; size and mtime of
+the file, for files that don't have one configured, by the time request
+processing is finished.
+ This will detect changes within a second that create a new file, any changes
+that take over a second and changes within a second to the same inode that
+truncate and append data.
+ This is And-httpd's default, and Apache-httpd's default.
+.... <auto-size-mtime>
+ Automatically generate an ETag, using the size and mtime of
+the file, for files that don't have one configured, by the time request
+processing is finished.
+ This doesn't protect from the common atomic update operation of
+write_tmp_file() and rename(), if two updates happen within a second (and the
+file doesn't change in size).
+ This is significant enough that unless you are running a server farm, where
+the inodes numbers on each server will be different, then it's not worth it.
 ... text-plain-redirect
+ Use very small text/plain redirects, instead of usable html files. Note that
+currently redirects can't be customized or compressed, so this is the only
+usable way to decrease their length. Also note that almost no browsers will
+show the data for the redirect requests.
 ... encoded-content-replacement
 ... keep-alive
 ... keep-alive-1.0
@@ -69,6 +138,7 @@ org.and.httpd-conf-main-1.0
 ..... ETag:
 ..... Range:
 ... Server:
+ This string will be output as the name of the software serving the requests.
 . match-connection
 .[ policy-eq | policy==
 .[ tag-eq

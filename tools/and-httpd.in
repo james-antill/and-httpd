@@ -28,6 +28,7 @@
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 localstatedir="@localstatedir@"
+sysconfdir="@sysconfdir@"
 
 prog_name=and-httpd
 prog_exe="@sbindir@/${prog_name}"
@@ -38,16 +39,10 @@ FILE_BASE="${localstatedir}/run/${prog_name}"
 CNTL_FILE="${FILE_BASE}.cntl"
 PID_FILE="${FILE_BASE}.pid"
 
-export AND_HTTPD_ARGS=''
-if [ -f /etc/and-httpd/and-httpd.conf ]; then
-  AND_HTTPD_ARGS='-C /etc/and-httpd/and-httpd.conf'
-fi
+export AND_HTTPD_ARGS='--default-configuration'
 
-if [ -d /etc/and-httpd/conf.d ]; then
-  AND_HTTPD_ARGS="$AND_HTTPD_ARGS --config-dir /etc/and-httpd/conf.d"
-fi
-
-[ -r /etc/sysconfig/and-httpd ] && . /etc/sysconfig/and-httpd
+[ -r "${sysconfdir}/sysconfig/and-httpd" ] && \
+   . "${sysconfdir}/sysconfig/and-httpd"
 
 GPRE_ARGS="--cntl-file ${CNTL_FILE} --pid-file ${PID_FILE}"
 GPST_ARGS="--daemon=true"

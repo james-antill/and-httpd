@@ -64,7 +64,7 @@ and_httpd_DEPENDENCIES = mime_types.h httpd_conf_main.h httpd_conf_req.h \
                          httpd.h httpd_app.h httpd_parse.h httpd_req.h \
                          httpd_err_codes.h
 and_httpd_CFLAGS   = $(GEN_CFLAGS) $(SOCKET_POLL_CFLAGS) $(XTIMER_Q_CFLAGS) \
-                     -DHTTPD_CONF_VERSION='"@VERSION@"'
+                     -DPATH_SYSCONFDIR='"@sysconfdir@"'
 and_httpd_LDADD    = $(GEN_LDLIBS) $(SOCKET_POLL_LDLIBS) $(XTIMER_Q_LDLIBS)
 
 if LIBCAP_AVAIL

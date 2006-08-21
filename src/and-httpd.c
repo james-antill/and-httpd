@@ -126,6 +126,10 @@ static void usage(const char *program_name, int ret, const char *prefix)
     --config-file  -C - Load configuration file specified.\n\
     --configuration-directory\n\
     --config-dir      - Load <dir>/*.conf as configuration files.\n\
+    --default-configuration\n\
+    --def-configuration\n\
+                      - Do the default configuration, which is done if no\n\
+                        options are given.\n\
 \n\
     --configuration-data-daemon\n\
                       - Parse configuration given in the\n\
@@ -520,6 +524,57 @@ static void serv_canon_policies(void)
   }
 }
 
+static int serv_def_conf(Vstr_base *out)
+{ /* pretend we passed (if it works...):
+   * -C /etc/and-httpd/and-httpd.conf --conf-dir /etc/and-httpd/conf.d ... */
+  struct stat64 d_stat[1];
+  static const char pc_file[] = PATH_SYSCONFDIR "/and-httpd/and-httpd.conf";
+  static const char pc_dir[]  = PATH_SYSCONFDIR "/and-httpd/conf.d";
+  
+  if ((stat64(pc_file, d_stat) != -1) &&
+      !httpd_conf_main_parse_file(out, httpd_opts, pc_file))
+    return (FALSE);
+  if ((stat64(pc_file, d_stat) != -1) &&
+      !opt_serv_sc_config_dir(out, httpd_opts, pc_dir,
+                              httpd_sc_conf_main_parse_dir_file))
+    return (FALSE);
+  
+  return (TRUE);
+}
+
+#define POPT_TOGGLE_ARG(x) do {                                         \
+      Opt_serv_policy_opts *popt_scan = httpd_opts->s->def_policy;      \
+                                                                        \
+      while (popt_scan)                                                 \
+      {                                                                 \
+        Httpd_policy_opts *popt_tmp = (Httpd_policy_opts *)popt_scan;   \
+        OPT_TOGGLE_ARG(popt_tmp->x);                                    \
+        popt_scan = popt_scan->next;                                    \
+      }                                                                 \
+    } while (FALSE)
+
+#define POPT_NUM_NR_ARG(x, y) do {                                      \
+      Opt_serv_policy_opts *popt_scan = httpd_opts->s->def_policy;      \
+                                                                        \
+      while (popt_scan)                                                 \
+      {                                                                 \
+        Httpd_policy_opts *popt_tmp = (Httpd_policy_opts *)popt_scan;   \
+        OPT_NUM_NR_ARG(popt_tmp->x, y);                                 \
+        popt_scan = popt_scan->next;                                    \
+      }                                                                 \
+    } while (FALSE)
+
+#define POPT_VSTR_ARG(x) do {                                           \
+      Opt_serv_policy_opts *popt_scan = httpd_opts->s->def_policy;      \
+                                                                        \
+      while (popt_scan)                                                 \
+      {                                                                 \
+        Httpd_policy_opts *popt_tmp = (Httpd_policy_opts *)popt_scan;   \
+        OPT_VSTR_ARG(popt_tmp->x);                                      \
+        popt_scan = popt_scan->next;                                    \
+      }                                                                 \
+    } while (FALSE)
+
 static void serv_cmd_line(int argc, char *argv[])
 {
   int optchar = 0;
@@ -540,6 +595,8 @@ static void serv_cmd_line(int argc, char *argv[])
    {"config-data-httpd",        required_argument, NULL, 144},
    {"configuration-data-and-httpd", required_argument, NULL, 144},
    {"config-data-and-httpd",        required_argument, NULL, 144},
+   {"default-configuration", no_argument, NULL, 149},
+   {"def-config",            no_argument, NULL, 149},
    
    {"sendfile", optional_argument, NULL, 31},
    {"mmap", optional_argument, NULL, 30},
@@ -567,6 +624,7 @@ static void serv_cmd_line(int argc, char *argv[])
    {"canonize-host", optional_argument, NULL, 146},
    {"error-host-400", optional_argument, NULL, 147},
    {"check-host", optional_argument, NULL, 148},
+   /* 149 -- config data above */
    /* {"404-file", required_argument, NULL, 0}, */
    {NULL, 0, NULL, 0}
   };
@@ -580,7 +638,7 @@ static void serv_cmd_line(int argc, char *argv[])
 
   evnt_opt_nagle = TRUE;
   
-  program_name = opt_program_name(argv[0], HTTPD_CONF_PROG_NAME);
+  program_name = opt_program_name(argv[0], PACKAGE);
   httpd_opts->s->name_cstr = program_name;
   httpd_opts->s->name_len  = strlen(program_name);
 
@@ -605,8 +663,7 @@ static void serv_cmd_line(int argc, char *argv[])
       case 'h': usage(program_name, EXIT_SUCCESS, "");
         
       case 'V':
-        vstr_add_fmt(out, 0, " %s version %s.\n",
-                     program_name, HTTPD_CONF_VERSION);
+        vstr_add_fmt(out, 0, " %s version %s.\n", program_name, VERSION);
         
         if (io_put_all(out, STDOUT_FILENO) == IO_FAIL)
           err(EXIT_FAILURE, "write");
@@ -632,38 +689,47 @@ static void serv_cmd_line(int argc, char *argv[])
         if (!httpd_conf_main_parse_cstr(out, httpd_opts, optarg))
           goto out_err_conf_msg;
         break;
+      case 149:
+        if (!serv_def_conf(out))
+          goto out_err_conf_msg;
+        break;
         
-      case 128: OPT_NUM_NR_ARG(popts->max_header_sz, "max header size"); break;
+      case 128: POPT_NUM_NR_ARG(max_header_sz, "max header size"); break;
         
-      case  31: OPT_TOGGLE_ARG(popts->use_sendfile);                 break;
-      case  30: OPT_TOGGLE_ARG(popts->use_mmap);                     break;
+      case  31: POPT_TOGGLE_ARG(use_sendfile);                     break;
+      case  30: POPT_TOGGLE_ARG(use_mmap);                         break;
         
-      case 129: OPT_TOGGLE_ARG(popts->use_keep_alive);               break;
-      case 130: OPT_TOGGLE_ARG(popts->use_keep_alive_1_0);           break;
-      case 131: OPT_TOGGLE_ARG(popts->use_vhosts_name);              break;
-      case 132: OPT_TOGGLE_ARG(popts->use_range);                    break;
-      case 133: OPT_TOGGLE_ARG(popts->use_range_1_0);                break;
-      case 134: OPT_TOGGLE_ARG(popts->use_public_only);              break;
-      case 135: OPT_VSTR_ARG(popts->dir_filename);                   break;
-      case 136: OPT_VSTR_ARG(popts->server_name);                    break;
-      case 137: OPT_TOGGLE_ARG(popts->use_enc_content_replacement);  break;
-      case 139: OPT_TOGGLE_ARG(popts->use_err_406);                  break;
+      case 129: POPT_TOGGLE_ARG(use_keep_alive);                   break;
+      case 130: POPT_TOGGLE_ARG(use_keep_alive_1_0);               break;
+      case 131: POPT_TOGGLE_ARG(use_vhosts_name);                  break;
+      case 132: POPT_TOGGLE_ARG(use_range);                        break;
+      case 133: POPT_TOGGLE_ARG(use_range_1_0);                    break;
+      case 134: POPT_TOGGLE_ARG(use_public_only);                  break;
+      case 135: POPT_VSTR_ARG(dir_filename);                       break;
+      case 136: POPT_VSTR_ARG(server_name);                        break;
+      case 137: POPT_TOGGLE_ARG(use_enc_content_replacement);      break;
+      case 139: POPT_TOGGLE_ARG(use_err_406);                      break;
         /* case 140: */
-      case 141: OPT_VSTR_ARG(popts->mime_types_main);                break;
-      case 142: OPT_VSTR_ARG(popts->mime_types_xtra);                break;
+      case 141: POPT_VSTR_ARG(mime_types_main);                    break;
+      case 142: POPT_VSTR_ARG(mime_types_xtra);                    break;
         /* case 143: */
         /* case 144: */
-      case 145: OPT_VSTR_ARG(popts->default_hostname);               break;
-      case 146: OPT_TOGGLE_ARG(popts->use_canonize_host);            break;
-      case 147: OPT_TOGGLE_ARG(popts->use_host_err_400);             break;
-      case 148: OPT_TOGGLE_ARG(popts->use_host_chk);
+      case 145: POPT_VSTR_ARG(default_hostname);                   break;
+      case 146: POPT_TOGGLE_ARG(use_canonize_host);                break;
+      case 147: POPT_TOGGLE_ARG(use_host_err_400);                 break;
+      case 148: POPT_TOGGLE_ARG(use_host_chk);
         
       
       ASSERT_NO_SWITCH_DEF();
     }
   }
-  vstr_free_base(out); out = NULL;
 
+  ASSERT(optind >= 1);
+  if (optind <= 1) /* just program name, no options so use default... */
+    if (!serv_def_conf(out))
+      goto out_err_conf_msg;
+  vstr_free_base(out); out = NULL;
+  
   argc -= optind;
   argv += optind;
 

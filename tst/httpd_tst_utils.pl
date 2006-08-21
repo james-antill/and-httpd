@@ -313,7 +313,7 @@ sub make_data
     my $data  = shift;
     my $fname = shift;
 
-    open(OUT, "> $fname") || failure("open $fname: $!");
+    open(OUT, ">",  $fname) || failure("open($fname): $!");
     print OUT $data;
     close(OUT) || failure("close");
 
@@ -384,10 +384,12 @@ sub setup
 	    $root . "/foo.example.com/corner/index.html",
 	    $root . "/foo.example.com/there",
 	    $root . "/foo.example.com:1234",
+	    $root . "/foo.example.com/conf-tst13",
 	    $conf_root . "/conf.d",
 	    $conf_root . "/foo.example.com/conf2",
 	    $conf_root . "/foo.example.com/conf3",
 	    $conf_root . "/foo.example.com/conf4",
+	    $conf_root . "/foo.example.com/conf-tst13",
 	    $err_conf_7_root  . "/foo.example.com",
 	    $err_conf_13_root . "/foo.example.com"]);
 
@@ -472,6 +474,28 @@ sub setup
 	      "$conf_root/foo.example.com/conf3/index.html");
     make_conf("filename [limit <none> skip-vhosts] foo.example.com/index.html",
 	      "$conf_root/foo.example.com/conf4/index.html");
+
+    make_line(2, "foo.example.com/conf-tst13/hex indentity\n " . 'x' x 78,
+	      "$root/foo.example.com/conf-tst13/hex");
+    make_line(1, "conf-tst13/hex gzip" . 'x' x 8,
+	      "$root/foo.example.com/conf-tst13/hex.gz");
+    make_line(1, "hex bz2",
+	      "$root/foo.example.com/conf-tst13/hex.bz2");
+
+    make_conf("Content-MD5:        42adf58e8669f28e57ced0f0cdd8e6c6" .
+	      " gzip/Content-MD5:  aaaaaaaabbbbbbbbccccccccdddddddd" .
+	      " bzip2/Content-MD5: 00000000111111113333333355555555",
+	      "$conf_root/foo.example.com/conf-tst13/hex");
+    make_conf("filename hex" .
+	      " Content-MD5: \"\\x42\\xad\\xf5\\x8e\\x86\\x69\\xf2\\x8e\\x57\\xce\\xd0\\xf0\\xcd\\xd8\\xe6\\xc6\"" .
+	      " gzip/Content-MD5: \"" . '\\xaa' x 4 . '\\xBB' x 4 . '\\xcc' x 4 . '\\xDD' x 4 . '"' .
+	      " bzip2/Content-MD5: \"" . '\\x00' x 4 . '\\x11' x 4 . '\\x33' x 4 . '\\x55' x 4 . '"',
+	      "$conf_root/foo.example.com/conf-tst13/string");
+    make_conf("filename hex" .
+	      " Content-MD5: \x42\xad\xf5\x8e\x86\x69\xf2\x8e\x57\xce\xd0\xf0\xcd\xd8\xe6\xc6" .
+	      " gzip/Content-MD5: " . "\xaa" x 4 . "\xbb" x 4 . "\xcc" x 4 . "\xdd" x 4 .
+	      " bzip2/Content-MD5: " . "\x00" x 4 . "\x11" x 4 . "\x33" x 4 . "\x55" x 4,
+	      "$conf_root/foo.example.com/conf-tst13/byte");
 
     make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
     make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
@@ -619,8 +643,8 @@ if (@ARGV)
     success();
   }
 
-our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP strictness headers allow-spaces true))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
-our $conf_args_strict = " --configuration-data-and-httpd '(policy <default> (secure-directory-filename no) (unspecified-hostname-append-port off))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP ETag: auto-off strictness headers allow-spaces true))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+our $conf_args_strict    = " --configuration-data-and-httpd ' policy <default>  unspecified-hostname-append-port off  secure-directory-filename no    HTTP ETag: auto-no' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
 
 sub httpd_vhost_tst
   {
@@ -637,6 +661,7 @@ sub conf_tsts
     my $end = shift;
     my $args = ' --configuration-data-daemon "rlimit CORE <unlimited>"';
     $args .= " --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+    $args .= " --configuration-data-and-httpd 'policy <default> HTTP ETag: auto-none'";
 
     my @conf_httpd_tsts = glob("$ENV{_TSTDIR}/ex_conf_httpd_tst_*");
     if (($beg == 1) && ($end == scalar(@conf_httpd_tsts)))
