@@ -10,6 +10,7 @@
     (listen addr 127.0.12.1 policy conf-httpd-tst-12.1-<default>)
 ; Test changing (listen) sections...
     (listen addr 127.0.12.1 policy conf-httpd-tst-13.1-<default>)
+    (listen addr 127.0.12.2 policy conf-httpd-tst-13.1-<default>)
 
      cntl-file ex_httpd_cntl)
 
@@ -38,3 +39,29 @@
      request-configuration-directory ex_httpd_conf_root
      req-err-dir ex_httpd_err_conf_13_root)
 
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-13.2-<auth> [inherit conf-httpd-tst-13.1-<default>]
+      HTTP auth basic-encoded realm 'Text in the auth dialog1' 
+                              token Zm9vOmJhcg==)
+
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-13.2-<default> [inherit conf-httpd-tst-13.2-<auth>]
+      HTTP auth off)
+
+(org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-13.3-<auth> [inherit conf-httpd-tst-13.1-<default>]
+      HTTP auth basic-single  realm 'Text in the auth dialog2' token foo:bar)
+
+(org.and.httpd-conf-main-1.0
+  (match-request [policy== conf-httpd-tst-13.1-<default> path-beg /A2/]
+      policy conf-httpd-tst-13.2-<auth>
+      org.and.httpd-conf-req-1.0
+         filename [limit path-beg /A2/] /)
+  (match-request [policy== conf-httpd-tst-13.1-<default> path-beg /D2/]
+      policy conf-httpd-tst-13.2-<default>
+      org.and.httpd-conf-req-1.0
+         filename [limit path-beg /D2/] /)
+   match-request [policy== conf-httpd-tst-13.1-<default> path-beg /A3/]
+      policy conf-httpd-tst-13.3-<auth>
+      org.and.httpd-conf-req-1.0
+         filename [limit path-beg /A3/] /)

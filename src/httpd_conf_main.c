@@ -20,8 +20,7 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
   CONF_SC_MAKE_CLIST_BEG(policy_http_d1, clist);
   
   else if (OPT_SERV_SYM_EQ("authorization") || OPT_SERV_SYM_EQ("auth"))
-  { /* token is output of: echo -n foo:bar | openssl enc -base64 */
-    /* see it with: echo token | openssl enc -d -base64 && echo */
+  {
     unsigned int depth = token->depth_num;
 
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
@@ -34,8 +33,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
       vstr_del(opts->auth_token, 1, opts->auth_token->len);
     }
     else if (OPT_SERV_SYM_EQ("basic-encoded"))
-    { /* echo -n foo:bar | openssl enc -base64
-         echo Zm9vOmJhcg== | openssl enc -d -base64 && echo */
+    { /* echo -n foo:bar | base64
+         echo -n Zm9vOmJhcg== | base64 -d && echo */
       CONF_SC_MAKE_CLIST_MID(depth, clist);
       
       else if (OPT_SERV_SYM_EQ("realm"))

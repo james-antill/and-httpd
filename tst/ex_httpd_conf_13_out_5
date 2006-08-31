@@ -1,0 +1,47 @@
+HTTP/1.1 410 Gone
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 89
+
+cond bad
+ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Wed, 13 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Length: 90
+ETag: "5a-416cd300"
+Link: </images/prefetch-img.jpeg>;rel=prefetch,</images/next.html>;rel=next,</images/index.html>;rel=index,</images/prev.html>;rel=prev
+
+cond good
+ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HTTP/1.1 200 OK
+Date:
+Server: foo-conf/13
+Last-Modified: Wed, 13 Oct 2004 07:02:24 GMT
+Accept-Ranges: bytes
+Vary: Accept-Encoding
+Content-Encoding: gzip
+Content-Length: 17
+ETag: "5a-416cd300"
+Link: </images/prefetch-img.jpeg>;rel=prefetch,</images/next.html>;rel=next,</images/index.html>;rel=index,</images/prev.html>;rel=prev
+
+cond good
+ gzip
+
+HTTP/1.1 410 Gone
+Date:
+Server: foo-conf/13
+Last-Modified:
+Connection: close
+Vary: Accept-Encoding
+Content-Type: text/html
+Content-Length: 89
+
+cond bad
+ yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy

@@ -45,12 +45,10 @@
 
 http://www.sans.org/top20/#u2
 
-	test auto base64 auto encoding
-	test new conf_tmpl files
+	splice() for real aio from disk
 	doc converter, manual
         change gethostbyname() to the new BS.
           IPv6 (and flying cars)
-
         in default start page:
          ,tools explanation
          README for scons and tools etc.

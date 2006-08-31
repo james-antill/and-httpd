@@ -33,13 +33,13 @@ sub httpd__munge_ret
     $output =~ s/^(Date:).*$/$1/gm;
     # Remove last-modified = start date for error messages
     $_ = $output;
-    s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
+    s#(HTTP/1[.]1 \s (?:30[1237]|40[013456]|41[01234567]|50[0135]) .*)$ (\n)
       ^(Date:)$ (\n)
       ^(Server: .*)$ (\n)
       ^(Last-Modified:) .*$
       #$1$2$3$4$5$6$7#gmx;
     # NOTE: that Server: can now be missing...
-    s#(HTTP/1[.]1 \s (?:30[1237]|40[03456]|41[01234567]|50[0135]) .*)$ (\n)
+    s#(HTTP/1[.]1 \s (?:30[1237]|40[013456]|41[01234567]|50[0135]) .*)$ (\n)
       ^(Date:)$ (\n)
       ^(Last-Modified:) .*$
       #$1$2$3$4$5#gmx;
@@ -497,6 +497,33 @@ sub setup
 	      " bzip2/Content-MD5: " . "\x00" x 4 . "\x11" x 4 . "\x33" x 4 . "\x55" x 4,
 	      "$conf_root/foo.example.com/conf-tst13/byte");
 
+
+my $conf_cond = <<EOL;
+  (match-request [protect-vary ! server-ipv4-cidr-eq 127.0.12.2/32]
+     (match-request [protect-vary ! referrer-search-eq www.example.com]
+         filename (+= bad-no-ref) ; Give a custom "don't deep link page"
+         return <gone>)
+      ; Only gets here if the above return isn't run, so no need for [else]
+      Link: (= </images/prefetch-img.jpeg> ';' rel=prefetch)
+      match-request [true]) ; for fool [else]
+
+   Link: (+= ,</images/next.html> ';' rel=next)
+   Link: (+= ,</images/index.html> ';' rel=index)
+   Link: (+= ,</images/prev.html> ';' rel=prev)
+
+   match-request [else]
+      parse-accept-encoding FALSE ; Don't gzip to localhost
+EOL
+
+    make_line(1, "cond good\n " . 'x' x 78,
+	      "$root/foo.example.com/conf-tst13/cond");
+    make_line(1, "cond good\n gzip\n",
+	      "$root/foo.example.com/conf-tst13/cond.gz");
+    make_line(1, "cond bad\n " . 'y' x 78,
+	      "$root/foo.example.com/conf-tst13/condbad-no-ref");
+    make_conf($conf_cond, "$conf_root/foo.example.com/conf-tst13/cond");
+
+
     make_html(0, "ERROR 404", "$err_conf_7_root/foo.example.com/404.html");
     make_conf("; comment\n", "$err_conf_7_root/foo.example.com/404");
 
@@ -530,6 +557,11 @@ EOL
 
     make_line(0, "ERROR 400 it/txt",
 	      "$err_conf_13_root/foo.example.com/400.it.txt");
+
+    make_line(0, "ERROR 401 en/text",
+	      "$err_conf_13_root/foo.example.com/401.en.txt");
+    make_line(0, "ERROR 401 en/html",
+	      "$err_conf_13_root/foo.example.com/401.en.html");
 
     make_html(0, "ERROR 404 en/html",
 	      "$err_conf_13_root/foo.example.com/404.en.html");
@@ -570,6 +602,7 @@ EOL
     make_conf($err_conf_neg, "$err_conf_7_root/foo.example.com/406");
 
     make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/400");
+    make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/401");
     make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/404");
     make_conf($err_conf_neg, "$err_conf_13_root/foo.example.com/406");
     make_conf($err_conf_neg, "$conf_root/foo.example.com/neg");
@@ -633,7 +666,12 @@ if (@ARGV)
 	elsif ($arg eq "conf_12")
 	  { all_conf_x_tsts(12); $y = 1; }
 	elsif ($arg eq "conf_13")
-	  { all_conf_x_tsts(13); $y = 1; }
+	  {
+	    my $z = shift;
+	    all_conf_x_tsts(13)       if ($z == 1);
+	    all_conf_x_x_tsts(13, $z)  if ($z != 1);
+	    $y = 1;
+	  }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
 	  { all_nonvhost_tsts(); $y = 1; }
 
@@ -677,10 +715,10 @@ sub conf_tsts
     daemon_init("and-httpd", $root, $args);
     my $list_pid = http_cntl_list();
 
-    for ($beg..$end)
+    for my $tnum ($beg..$end)
       {
 	if (0) {}
-	elsif ($_ == 1)
+	elsif ($tnum == 1)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.0.1");
 	    all_vhost_tsts();
@@ -692,37 +730,44 @@ sub conf_tsts
 	    daemon_status("and-httpd_cntl", "127.0.0.3");
 	    all_vhost_tsts();
 	  }
-	elsif ($_ == 2)
+	elsif ($tnum == 2)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.1.1");
 	    all_public_only_tsts("no gen tsts");
 	  }
-	elsif ($_ == 3)
+	elsif ($tnum == 3)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.2.1");
 	    all_nonvhost_tsts();
 	  }
-	elsif ($_ == 4)
+	elsif ($tnum == 4)
 	  {
 	    daemon_status("and-httpd_cntl", "127.0.3.1");
 	    all_none_tsts();
 	  }
-	elsif (($_ == 5) || ($_ == 6) || ($_ == 7) ||
-	       ($_ == 10) || ($_ == 11) || ($_ == 12) || ($_ == 13))
+	elsif (($tnum ==  5) || ($tnum ==  6) || ($tnum ==  7) ||
+	       ($tnum == 10) || ($tnum == 11) || ($tnum == 12))
 	  {
-	    all_conf_x_tsts($_);
+	    all_conf_x_tsts($tnum);
 	  }
-	elsif ($_ == 8)
+	elsif ($tnum == 8)
 	  {
-	    all_conf_x_x_tsts(8, 1);
-	    all_conf_x_x_tsts(8, 2);
-	    all_conf_x_x_tsts(8, 3);
-	    all_conf_x_x_tsts(8, 4);
+	    for my $i (1..4)
+	      {
+		all_conf_x_x_tsts($tnum, $i);
+	      }
 	  }
-	elsif ($_ == 9)
+	elsif ($tnum == 9)
 	  {
-	    all_conf_x_x_tsts(9, 1);
-	    all_conf_x_x_tsts(9, 2);
+	    for my $i (1..2)
+	      {
+		all_conf_x_x_tsts($tnum, $i);
+	      }
+	  }
+	elsif ($tnum == 13)
+	  {
+	    all_conf_x_tsts($tnum);
+	    all_conf_x_x_tsts($tnum, 2);
 	  }
 	else
 	  { failure("Bad conf number."); }
