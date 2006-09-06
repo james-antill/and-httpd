@@ -55,9 +55,7 @@ http://www.sans.org/top20/#u2
          generic config. manual etc.
         test expires
         scons
-          pictures
-          index, ATOM/NETSTR
-            mod_rssindex - and-dir_list2html outputs atom?
+          make_index, ATOM && pictures
           md5sum
 
 	man pages

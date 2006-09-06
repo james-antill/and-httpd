@@ -17,6 +17,9 @@ static int output_fmode = 0664; /* or 0644 as default ? -- umask */
 
 static unsigned int output_type = OUTPUT_TYPE_HTML;
 
+static int output_perms = FALSE;
+static int output_mtime = TRUE;
+
 static const char *def_prefix = "";
 
 static const char *css_fname = "dir_list.css";
@@ -94,6 +97,8 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
   Vstr_sect_node name[1] = {{0,0}};
   Vstr_sect_node size[1] = {{0,0}};
   Vstr_sect_node type[1] = {{0,0}};
+  Vstr_sect_node mtim[1] = {{0,0}};
+  Vstr_sect_node perm[1] = {{0,0}};
   
   if (!ns1)
   {
@@ -118,8 +123,9 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
     if (!(nst = vstr_parse_netstr(s2, pos, len, &vpos, &vlen)))
       errx(EXIT_FAILURE, "bad input");
     pos += nst; len -= nst;
-    if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "1"))
+    if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "2"))
       errx(EXIT_FAILURE, "Unsupported version");
+    
     *parsed_header = TRUE;
     len = 0;
   }
@@ -151,10 +157,20 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
       type->pos = vpos;
       type->len = vlen;
     }
+    else if (vstr_cmp_cstr_eq(s2, kpos, klen, "perms"))
+    {
+      perm->pos = vpos;
+      perm->len = vlen;
+    }
     else if (vstr_cmp_cstr_eq(s2, kpos, klen, "size"))
     {
       size->pos = vpos;
       size->len = vlen;
+    }
+    else if (vstr_cmp_cstr_eq(s2, kpos, klen, "mtime"))
+    {
+      mtim->pos = vpos;
+      mtim->len = vlen;
     }
   }
 
@@ -162,8 +178,10 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
   {
     Vstr_base *href = vstr_dup_vstr(NULL, s2, name->pos, name->len, 0);
     Vstr_base *text = vstr_dup_vstr(NULL, s2, name->pos, name->len, 0);
+    VSTR_AUTOCONF_uintmax_t type_val = 0;
     VSTR_AUTOCONF_uintmax_t val = 0;
-      
+    time_t tval = 0;
+    
     *row_num %= 2;
     ++*row_num;
 
@@ -172,44 +190,142 @@ static int ex_dir_list2html_process(Vstr_base *s1, Vstr_base *s2,
     if (!text || !html_conv_encode_data(text, 1, text->len))
       errno = ENOMEM, err(EXIT_FAILURE, "html");
 
-    vstr_add_fmt(s1, s1->len, "  <tr class=\"r%d\"> <td class=\"c1\">"
-                 "<a href=\"%s${vstr:%p%zu%zu%u}\">${vstr:%p%zu%zu%u}</a></td>",
-                 *row_num,
-                 def_prefix,
-                 href, (size_t)1, href->len, 0,
-                 text, (size_t)1, text->len, 0);
+    if (type->pos)
+      type_val = vstr_parse_uintmax(s2, type->pos, type->len, 8, NULL, NULL);
+
+    vstr_add_fmt(s1, s1->len, "  <tr class=\"r%d\"> <td class=\"cn\">",
+                 *row_num);
+                 
+    if (type_val && S_ISDIR(type_val))
+      vstr_add_fmt(s1, s1->len, "<a class=\"%s\" "
+                   "href=\"%s${vstr:%p%zu%zu%u}%s\">${vstr:%p%zu%zu%u}</a>",
+                   "dir", def_prefix,
+                   href, (size_t)1, href->len, 0, "/",
+                   text, (size_t)1, text->len, 0);
+    else if (type_val && S_ISLNK(type_val))
+      vstr_add_fmt(s1, s1->len, "<a class=\"%s\" "
+                   "href=\"%s${vstr:%p%zu%zu%u}%s\">${vstr:%p%zu%zu%u}</a>",
+                   "link", def_prefix,
+                   href, (size_t)1, href->len, 0, "",
+                   text, (size_t)1, text->len, 0);
+    else
+      vstr_add_fmt(s1, s1->len, "<a class=\"%s\" "
+                   "href=\"%s${vstr:%p%zu%zu%u}%s\">${vstr:%p%zu%zu%u}</a>",
+                   "file", def_prefix,
+                   href, (size_t)1, href->len, 0, "",
+                   text, (size_t)1, text->len, 0);
+    vstr_add_fmt(s1, s1->len, "</td>");
+    
     vstr_free_base(href); href = NULL;
     vstr_free_base(text); text = NULL;
     
     if (!size->pos)
-      vstr_add_cstr_buf(s1, s1->len, " <td class=\"c2\"></td>");
+      vstr_add_cstr_buf(s1, s1->len, " <td class=\"csz\"></td>");
     else
     {
       val = vstr_parse_uintmax(s2, size->pos, size->len, 10, NULL, NULL);
 
-      vstr_add_fmt(s1, s1->len, " <td class=\"c2\">${BKMG.ju:%ju}</td>", val);
+      vstr_add_fmt(s1, s1->len, " <td class=\"csz\">${BKMG.ju:%ju}</td>", val);
     }
     
-    if (!type->pos)
-      vstr_add_cstr_buf(s1, s1->len, " <td class=\"c3\"></td>");
+    if (output_mtime && !mtim->pos)
+      vstr_add_cstr_buf(s1, s1->len, " <td class=\"cmt\"></td>");
+    else if (output_mtime)
+    {
+      struct tm *tm_val = NULL;
+
+      tval = vstr_parse_uintmax(s2, mtim->pos, mtim->len, 10, NULL, NULL);
+
+      if (!(tm_val = localtime(&tval)))
+        vstr_add_cstr_buf(s1, s1->len, " <td class=\"cmt\">unknown</td>");
+      else
+      {
+        char buf[4096];
+      
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", tm_val);
+      
+        vstr_add_fmt(s1, s1->len, " <td class=\"cmt\">%s</td>", buf);
+      }
+    }
+    
+    if (output_perms && !perm->pos)
+      vstr_add_cstr_buf(s1, s1->len, " <td class=\"cp\"></td>");
+    else if (output_perms)
+    {
+      val = vstr_parse_uintmax(s2, perm->pos, perm->len, 8, NULL, NULL);
+      switch (val & 07)
+      {
+        case 07:
+          if (type_val && S_ISDIR(type_val))
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Read, write and search", "rwx");
+          else
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Read, write and execute", "rwx");
+          break;
+        case 06:
+          vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                       "Read and write", "rw-");
+          break;
+        case 05:
+          if (type_val && S_ISDIR(type_val))
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Read and search", "r-x");
+          else
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Read and execute", "r-x");
+          break;
+        case 04:
+          vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                       "Read only", "r--");
+          break;
+        case 03:
+          if (type_val && S_ISDIR(type_val))
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Write and search", "-wx");
+          else
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Write and execute", "-wx");            
+          break;
+        case 02:
+          vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                       "Write only", "-w-");
+          break;
+        case 01:
+          if (type_val && S_ISDIR(type_val))
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Search only", "--x");
+          else
+            vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                         "Execute only", "--x");            
+          break;
+        case  0:
+          vstr_add_fmt(s1, s1->len, " <td class=\"cp\" title=\"%s\">%s</td>",
+                       "None", "---");
+          break;
+      }
+    }
+    
+    if (!type_val)
+      vstr_add_cstr_buf(s1, s1->len, " <td class=\"ct\"></td>");
     else
     {
-      val = vstr_parse_uintmax(s2, type->pos, type->len, 10, NULL, NULL);
-      
-      vstr_add_cstr_buf(s1, s1->len, " <td class=\"c3\">");
+      vstr_add_cstr_buf(s1, s1->len, " <td class=\"ct\">");
       if (0) { }
-      else if (S_ISREG(val))
+      else if (S_ISREG(type_val))
       { /* do nothing */ }
-      else if (S_ISDIR(val))
+      else if (S_ISDIR(type_val))
         vstr_add_cstr_buf(s1, s1->len, "(directory)");
-      else if (S_ISCHR(val))
+      else if (S_ISCHR(type_val))
         vstr_add_cstr_buf(s1, s1->len, "(character device)");
-      else if (S_ISBLK(val))
+      else if (S_ISBLK(type_val))
         vstr_add_cstr_buf(s1, s1->len, "(block device)");
-      else if (S_ISLNK(val))
+      else if (S_ISLNK(type_val))
         vstr_add_cstr_buf(s1, s1->len, "(symbolic link)");
-      else if (S_ISSOCK(val))
+      else if (S_ISSOCK(type_val))
         vstr_add_cstr_buf(s1, s1->len, "(socket)");
+      else
+        vstr_add_cstr_buf(s1, s1->len, "(UNKNOWN)");
       vstr_add_cstr_buf(s1, s1->len, "</td>");
     }
       
@@ -282,11 +398,15 @@ static void ex_dir_list2html_beg(Vstr_base *s1, const char *fname)
   <table class=\"dir_list\">\n\
   \n\
   <thead>\n\
-  <tr class=\"rh\"> <th class=\"c1\">Name</th> <th class=\"c2\">Size</th>  <th class=\"c3\">Type</th> </tr>\n\
+  <tr class=\"rh\"> <th class=\"cn\">Name</th> <th class=\"csz\">Size</th> %s%s<th class=\"ct\">Type</th> </tr>\n\
   </thead>\n\
   \n\
   <tbody>\n\
-", fname, css_fname, fname);
+", fname, css_fname, fname,
+               !output_mtime ? "" :
+               "<th class=\"cmt\" title=\"Last modified time\">Modified</th> ",
+               !output_perms ? "" :
+               "<th class=\"cp\" title=\"Permissions\">rwx</th> ");
 
     ASSERT_NO_SWITCH_DEF();
   }
@@ -364,6 +484,9 @@ int main(int argc, char *argv[])
     EX_UTILS_GETOPT_CSTR("cssfilename",  css_fname);
     EX_UTILS_GETOPT_CSTR("name",         def_name);
     EX_UTILS_GETOPT_CSTR("output",       output_fname);
+    EX_UTILS_GETOPT_TOGGLE("mtime",      output_mtime);
+    EX_UTILS_GETOPT_TOGGLE("permissions",output_perms);
+    EX_UTILS_GETOPT_TOGGLE("perms",      output_perms);
         /*      EX_UTILS_GETOPT_CSTR("style",        output_tname); */
     EX_UTILS_GETOPT_NUM("filemode",      output_fmode);
     else if (!strcmp("--version", argv[count]))
@@ -396,7 +519,7 @@ Output filenames.\n\
 Report bugs to James Antill <james@and.org>.\n\
 ");
       /*
-    --style         - Instead of a single page, output a slideshow of files.\n\
+    --style         - Output a different style, instead of HTML.\n\
         type = html | atom\n\
       */
       goto out;

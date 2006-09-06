@@ -1,6 +1,6 @@
 
 toolsmaindir = $(datadir)/and-httpd-$(VERSION)-tools
-toolsmain_DATA = scons_and_httpd_helpers.py
+toolsmain_DATA = scons_and_httpd_helpers.py dir_list-1.0.css
 
 toolsmain_SCRIPTS =                         \
                 and-httpd-status \

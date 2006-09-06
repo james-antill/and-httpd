@@ -1,0 +1,34 @@
+
+ /* This is an example CSS file for controlling what is produced by
+    and-dir_list2html. Note that the version at: 
+
+    http://www.and.org/dir_list-1.0.css
+
+    ...is used by make_index, by default. */
+
+ table.dir_list              { border-bottom: solid; }
+
+ table.dir_list  tr.rh       { background: #DDD; }
+ table.dir_list  tr.rh:hover { background: #CCC; }
+
+ table.dir_list  tr.r1       { background: #EEE; }
+ table.dir_list  tr.r1:hover { background: #CCC; }
+
+ table.dir_list  tr.r2       { background: #FFF; }
+ table.dir_list  tr.r2:hover { background: #CCC; }
+
+ table.dir_list  td.cn       { width: 50%; padding: 0.2em; text-align: left;   }
+ table.dir_list  td.csz      { width: 10%; padding: 0.2em; text-align: right;  }
+ table.dir_list  td.cmt      { width: 20%; padding: 0.2em; text-align: right;  }
+ table.dir_list  td.cp       { width:  5%; padding: 0.2em; text-align: center; }
+ table.dir_list  td.ct       { width: 15%; padding: 0.2em; text-align: right;  }
+
+ table.dir_list  th.cn       { width: 50%; padding: 0.2em; text-align: left;   }
+ table.dir_list  th.csz      { width: 10%; padding: 0.2em; text-align: right;  }
+ table.dir_list  th.cmt      { width: 20%; padding: 0.2em; text-align: right;  }
+ table.dir_list  th.cp       { width:  5%; padding: 0.2em; text-align: center; }
+ table.dir_list  th.ct       { width: 15%; padding: 0.2em; text-align: right;  }
+
+
+ table.dir_list  td.cn a.dir       { font-weight: bold; }
+ table.dir_list  td.cn a.dir:after { content: "/"; }

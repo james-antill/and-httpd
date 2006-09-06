@@ -1,3 +1,16 @@
+2006-09-05  James Antill  <james@and.org>
+
+	* src/and-dir_list2html.c (ex_dir_list2html_process): Tweak output,
+	use new version 2 info.
+
+	* src/and-dir_list.c (main): Produce version 2 dir listings, can have
+	all the file stat data ... although just the name by default.
+
+	* tools/make_index.in: Cleanup, and don't pass everything to sh. Also
+	now produce index.netstr files, by default.
+
+	* tools/dir_list-1.0.css: Add default make_index CSS content.
+
 2006-08-19  James Antill  <james@and.org>
 
 	* src/conf.c (conf_sc_conv_unesc): Add hex escaping to strings.

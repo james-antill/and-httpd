@@ -20,36 +20,98 @@ use Pod::Usage;
 my $man = 0;
 my $help = 0;
 
-my $filter_def_args = "-A .. --deny-name-beg . -D index.html -D dir_list.css --acpt-name-end .tar.gz --deny-name-end .gz --acpt-name-end .tar.bz2 --deny-name-end .bz2 --deny-name-end .tmp --deny-name-end '~' --deny-name-end '#'";
-my $filter_args = $filter_def_args;
 
-my $sort_def_args = "--sort=version";
-my $sort_args = $sort_def_args;
-my $html_def_args = "--css-filename http://www.and.org/dir_list-1.0.css";
-my $html_args = $html_def_args;
-my $index_loc = undef;
+
+my $list_def_args   = [qw(--size --follow --mtime --type)];
+my $list_args       = [];
+
+my $filter_def_args = [qw(-A .. --deny-name-beg . -D index.atom -D index.html -D index.netstr --acpt-name-end .tar.gz --deny-name-end .gz --acpt-name-end .tar.bz2 --deny-name-end .bz2 --deny-name-end .tmp), "--deny-name-end", '~', "--deny-name-end", '#'];
+my $filter_args     = [];
+
+my $atom_def_args   = [];
+my $atom_args       = [];
+
+my $html_def_args   = [qw(--css-filename http://www.and.org/dir_list-1.0.css)];
+my $html_args       = [];
+
+my $sort_def_args   = [qw(--sort=version)];
+my $sort_args       = [];
+
+
+
+my $atom_loc   = undef;
+my $index_loc  = undef;
+my $netstr_loc = undef;
+
+my %types = ();
 
 pod2usage(0) if !
-GetOptions ("filter-args=s@" => \$filter_args,
-	    "sort-args=s@" => \$sort_args,
-	    "html-args=s@" => \$html_args,
+GetOptions ("filter-args=s" => sub { push @$filter_args, split " ", $_[1] },
+	    "list-args=s"   => sub { push @$list_args,   split " ", $_[1] },
+	    "sort-args=s"   => sub { push @$sort_args,   split " ", $_[1] },
+	    "html-args=s"   => sub { push @$html_args,   split " ", $_[1] },
 	    "dir-name|dirname|d=s" => \$dir_name,
-	    "output|o=s" => \$index_loc,
+	    "atom-output|a=s" => \$atom_loc,
+	    "html-output|output|o=s" => \$index_loc,
+	    "netstr-output|n=s" => \$netstr_loc,
 	    "prefix-exes|P=s" => \$prefix,
+	    "types|T=s"  => sub { $types{$_} = 1 for split ',', $_[1] },
 	    "help|?"   => \$help,
 	    "man"      => \$man);
 pod2usage(-exitstatus => 0, -verbose => 1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
-if (ref $filter_args)
-  { $filter_args = join " ", map { $_ eq "--default" ? $filter_def_args : $_ }
-                             @$filter_args; }
-if (ref $sort_args)
-  { $sort_args   = join " ", map { $_ eq "--default" ? $sort_def_args   : $_ }
-                             @$sort_args; }
-if (ref $html_args)
-  { $html_args   = join " ", map { $_ eq "--default" ? $html_def_args   : $_ }
-                             @$html_args; }
+if (! keys %types)
+{
+  $types{'html'}   = 1;
+  $types{'netstr'} = 1;
+}
+
+if (exists $types{'all'})
+  {
+    $types{$_} = 1 for qw/atom html netstr/;
+  }
+
+if (! @$atom_args)
+  { $atom_args = $atom_def_args; }
+else
+  { my @tmp = ();
+    for (@$atom_args)
+      { push @tmp, ($_ eq "--default" ? (@$atom_def_args)   : $_) }
+    $atom_args = \@tmp; }
+
+if (! @$filter_args)
+  { $filter_args = $filter_def_args; }
+else
+  { my @tmp = ();
+    for (@$filter_args)
+      { push @tmp, ($_ eq "--default" ? (@$filter_def_args)   : $_) }
+    $filter_args = \@tmp; }
+
+if (! @$html_args)
+  { $html_args = $html_def_args; }
+else
+  { my @tmp = ();
+    for (@$html_args)
+      { push @tmp, ($_ eq "--default" ? (@$html_def_args)   : $_) }
+    $html_args = \@tmp; }
+
+if (! @$list_args)
+  { $list_args = $list_def_args; }
+else
+  { my @tmp = ();
+    for (@$list_args)
+      { push @tmp, ($_ eq "--default" ? (@$list_def_args)   : $_) }
+    $list_args = \@tmp; }
+
+if (! @$sort_args)
+  { $sort_args = $sort_def_args; }
+else
+  { my @tmp = ();
+    for (@$sort_args)
+      { push @tmp, ($_ eq "--default" ? (@$sort_def_args)   : $_) }
+    $sort_args = \@tmp; }
+
 
 pod2usage(0) if (scalar @ARGV != 1);
 
@@ -57,30 +119,64 @@ my $dir_loc   = shift @ARGV;
 
 pod2usage(0) if (! -d $dir_loc);
 
+if (!defined ($atom_loc))
+  { $atom_loc = $dir_loc . "/index.atom"; }
 if (!defined ($index_loc))
   { $index_loc = $dir_loc . "/index.html"; }
+if (!defined ($netstr_loc))
+  { $netstr_loc = $dir_loc . "/index.netstr"; }
 if (!defined ($dir_name))
   {
     $dir_name = $dir_loc;
-    $dir_name =~ m!/?([^/]+)/*$!;
+    $dir_name =~ m!/?([^/]+)/*$!; # basename, kind of
     if ($1 ne '')
       { $dir_name = $1; }
     else
       { $dir_name = "Unknown"; }
   }
 
-$dir_loc   =~ s/'/'"'"'/g;
-$dir_name  =~ s/'/'"'"'/g;
-$index_loc =~ s/'/'"'"'/g;
+# $dir_loc   =~ s/'/'"'"'/g;
+# $dir_name  =~ s/'/'"'"'/g;
+# $index_loc =~ s/'/'"'"'/g;
 
-my $cmds = <<EOL;
- ${prefix}dir_list --size --follow -- '$dir_loc' | \
- ${prefix}dir_filter $filter_args | \
- ${prefix}dir_sort $sort_args | \
- ${prefix}dir_list2html --name '$dir_name' $html_args --output '$index_loc'
-EOL
+use IPC::Open2;
 
-system($cmds);
+my $chld_out;
+sub cmd_pipe_beg
+  {
+    my ($pid);
+
+    $pid = open(CHLD_OUT, '-|', @_);
+
+    return $pid;
+  }
+
+sub cmd_pipe_nxt
+  {
+    my ($pid);
+
+    open(CHLD_IN, ">&CHLD_OUT") ||  die "dup2(IN, OUT): $!\n";
+
+    $pid = fileno CHLD_IN; # HACK: So perl thinks CHLD_IN is used
+
+    $pid = open2(\*CHLD_OUT, '>&CHLD_IN', @_);
+
+    return $pid;
+  }
+
+cmd_pipe_beg("${prefix}dir_list", @$list_args, "--", $dir_loc);
+# Insert public data whitelist...
+cmd_pipe_nxt("${prefix}dir_filter", @$filter_args);
+cmd_pipe_nxt("${prefix}dir_sort", @$sort_args);
+cmd_pipe_nxt("tee", $netstr_loc)                          if ($types{'netstr'});
+cmd_pipe_nxt("${prefix}dir_list2html", @$html_args,
+	     '--name', $dir_name, '--output', $index_loc) if ($types{'html'});
+
+# Need way to get correct input, tee() pipe to pipe?
+# cmd_pipe_nxt("${prefix}dir_list2html", @$atom_args, '--output-type=atom',
+# 	     '--name', $dir_name, '--output', $atom_loc)  if ($types{'atom'});
+
+# Maybe, insert picture output...
 
 __END__
 
@@ -93,14 +189,19 @@ make_index - Make index.html files from directories
 make_index [options] <dir>
 
  Options:
-  --help -?         brief help message
-  --man             full documentation
-  --filter-args     Filter arguments
-  --sort-args       Sort arguments
-  --html-args       HTML conversion arguments
-  --dir-name        Directory name
-  --output -o       Output filename
-  --prefix-exes -P  prefix for executables
+  --help -?                       brief help message
+  --man                           full documentation
+  --atom-args                     ATOM conversion arguments
+  --filter-args                   Filter arguments
+  --html-args                     HTML conversion arguments
+  --list-args                     Directory listing arguments
+  --dir-name                      Directory name
+  --sort-args                     Sort arguments
+  --atom-output -a                Output filename for atom
+  --html-output --output -o       Output filename for html
+  --netstr-output -n              Output filename for netstr
+  --types -T                      Types to output: all | atom | html | netstr
+  --prefix-exes -P                Prefix for executables
 
 =head1 OPTIONS
 
@@ -114,39 +215,59 @@ Print a brief help message and exits.
 
 Prints the manual page and exits.
 
+=item B<--atom-args>
+
+Args to pass the dir_list2atom.
+
 =item B<--filter-args>
 
 Args to pass the dir_filter.
-
-=item B<--sort-args>
-
-Args to pass the dir_sort.
 
 =item B<--html-args>
 
 Args to pass the dir_list2html.
 
+=item B<--list-args>
+
+Args to pass the dir_list.
+
+=item B<--sort-args>
+
+Args to pass the dir_sort.
+
 =item B<--dir-name>
 
 Name of directory for the title.
 
-=item B<--output>
+=item B<--atom-output>
 
-Filename to output directory contents to (defaults to index.html).
+Filename to output ATOM directory contents to (defaults to index.atom).
+
+=item B<--html-output>
+
+Filename to output HTML directory contents to (defaults to index.html).
+
+=item B<--netstr-output>
+
+Filename to output Netstr directory contents to (defaults to index.netstr).
+
+=item B<--types>
+
+Types to output, from: all, atom, html and netstr (defaults to html and netstr).
 
 =item B<--prefix>
 
-Prefix to add the executable names (can be a path).
+Prefix path to add the executable names (defaults to nothing).
 
 =back
 
 
 =head1 DESCRIPTION
 
-B<make_index> will create index.html files from a given directory.
+B<make_index> will create HTML output from a given directory input.
  It filters the filenames in the directory and can use an executable prefix.
 
-B<make_index> calls the programs dir_list, dir_filter, dir_sort and
-dir_list2html.
+B<make_index> calls the programs dir_list, dir_filter, dir_sort
+and dir_list2html.
 
 =cut

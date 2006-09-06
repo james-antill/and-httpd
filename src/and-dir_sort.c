@@ -54,7 +54,7 @@ static int ex_dir_sort_process(Vstr_base *s1, Vstr_base *s2,
       if (!(nst = vstr_parse_netstr(s2, pos, len, &vpos, &vlen)))
         errx(EXIT_FAILURE, "bad input");
       pos += nst; len -= nst;
-      if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "1"))
+      if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "2"))
         errx(EXIT_FAILURE, "Unsupported version");
       *parsed_header = TRUE;
       
@@ -88,7 +88,7 @@ static int ex_dir_sort_process(Vstr_base *s1, Vstr_base *s2,
       pos += nst; len -= nst;
       
       if (!vstr_cmp_cstr_eq(s2, kpos, klen, "name"))
-        continue; /* only sort by names atm. */
+        continue; /* FIXME: only sort by names atm. */
       
       if (!(key = vstr_export_cstr_malloc(s2, vpos, vlen)))
         errno = ENOMEM, err(EXIT_FAILURE, "sort");

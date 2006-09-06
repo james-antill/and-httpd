@@ -98,6 +98,11 @@
     }                                                                   \
     else if (0) ASSERT(FALSE)
 
+#define EX_UTILS_GETOPT_TOGGLE(name, var)                               \
+    else if (!strncmp("--" name, argv[count], strlen(argv[count])))     \
+      (var) = !(var);                                                   \
+    else if (0) ASSERT(FALSE)    
+
 
 #if COMPILE_DEBUG
 # define assert(x) do { if (x) {} else { warnx("assert(%s), FAILED at %s:%u", #x , __FILE__, __LINE__); abort(); } } while (FALSE)

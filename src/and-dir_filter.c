@@ -75,7 +75,7 @@ static int ex_dir_filter_process(Vstr_base *s1, Vstr_base *s2,
     if (!(nst = vstr_parse_netstr(s2, pos, len, &vpos, &vlen)))
       errx(EXIT_FAILURE, "bad input");
     pos += nst; len -= nst;
-    if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "1"))
+    if (!vstr_cmp_cstr_eq(s2, vpos, vlen, "2"))
       errx(EXIT_FAILURE, "Unsupported version");
     *parsed_header = TRUE;
     len = 0;
@@ -109,6 +109,8 @@ static int ex_dir_filter_process(Vstr_base *s1, Vstr_base *s2,
     {
       int keep = TRUE;
 
+      /* FIXME: can only filter on name atm. */
+      
       if (0) { /* do nothing */ }
       else if (FILTER_MATCH("acpt-name-eq", vstr_cmp_cstr_eq)) keep = TRUE;
       else if (FILTER_MATCH("deny-name-eq", vstr_cmp_cstr_eq)) keep = FALSE;
@@ -224,7 +226,6 @@ static void ex_dir_filter_cmd_line(int *passed_argc, char **passed_argv[])
   const char *program_name = NULL;
   struct option long_options[] =
   {
-   /* allow filtering on size etc. */
    {"help", no_argument, NULL, 'h'},
 
    {"accept-name-eq", required_argument, NULL, 'A'},
