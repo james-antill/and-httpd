@@ -20,7 +20,7 @@
   <body>
     <h1>And-HTTPD</h1>
 
-    <h2>Current version is 0.99.9</h2>
+    <h2>Current version is 0.99.10</h2>
 
 <p> NOTE that this software requires the Vstr, socket_poll and timer_q
  libraries.</p>
@@ -31,8 +31,8 @@
 
 <ul>
   <li> Tar balls are available via.
-              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.9/">ftp</a> and
-              <a href="http://www.and.org/and-httpd/0.99.9/"><b>http</b></a>.
+              <a href="ftp://ftp.and.org/pub/james/and-httpd/0.99.10/">ftp</a> and
+              <a href="http://www.and.org/and-httpd/0.99.10/"><b>http</b></a>.
  Also a binary bzip2 cpio archive, of version 0.99.7, compiled against uLibc is
 available <a href="http://bent.latency.net/bent/i386/and-httpd-0.99.7.cpio.bz2">here</a>.
 </li>
@@ -134,7 +134,11 @@ path in the request configuration directory:
 <p>
 And-httpd will also do a number of things automatically, like automatically
 redirecting between directories and files or automatically redirecting
-"ugly" requests. </p>
+"ugly" requests for index.html to the parent directory. It will also
+automatically redirect requests ending in common punctuation that don't match
+a file (so that if you paste a URL into an email and have a dor or comma at the
+end, it'll "just work").
+</p>
 
 <a id="rewrites"></a>
 <h3>Rewrites</h3>
@@ -191,17 +195,22 @@ the apache-httpd style combined log format.</p>
  like epoll.</li>
 <li>Multi-process support, allowing it to scale with the number of CPUs it
 has available.</li>
-<li>Zero copy network output, using either sendfile or mmap.</li>
+<li>Zero copy network output, using either sendfile() or mmap().</li>
 <li>TCP_CORK, to combine data as much as possible.</li>
 <li>TCP_DEFER_ACCEPT, to minimize empty network connections.</li>
+<li>TCP_CONGESTION, so you can control TCP behaviour for your network.</li>
 <li>posix_fadvise(), to speed up disk IO</li>
 <li><a href="http://www.and.org/vstr/">Vstr</a>, to manage IO buffers.</li>
 </ul>
 
 <p> It also does automatic gzip encoding negotiation (with pre-encoded data)
 and IO limiting for clients that don't allow encoded output (saving badiwdth).
+ It automatically generates ETag's, and processes conditional GET's (saving
+bandwidth).
+</p>
+<p>
  Due to the design, keep-alive is basically free, which also helps reduce
-bandwidth.
+latency and bandwidth.
 </p>
 
 <a id="secure"></a>
@@ -330,7 +339,7 @@ probes database.</p>
     <address><a href="mailto:james-web@and.org">James Antill</a></address>
 <!-- Created: Mon Jan 17 18:09:46 EST 2005 -->
 <!-- hhmts start -->
-Last modified: Sat Jun 24 15:27:03 EDT 2006
+Last modified: Sat Sep  9 14:06:25 EDT 2006
 <!-- hhmts end -->
   </body>
 </html>

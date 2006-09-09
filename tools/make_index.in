@@ -139,6 +139,10 @@ if (!defined ($dir_name))
 # $dir_name  =~ s/'/'"'"'/g;
 # $index_loc =~ s/'/'"'"'/g;
 
+sub ptee
+  { # Do process tee, one pipe input and two pipe outputs...
+  }
+
 use IPC::Open2;
 
 my $chld_out;

@@ -1,3 +1,15 @@
+0.99.10 - 2006-09-09
+ Auto ETag support.
+ Index.html tweaks.
+ Parse hex escaping in configuration strings.
+ Allow ascii and raw md5 content for the MD5 header.
+ Allow unencoded authentication configuration.
+ Now have a match-error-response, and default confguration using it to fix all
+the trailing character error.
+ TCP_CONGESTION support.
+ Look in user.mime_type extended attribute, for a files mime type.
+ Added a sample file for SConstruct. Minor bug fixes and feature additions.
+
 0.99.9 - 2006-06-24
  Fix bug when configured not to process HTTP/0.9 requests.
  Fix conf.d sort order processing.

@@ -1,3 +1,7 @@
+2006-09-09  James Antill  <james@and.org>
+
+	* NEWS: Release 0.99.10
+
 2006-09-05  James Antill  <james@and.org>
 
 	* src/and-dir_list2html.c (ex_dir_list2html_process): Tweak output,
