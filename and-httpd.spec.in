@@ -1,6 +1,3 @@
-# Do we want to run "make check" after the build...
-%define chk_opt %{?chk}%{!?chk:0}
-
 # Do we want a DEBUG build
 %define dbg_opt %{?dbg}%{!?dbg:0}
 # Use the Vstr debug libraries?
@@ -51,8 +48,8 @@ Provides: webserver
 
 %description
 
- And-httpd is currently only a URL to file mapping daemon,
-in other words in can take an incomming URL and map it
+And-httpd is currently only a URL to file mapping daemon,
+in other words in can take an incoming URL and map it
 to a file in a number of ways. However it cannot do CGI
 or anything like apache-httpd mod_python etc. ... it cannot
 even dynamically create directory listings, however the -tools
@@ -78,20 +75,15 @@ Requires: scons, python, perl, perl-File-Slurp
 
 %build
 
-function build()
-{
-%if %{chk_opt}
-  make %{makeopts} check
-%else
-  make %{makeopts}
-%endif
-}
-
 ./configure %{dbg_arg_main} %{dbg_arg_vstr} %{dbg_arg_timer_q} \
   --prefix=%{_prefix} --mandir=%{_mandir} --localstatedir=%{statedir} \
   --datadir=%{_datadir} --sysconfdir=%{_sysconfdir} --libdir=%{_libdir}
 
-build
+make %{makeopts}
+
+%check
+
+make %{makeopts} check
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -150,9 +142,13 @@ fi
 %{_datadir}/and-httpd-@VERSION@-tools/*
 %{_libexecdir}/and-httpd-@VERSION@-tools/*
 %config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py*
+%config %{wwwdir}/SConstruct-tmpl
 
 
 %changelog
+* Sat Sep  9 2006 James Antill <james@and.org> - 0.99.10-1
+- Move make check to FC check section
+
 * Fri Jun  2 2006 James Antill <james@and.org> - and-httpd-0.99.8-2
 - Remove built python files for FC5.
 

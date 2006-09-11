@@ -1,6 +1,10 @@
-2006-09-09  James Antill  <james@and.org>
+2006-09-10  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.10
+
+2006-09-10  James Antill  <james@and.org>
+
+	* tools/make_index.in (cmd_pipe_beg): Fix new make_index code for RHEL3.
 
 2006-09-05  James Antill  <james@and.org>
 

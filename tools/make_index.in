@@ -145,12 +145,15 @@ sub ptee
 
 use IPC::Open2;
 
-my $chld_out;
 sub cmd_pipe_beg
   {
     my ($pid);
 
-    $pid = open(CHLD_OUT, '-|', @_);
+    open(TMP, "+>", undef) or die "tempfile: $!";
+
+    $pid = fileno TMP; # HACK: So perl thinks TMP is used
+
+    $pid = open2(\*CHLD_OUT, '<&TMP', @_);
 
     return $pid;
   }
@@ -159,22 +162,25 @@ sub cmd_pipe_nxt
   {
     my ($pid);
 
-    open(CHLD_IN, ">&CHLD_OUT") ||  die "dup2(IN, OUT): $!\n";
+    open(CHLD_IN, "<&CHLD_OUT") ||  die "dup2(IN, OUT): $!\n";
 
     $pid = fileno CHLD_IN; # HACK: So perl thinks CHLD_IN is used
 
-    $pid = open2(\*CHLD_OUT, '>&CHLD_IN', @_);
+    $pid = open2(\*CHLD_OUT, '<&CHLD_IN', @_);
 
     return $pid;
   }
 
-cmd_pipe_beg("${prefix}dir_list", @$list_args, "--", $dir_loc);
-# Insert public data whitelist...
+cmd_pipe_beg("${prefix}dir_list",   @$list_args, "--", $dir_loc);
+
 cmd_pipe_nxt("${prefix}dir_filter", @$filter_args);
-cmd_pipe_nxt("${prefix}dir_sort", @$sort_args);
-cmd_pipe_nxt("tee", $netstr_loc)                          if ($types{'netstr'});
+cmd_pipe_nxt("${prefix}dir_sort",   @$sort_args);
+
+cmd_pipe_nxt("tee", $netstr_loc)                         if ($types{'netstr'});
+
 cmd_pipe_nxt("${prefix}dir_list2html", @$html_args,
 	     '--name', $dir_name, '--output', $index_loc) if ($types{'html'});
+
 
 # Need way to get correct input, tee() pipe to pipe?
 # cmd_pipe_nxt("${prefix}dir_list2html", @$atom_args, '--output-type=atom',
