@@ -1,4 +1,4 @@
-0.99.10 - 2006-09-09
+0.99.11 - 2006-09-10
  Auto ETag support.
  Index.html tweaks.
  Parse hex escaping in configuration strings.

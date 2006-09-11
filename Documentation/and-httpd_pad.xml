@@ -33,9 +33,9 @@
   </Company_Info>
   <Program_Info>
     <Program_Name>and-httpd</Program_Name>
-    <Program_Version>0.99.9</Program_Version>
-    <Program_Release_Month>06</Program_Release_Month>
-    <Program_Release_Day>24</Program_Release_Day>
+    <Program_Version>0.99.11</Program_Version>
+    <Program_Release_Month>09</Program_Release_Month>
+    <Program_Release_Day>10</Program_Release_Day>
     <Program_Release_Year>2006</Program_Release_Year>
     <Program_Cost_Dollars>0</Program_Cost_Dollars>
     <Program_Cost_Other_Code>USD</Program_Cost_Other_Code>
@@ -45,10 +45,17 @@
     <Program_Install_Support>Install and Uninstall</Program_Install_Support>
     <Program_OS_Support>Linux,Unix</Program_OS_Support>
     <Program_Language>English</Program_Language>
-    <Program_Change_Info> Fix bug when configured not to process HTTP/0.9 requests.
- Fix conf.d sort order processing.
- Add exception for localhost in default io limiting.
- Add some config. options for syslog output.
+    <Program_Change_Info>
+ Auto ETag support.
+ Index.html tweaks.
+ Parse hex escaping in configuration strings.
+ Allow ascii and raw md5 content for the MD5 header.
+ Allow unencoded authentication configuration.
+ Now have a match-error-response, and default confguration using it to fix all
+the trailing character error.
+ TCP_CONGESTION support.
+ Look in user.mime_type extended attribute, for a files mime type.
+ Added a sample file for SConstruct. Minor bug fixes and feature additions.
 </Program_Change_Info>
     <Program_System_Requirements/>
     <Program_Specific_Category>Webserver</Program_Specific_Category>
@@ -58,12 +65,12 @@
     <Includes_DirectX>N</Includes_DirectX>
     <File_Info>
       <Filename_Generic>and-httpd</Filename_Generic>
-      <Filename_Versioned>and-httpd-0.99.9</Filename_Versioned>
-      <Filename_Previous>and-httpd-0.99.8</Filename_Previous>
-      <Filename_Long>and-httpd-0.99.9.tar.gz</Filename_Long>
-      <File_Size_Bytes>691205</File_Size_Bytes>
-      <File_Size_K>675.01</File_Size_K>
-      <File_Size_MB>0.66</File_Size_MB>
+      <Filename_Versioned>and-httpd-0.99.11</Filename_Versioned>
+      <Filename_Previous>and-httpd-0.99.9</Filename_Previous>
+      <Filename_Long>and-httpd-0.99.11.tar.gz</Filename_Long>
+      <File_Size_Bytes>717333</File_Size_Bytes>
+      <File_Size_K>700.52</File_Size_K>
+      <File_Size_MB>0.68</File_Size_MB>
     </File_Info>
     <Expire_Info>
       <Has_Expire_Info>N</Has_Expire_Info>
@@ -89,9 +96,9 @@
       <Application_XML_File_URL>http://www.and.org/and-httpd/and-httpd_pad.xml</Application_XML_File_URL>
     </Application_URLs>
     <Download_URLs>
-      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.9/and-httpd-0.99.9.tar.gz</Primary_Download_URL>
-      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.9/and-httpd-0.99.9.tar.gz</Secondary_Download_URL>
-      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.9/</Additional_Download_URL_1>
+      <Primary_Download_URL>http://www.and.org/and-httpd/0.99.11/and-httpd-0.99.11.tar.gz</Primary_Download_URL>
+      <Secondary_Download_URL>ftp://ftp.and.org/pub/james/and-httpd/0.99.11/and-httpd-0.99.11.tar.gz</Secondary_Download_URL>
+      <Additional_Download_URL_1>http://www.and.org/and-httpd/0.99.11/</Additional_Download_URL_1>
     </Download_URLs>
   </Web_Info>
   <Permissions>

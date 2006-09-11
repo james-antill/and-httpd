@@ -62,7 +62,7 @@ Group: Development/Tools
 Requires: scons, python, perl, perl-File-Slurp
 
 %description tools
- Tools to help managing data under /var/www, including:
+Tools to help managing data under /var/www, including:
 
 . automatic directory indexer.
 . automatic gzip encoding generator.
@@ -89,6 +89,10 @@ make %{makeopts} check
 rm -rf $RPM_BUILD_ROOT
 
 make DESTDIR=$RPM_BUILD_ROOT install
+
+# These are "sometimes" created by magic...
+touch $RPM_BUILD_ROOT/%{wwwdir}/scons_and_httpd_helpers.pyc
+touch $RPM_BUILD_ROOT/%{wwwdir}/scons_and_httpd_helpers.pyo
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -141,13 +145,16 @@ fi
 %defattr(-,root,root,-)
 %{_datadir}/and-httpd-@VERSION@-tools/*
 %{_libexecdir}/and-httpd-@VERSION@-tools/*
-%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py*
+%config(noreplace) %{wwwdir}/scons_and_httpd_helpers.py
+%{wwwdir}/scons_and_httpd_helpers.pyc
+%ghost %{wwwdir}/scons_and_httpd_helpers.pyo
 %config %{wwwdir}/SConstruct-tmpl
 
 
 %changelog
-* Sat Sep  9 2006 James Antill <james@and.org> - 0.99.10-1
+* Sat Sep  9 2006 James Antill <james@and.org> - 0.99.11-1
 - Move make check to FC check section
+- Tweak compiled python files.
 
 * Fri Jun  2 2006 James Antill <james@and.org> - and-httpd-0.99.8-2
 - Remove built python files for FC5.

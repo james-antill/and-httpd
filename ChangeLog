@@ -1,8 +1,11 @@
 2006-09-10  James Antill  <james@and.org>
 
-	* NEWS: Release 0.99.10
+	* NEWS: Release 0.99.11
 
 2006-09-10  James Antill  <james@and.org>
+
+	* tools/make_index.in: Use output dirname() for atom/netstr, if they
+	aren't defined.
 
 	* tools/make_index.in (cmd_pipe_beg): Fix new make_index code for RHEL3.
 
