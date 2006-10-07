@@ -806,7 +806,8 @@ static void serv_cmd_line(int argc, char *argv[])
 
     if (chroot_dir)
     { /* preload locale info. so syslog can log in localtime, this doesn't work
-       * with current glibc's as they re-stat ... maybe set the ENV somehow? */
+       * with glibc's interfaces ...
+       * but we have our own and gmtime_r() / localime_r() etc. */
       time_t now = time(NULL);
       (void)localtime(&now);
       
@@ -882,17 +883,33 @@ static void serv_cmd_line(int argc, char *argv[])
   exit (EXIT_FAILURE);  
 }
 
+#if COMPILE_DEBUG
+static int cov(void) /* for coverage */
+{
+  Opt_serv_policy_opts *opt = NULL;
+  
+  assert((F(M0(1, 1)), 1));
+  
+  ASSERT(date_syslog_trad(vlg->dt, time(NULL)));
+
+  opt = opt_policy_make(httpd_opts->s);
+  vstr_ref_del(opt->ref);
+  
+  return (TRUE);
+}
+#endif
+
 int main(int argc, char *argv[])
 {
   if (sizeof(uintmax_t) != sizeof(VSTR_AUTOCONF_uintmax_t))
     errx(EXIT_FAILURE, "uintmax_t size is different between program and Vstr");
 
-  assert((F(M0(1, 1)), 1)); /* for coverage */
-  
   serv_init();
 
   serv_cmd_line(argc, argv);
 
+  ASSERT(cov()); /* for coverage */
+  
   while (evnt_waiting())
   {
     evnt_sc_main_loop(HTTPD_CONF_MAX_WAIT_SEND);

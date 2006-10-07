@@ -131,12 +131,14 @@ const struct tm *date_localtime(Date_store *data, time_t val)
 
 static const char date__days_shrt[7][4] =
 {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+#define DATE__LEN_DAYS_SHRT 3
 static const char date__days_full[7][10] =
 {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
  "Saturday"};
 static const char date__months[12][4] =
 {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
  "Sep", "Oct", "Nov", "Dec"};
+#define DATE__LEN_MONTHS 3
 
 /* stupid roll your own string API, but what ya gonna do... */
 #define CP_BEG() do { ptr = data->ret_buf;                              \
@@ -175,22 +177,37 @@ static const char date__months[12][4] =
 
 #define CP_END() CP("", 1)
 
+#if COMPILE_DEBUG
+/* this is a macro so GCC doesn't warn about "format not a string literal" */
+# define date__assert_strftime(fmt, tm, res) do \
+    {                                          \
+      char buf[DATE__RET_SZ];                  \
+                                               \
+      strftime(buf, sizeof(buf), fmt, tm);     \
+                                               \
+      ASSERT (!strcmp(buf, res));              \
+    } while (FALSE)
+#else
+# define date__assert_strftime(fmt, tm, res) /* do nothing */
+#endif
+
 /* we do all of this "locally" due to POSIX requiring strftime to call tzset()
    Glibc then compounds that by stat()'ing */
 const char *date_rfc1123(Date_store *data, time_t val)
 {
+  static const char fmt[] = "%a, %d %h %Y %T GMT";
   const struct tm *tm = NULL;
   char *ptr = NULL;
   
   if (!(tm = date_gmtime(data, val)))
-    err(EXIT_FAILURE, "gmtime_r(%s)", "%a, %d %h %Y %T GMT");
+    err(EXIT_FAILURE, "gmtime_r(%s)", fmt);
 
   CP_BEG();
-  CP(date__days_shrt[tm->tm_wday], 3); /* %a */
+  CP(date__days_shrt[tm->tm_wday], DATE__LEN_DAYS_SHRT); /* %a */
   CP_LEN(", ");
   CP_02NUM(tm->tm_mday); /* %d */
   CP_LEN(" ");
-  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP(date__months[tm->tm_mon], DATE__LEN_MONTHS); /* %h */
   CP_LEN(" ");
   CP_NUM(tm->tm_year + 1900); /* %Y */
   CP_LEN(" ");
@@ -201,23 +218,26 @@ const char *date_rfc1123(Date_store *data, time_t val)
   CP_02NUM(tm->tm_sec);
   CP_LEN(" GMT");
   CP_END();
+
+  date__assert_strftime(fmt, tm, data->ret_buf);
   
   return (data->ret_buf);
 }
 const char *date_rfc850(Date_store *data, time_t val)
 {
+  static const char fmt[] = "%A, %d-%h-%y %T GMT";
   const struct tm *tm = NULL;
   char *ptr = NULL;
   
   if (!(tm = date_gmtime(data, val)))
-    err(EXIT_FAILURE, "gmtime_r(%s)", "%A, %d-%h-%y %T GMT");
+    err(EXIT_FAILURE, "gmtime_r(%s)", fmt);
   
   CP_BEG();
   CP_LEN(date__days_full[tm->tm_wday]); /* %A */
   CP_LEN(", ");
   CP_02NUM(tm->tm_mday); /* %d */
   CP_LEN("-");
-  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP(date__months[tm->tm_mon], DATE__LEN_MONTHS); /* %h */
   CP_LEN("-");
   CP_02NUM(tm->tm_year % 100); /* %y */
   CP_LEN(" ");
@@ -229,20 +249,23 @@ const char *date_rfc850(Date_store *data, time_t val)
   CP_LEN(" GMT");
   CP_END();
   
+  date__assert_strftime(fmt, tm, data->ret_buf);
+  
   return (data->ret_buf);
 }
 const char *date_asctime(Date_store *data, time_t val)
 {
+  static const char fmt[] = "%a %h %e %T %Y";
   const struct tm *tm = NULL;
   char *ptr = NULL;
   
   if (!(tm = date_gmtime(data, val)))
-    err(EXIT_FAILURE, "gmtime_r(%s)", "%a %h %e %T %Y");
+    err(EXIT_FAILURE, "gmtime_r(%s)", fmt);
 
   CP_BEG();
-  CP(date__days_shrt[tm->tm_wday], 3); /* %a */
+  CP(date__days_shrt[tm->tm_wday], DATE__LEN_DAYS_SHRT); /* %a */
   CP_LEN(" ");
-  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP(date__months[tm->tm_mon], DATE__LEN_MONTHS); /* %h */
   CP_LEN(" ");
   CP__2NUM(tm->tm_mday); /* %e */
   CP_LEN(" ");
@@ -255,18 +278,21 @@ const char *date_asctime(Date_store *data, time_t val)
   CP_NUM(tm->tm_year + 1900); /* %Y */
   CP_END();
   
+  date__assert_strftime(fmt, tm, data->ret_buf);
+
   return (data->ret_buf);
 }
 const char *date_syslog_trad(Date_store *data, time_t val)
 {
+  static const char fmt[] = "%h %e %T";
   const struct tm *tm = NULL;
   char *ptr = NULL;
   
   if (!(tm = date_localtime(data, val)))
-    err(EXIT_FAILURE, "localtime_r(%s)", "%h %e %T");
+    err(EXIT_FAILURE, "localtime_r(%s)", fmt);
 
   CP_BEG();
-  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP(date__months[tm->tm_mon], DATE__LEN_MONTHS); /* %h */
   CP_LEN(" ");
   CP__2NUM(tm->tm_mday); /* %e */
   CP_LEN(" ");
@@ -277,21 +303,24 @@ const char *date_syslog_trad(Date_store *data, time_t val)
   CP_02NUM(tm->tm_sec);
   CP_END();
   
+  date__assert_strftime(fmt, tm, data->ret_buf);
+
   return (data->ret_buf);
 }
 
 const char *date_syslog_yr(Date_store *data, time_t val)
 {
+  static const char fmt[] = "%Y %h %e %T";
   const struct tm *tm = NULL;
   char *ptr = NULL;
   
   if (!(tm = date_localtime(data, val)))
-    err(EXIT_FAILURE, "localtime_r(%s)", "%h %e %T");
+    err(EXIT_FAILURE, "localtime_r(%s)", fmt);
 
   CP_BEG();
   CP_NUM(tm->tm_year + 1900); /* %Y */
   CP_LEN(" ");
-  CP(date__months[tm->tm_mon], 3); /* %h */
+  CP(date__months[tm->tm_mon], DATE__LEN_MONTHS); /* %h */
   CP_LEN(" ");
   CP__2NUM(tm->tm_mday); /* %e */
   CP_LEN(" ");
@@ -302,6 +331,8 @@ const char *date_syslog_yr(Date_store *data, time_t val)
   CP_02NUM(tm->tm_sec);
   CP_END();
   
+  date__assert_strftime(fmt, tm, data->ret_buf);
+
   return (data->ret_buf);
 }
 

@@ -31,8 +31,7 @@
 	Should produce sort by size
 	Should produce sort by mtime
 	Should produce sort by reverse (6 html pages in all?)
-	Output mtime column
-	Keep netstr list for mime: application/dir-list ?
+	Atom output.
 
 
   opt_serv

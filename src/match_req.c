@@ -585,10 +585,7 @@ int httpd_match_request_tst_d1(struct Con *con, Httpd_req_data *req,
     ASSERT(type);
     
     if (!httpd_policy_path_make(con, req, conf, token, type, &ref))
-    {
-      vstr_ref_del(ref);
       return (FALSE);
-    }
     
     lim = httpd_policy_path_req2lim(type);
     *matches = httpd_policy_path_lim_eq(req->fname, &pos, &len, lim,

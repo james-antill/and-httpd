@@ -2,11 +2,13 @@
 use strict;
 use File::Path;
 use File::Copy;
+use Date::Manip;
 
 require 'vstr_tst_examples.pl';
 
 our $tst_DBG;
 our $root      = "ex_httpd_root";
+our $gen_root  = "ex_httpd_gen_root";
 our $conf_root = "ex_httpd_conf_root";
 my $err_conf_7_root  = "ex_httpd_err_conf_7_root";
 my $err_conf_13_root  = "ex_httpd_err_conf_13_root";
@@ -25,14 +27,35 @@ sub http_cntl_list
     return $list_pid;
   }
 
+sub httpd__munge_expires
+  {
+    my $hrd = shift;
+    my $hre = shift;
+
+    my $dd = ParseDate($hrd);
+    my $de = ParseDate($hre);
+
+    my $calc = DateCalc($dd, $de);
+
+    my $num = Delta_Format($calc, 0, "%sh");
+
+    return "Date::Manip/delta-secs=$num";
+}
+
 sub httpd__munge_ret
   {
     my $output = shift;
 
-    # Remove date, because that changes each time
-    $output =~ s/^(Date:).*$/$1/gm;
-    # Remove last-modified = start date for error messages
     $_ = $output;
+
+    # Change to a testable Expires header
+    s{(\nDate: \s )([^\r]+) (\r\n (?:[^\r]+\r\n)+? ) ^(Expires: \s )([^\r]+) \r (\n)}
+     {$1 . $2 . $3 . $4 . httpd__munge_expires($2, $5) . $6}egmsx;
+
+    # Remove date, because that changes each time
+    s/^(Date:).*$/$1/gm;
+
+    # Remove last-modified = start date for error messages
     s#(HTTP/1[.]1 \s (?:30[1237]|40[013456]|41[01234567]|50[0135]) .*)$ (\n)
       ^(Date:)$ (\n)
       ^(Server: .*)$ (\n)
@@ -363,6 +386,7 @@ sub cleanup
     print "DBG($$): httpd_cleanup()\n" if ($tst_DBG > 0);
 
     rmtree([$root,
+	    $gen_root,
 	    $conf_root,
 	    $err_conf_7_root,
 	    $err_conf_13_root]);
@@ -385,11 +409,14 @@ sub setup
 	    $root . "/foo.example.com/there",
 	    $root . "/foo.example.com:1234",
 	    $root . "/foo.example.com/conf-tst13",
+	    $gen_root . "/foo.example.com/conf-tst13",
+	    $gen_root . "/conf-tst13",
 	    $conf_root . "/conf.d",
 	    $conf_root . "/foo.example.com/conf2",
 	    $conf_root . "/foo.example.com/conf3",
 	    $conf_root . "/foo.example.com/conf4",
 	    $conf_root . "/foo.example.com/conf-tst13",
+	    $conf_root . "/conf-tst13",
 	    $err_conf_7_root  . "/foo.example.com",
 	    $err_conf_13_root . "/foo.example.com"]);
 
@@ -484,18 +511,57 @@ sub setup
 
     make_conf("Content-MD5:        42adf58e8669f28e57ced0f0cdd8e6c6" .
 	      " gzip/Content-MD5:  aaaaaaaabbbbbbbbccccccccdddddddd" .
-	      " bzip2/Content-MD5: 00000000111111113333333355555555",
+	      " bzip2/Content-MD5: 00000000111111113333333355555555" .
+	      " Content-Disposition: filename=hex" .
+	      " Content-Language: en" .
+	      " Content-Location: ./hex-ascii" .
+	      " Expires: <now>" .
+	      " Expires: 1 <minute>" .
+	      " Expires: 2 <minutes>" .
+	      " Expires: 1 <hour>" .
+	      " Expires: 2 <hours>" .
+	      " Expires: 1 <day>" .
+	      " Expires: 2 <days>" .
+	      " Expires: foo=bar" .
+	      " Expires: <never>" .
+	      " Cache-Control: <expires-now>" .
+	      " Cache-Control: 1 <expire-minute>" .
+	      " Cache-Control: 2 <expire-minutes>" .
+	      " Cache-Control: 1 <expire-hour>" .
+	      " Cache-Control: 2 <expire-hours>" .
+	      " Cache-Control: 1 <expire-day>" .
+	      " Cache-Control: 2 <expire-days>" .
+	      " Cache-Control: <expires-never>" .
+	      " Cache-Control: += ,private",
 	      "$conf_root/foo.example.com/conf-tst13/hex");
     make_conf("filename hex" .
 	      " Content-MD5: \"\\x42\\xad\\xf5\\x8e\\x86\\x69\\xf2\\x8e\\x57\\xce\\xd0\\xf0\\xcd\\xd8\\xe6\\xc6\"" .
 	      " gzip/Content-MD5: \"" . '\\xaa' x 4 . '\\xBB' x 4 . '\\xcc' x 4 . '\\xDD' x 4 . '"' .
-	      " bzip2/Content-MD5: \"" . '\\x00' x 4 . '\\x11' x 4 . '\\x33' x 4 . '\\x55' x 4 . '"',
+	      " bzip2/Content-MD5: \"" . '\\x00' x 4 . '\\x11' x 4 . '\\x33' x 4 . '\\x55' x 4 . '"' .
+	      " Content-Disposition: filename=string" .
+	      " P3P: malkadml1267yladskj|\\.,<>{}?/*&^%$@!=+~-_" .
+	      " Expires: 1 <week>" .
+	      " Cache-Control: 1 <expire-week>",
 	      "$conf_root/foo.example.com/conf-tst13/string");
     make_conf("filename hex" .
 	      " Content-MD5: \x42\xad\xf5\x8e\x86\x69\xf2\x8e\x57\xce\xd0\xf0\xcd\xd8\xe6\xc6" .
 	      " gzip/Content-MD5: " . "\xaa" x 4 . "\xbb" x 4 . "\xcc" x 4 . "\xdd" x 4 .
-	      " bzip2/Content-MD5: " . "\x00" x 4 . "\x11" x 4 . "\x33" x 4 . "\x55" x 4,
+	      " bzip2/Content-MD5: " . "\x00" x 4 . "\x11" x 4 . "\x33" x 4 . "\x55" x 4 .
+	      " Content-Disposition: filename=byte" .
+	      " Expires: 4_000 <weeks>" .
+	      " Cache-Control: 4_000 <expire-weeks>",
 	      "$conf_root/foo.example.com/conf-tst13/byte");
+
+    make_line(1, "gen vhost",
+	      "$gen_root/foo.example.com/conf-tst13/gen");
+    make_line(1, "gen non-vhost",
+	      "$gen_root/conf-tst13/gen");
+    make_conf(" filename [skip-document-root true limit <none>] " .
+	      " = <doc-root/..> $gen_root <virtual-host> <path>",
+	     "$conf_root/foo.example.com/conf-tst13/gen");
+    make_conf("filename [skip-document-root true limit <none>] " .
+	      " = <doc-root/..> $gen_root <virtual-host> <path>",
+	     "$conf_root/conf-tst13/gen");
 
 
 my $conf_cond = <<EOL;
@@ -669,7 +735,7 @@ if (@ARGV)
 	  {
 	    my $z = shift;
 	    all_conf_x_tsts(13)       if ($z == 1);
-	    all_conf_x_x_tsts(13, $z)  if ($z != 1);
+	    all_conf_x_x_tsts(13, $z) if ($z != 1);
 	    $y = 1;
 	  }
 	elsif (($arg eq "non-virtual-hosts") || ($arg eq "non-vhosts"))
@@ -767,7 +833,10 @@ sub conf_tsts
 	elsif ($tnum == 13)
 	  {
 	    all_conf_x_tsts($tnum);
-	    all_conf_x_x_tsts($tnum, 2);
+	    for my $i (2..3)
+	      {
+		all_conf_x_x_tsts($tnum, $i);
+	      }
 	  }
 	else
 	  { failure("Bad conf number."); }

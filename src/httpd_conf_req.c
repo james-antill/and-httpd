@@ -270,7 +270,6 @@ static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
     {
       CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
 
-      vstr_ref_del(*ret_ref); *ret_ref = NULL;
       if (token->type >= CONF_TOKEN_TYPE_USER_BEG)
       {
         unsigned int type = token->type - CONF_TOKEN_TYPE_USER_BEG;
@@ -309,6 +308,8 @@ static int httpd__meta_build_path(struct Con *con, Httpd_req_data *req,
             vstr_ref_del(ref);
             return (FALSE);
         }
+        
+        vstr_ref_del(*ret_ref);
         *ret_ref = ref;
         if (nxt && !conf_parse_num_token(conf, token, nxt))
           return (FALSE);
@@ -612,9 +613,10 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     size_t orig_len = 0;
     int bp_type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP;
     int canon = FALSE;
-    
-    if (req->direct_filename)
-      return (FALSE);
+
+    /* Allow people to do aliases with "filename" but then have redirects */
+    /*    if (req->direct_filename)
+     *          return (FALSE); */
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     if (!httpd__meta_build_path(con, req, conf, token,
@@ -642,20 +644,25 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
                            req->fname, 1, req->fname->len,
                            lim, FALSE, ref, TRUE, &bp_type))
       return (FALSE);
-    if (!req->direct_uri && (lim == HTTPD_POLICY_PATH_LIM_NONE) &&
-        (bp_type != HTTPD_CONF_REQ__TYPE_BUILD_PATH_ASSIGN))
-    { /* we needed to do the above sub */
-      if (!vstr_sub_vstr(req->fname, 1, orig_len,
-                         con->evnt->io_r, req->path_pos, req->path_len, 0))
-        return (FALSE);
-    }
-    req->vhost_prefix_len = 0;
-    
-    req->direct_uri = TRUE;
-    HTTP_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);
 
-    if (canon)
-      httpd_req_absolute_uri(con, req, req->fname, 1, req->fname->len);
+    if (bp_type != HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP)
+    {
+      if (!req->direct_uri && (lim == HTTPD_POLICY_PATH_LIM_NONE) &&
+          (bp_type != HTTPD_CONF_REQ__TYPE_BUILD_PATH_ASSIGN))
+      { /* we needed to do the above sub */
+        if (!vstr_sub_vstr(req->fname, 1, orig_len,
+                           con->evnt->io_r, req->path_pos, req->path_len, 0))
+          return (FALSE);
+      }
+      req->vhost_prefix_len = 0;
+      
+      req->direct_filename = FALSE;
+      req->direct_uri      = TRUE;
+      HTTP_REQ__X_HDR_CHK(req->fname, 1, req->fname->len);
+      
+      if (canon)
+        httpd_req_absolute_uri(con, req, req->fname, 1, req->fname->len);
+    }
   }
   else if (OPT_SERV_SYM_EQ("Cache-Control:"))
   { 
@@ -710,29 +717,41 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     size_t pos = 0;
     size_t len = 0;
     Vstr_ref *ref = NULL;
+    int canon = TRUE;
+    int bp_type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP;
 
-    if (req->direct_uri || req->direct_filename)
+    if (req->direct_uri)
       return (FALSE);
-
+    
     if (!httpd__content_location_valid(req, &pos, &len))
       return (FALSE);
     
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
-    if (!httpd__meta_build_path(con, req, conf, token, NULL, NULL, &lim, &ref))
+    if (!httpd__meta_build_path(con, req, conf, token,
+                                NULL, &canon, &lim, &ref))
     {
       vstr_ref_del(ref);
       return (FALSE);
     }
     if (!httpd__build_path(con, req, conf, token, req->xtra_content, pos, len,
-                           lim, FALSE, ref, TRUE, NULL))
+                           lim, FALSE, ref, TRUE, &bp_type))
       return (FALSE);
     
-    len = vstr_sc_posdiff(pos, req->xtra_content->len);
+    if (bp_type != HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP)
+    {
+      len = vstr_sc_posdiff(pos, req->xtra_content->len);
     
-    req->content_location_vs1 = req->xtra_content;
-    req->content_location_pos = pos;
-    req->content_location_len = len;
-    HTTP_REQ__X_CONTENT_HDR_CHK(content_location);
+      if (canon)
+      {
+        httpd_req_absolute_uri(con, req, req->xtra_content, pos, len);
+        len = vstr_sc_posdiff(pos, req->xtra_content->len);
+      }
+    
+      req->content_location_vs1 = req->xtra_content;
+      req->content_location_pos = pos;
+      req->content_location_len = len;
+      HTTP_REQ__X_CONTENT_HDR_CHK(content_location);
+    }
   }
   else if (OPT_SERV_SYM_EQ("Content-MD5:") ||
            OPT_SERV_SYM_EQ("identity/Content-MD5:"))
@@ -785,7 +804,7 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     req->expires_time = req->now;
     if (0) { /* nothing */ }
     else if (HTTPD__EXPIRES_CMP(expires, "minute"))
-      httpd__conf_req_reset_expires(req, (num * 60 *  1));
+      httpd__conf_req_reset_expires(req, (num * 60));
     else if (HTTPD__EXPIRES_CMP(expires, "hour"))
       httpd__conf_req_reset_expires(req, (num * 60 * 60));
     else if (HTTPD__EXPIRES_CMP(expires, "day"))
@@ -819,9 +838,11 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     int full = req->skip_document_root;
     unsigned int lim = HTTPD_POLICY_PATH_LIM_NAME_FULL;
     Vstr_ref *ref = NULL;
+    int bp_type = HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP;
     
     if (req->direct_uri)
       return (FALSE);
+    
     CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
     if (!httpd__meta_build_path(con, req, conf, token, &full, NULL, &lim, &ref))
     {
@@ -830,13 +851,17 @@ static int httpd__conf_req_d1(struct Con *con, struct Httpd_req_data *req,
     }
     if (!httpd__build_path(con, req, conf, token,
                            req->fname, 1, req->fname->len,
-                           lim, full, ref, FALSE, NULL))
+                           lim, full, ref, FALSE, &bp_type))
       return (FALSE);
-    if (!req->skip_document_root &&
-        !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT) &&
-        (!req->fname->len || !vstr_cmp_cstr_eq(req->fname, 1, 1, "/")))
-      vstr_add_cstr_ptr(req->fname, 0, "/");
-    req->direct_filename = TRUE;
+
+    if (bp_type != HTTPD_CONF_REQ__TYPE_BUILD_PATH_SKIP)
+    {
+      if (!req->skip_document_root &&
+          !(req->conf_flags & HTTPD_CONF_REQ_FLAGS_PARSE_FILE_DIRECT) &&
+          (!req->fname->len || !vstr_cmp_cstr_eq(req->fname, 1, 1, "/")))
+        vstr_add_cstr_ptr(req->fname, 0, "/");
+      req->direct_filename = TRUE;
+    }
   }
   else if (OPT_SERV_SYM_EQ("parse-accept"))
     OPT_SERV_X_TOGGLE(req->parse_accept);
@@ -959,18 +984,6 @@ int httpd_conf_req_d0(struct Con *con, Httpd_req_data *req,
 
     if (!httpd__conf_req_d1(con, req, timestamp, conf, token, clist))
       return (FALSE);
-  }
-
-  if (req->content_location_vs1)
-  { /* absolute URI content-location header */
-    size_t pos = 0;
-    size_t len = 0;
-
-    if (!httpd__content_location_valid(req, &pos, &len))
-      return (FALSE);
-    
-    httpd_req_absolute_uri(con, req, req->xtra_content, pos, len);
-    req->content_location_len = vstr_sc_posdiff(pos, req->xtra_content->len);
   }
 
   return (TRUE);

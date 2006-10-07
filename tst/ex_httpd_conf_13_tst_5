@@ -1,3 +1,6 @@
+GET /conf-tst13/cond/ HTTP/1.1
+Host:
+
 GET /conf-tst13/cond HTTP/1.1
 Host:
 

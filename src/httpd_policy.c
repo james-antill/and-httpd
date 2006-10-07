@@ -87,6 +87,8 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
   size_t fname_len = 0;
 
   /* FIXME: how does (vhost_prefix_len >= req->fname->len) happen ? */
+  ASSERT(vhost_prefix_len <= req->fname->len);
+  
   if (vhost_prefix_len >= req->fname->len)
     vhost_prefix_len = 0;
   
@@ -248,6 +250,12 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
     *used_req = TRUE;
     httpd_sc_add_hostname(con, req, conf->tmp, conf->tmp->len);
   }
+  else if (OPT_SERV_SYM_EQ("<virtual-hostname>") ||
+           OPT_SERV_SYM_EQ("<virtual-host>") || OPT_SERV_SYM_EQ("<vhost>"))
+  { /* this adds the vhost prefix, which might be the same as <hostname> */
+    *used_req = TRUE;
+    HTTPD_APP_REF_VSTR(conf->tmp, req->fname, 1, vhost_prefix_len);
+  }
   else if (OPT_SERV_SYM_EQ("<request-configuration-directory>") ||
            OPT_SERV_SYM_EQ("<req-conf-dir>"))
   {
@@ -281,12 +289,9 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
            (!req->direct_uri      && OPT_SERV_SYM_EQ("<file-path>")) ||
            (!req->direct_filename && OPT_SERV_SYM_EQ("<Location:>")))
   {
-    size_t pos = fname_pos;
-    size_t len = fname_len;
-    
     *used_req = TRUE;
     
-    HTTPD_APP_REF_VSTR(conf->tmp, req->fname, pos, len);
+    HTTPD_APP_REF_VSTR(conf->tmp, req->fname, fname_pos, fname_len);
   }
   else if (OPT_SERV_SYM_EQ("<path-full>") ||
            (!req->direct_uri      && OPT_SERV_SYM_EQ("<file-path-full>")))
@@ -408,7 +413,8 @@ int httpd_policy_path_make(struct Con *con, Httpd_req_data *req,
   int clist = FALSE;
   
   ASSERT(ret_ref);
-  *ret_ref     = NULL;
+  vstr_ref_del(*ret_ref);
+  *ret_ref = NULL;
 
   CONF_SC_PARSE_TOP_TOKEN_RET(conf, token, FALSE);
   CONF_SC_TOGGLE_CLIST_VAR(clist);
@@ -437,8 +443,13 @@ int httpd_policy_path_make(struct Con *con, Httpd_req_data *req,
   if (ret && !(used_pol || used_req))
     ret = conf_token_set_user_value(conf, &save, type, ref, token->num);
   
-  if (ret)
-    *ret_ref = ref;
+  if (!ret)
+  {
+    vstr_ref_del(ref);
+    ref = NULL;
+  }
+
+  *ret_ref = ref;
 
   return (ret);
 }

@@ -5,7 +5,7 @@ Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Length: 121
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -54,7 +54,7 @@ Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Encoding: gzip
 Content-Length: 28
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -102,7 +102,7 @@ Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Encoding: bzip2
 Content-Length: 8
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -170,7 +170,7 @@ Last-Modified: Tue, 12 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Length: 121
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -224,7 +224,7 @@ Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Encoding: gzip
 Content-Length: 28
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -268,7 +268,7 @@ Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Encoding: bzip2
 Content-Length: 8
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -316,7 +316,7 @@ Accept-Ranges: bytes
 Vary: Accept-Encoding
 Content-Encoding: bzip2
 Content-Length: 8
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex
@@ -360,7 +360,7 @@ Vary: Accept-Encoding
 Content-Encoding: gzip
 Content-Length: 1
 Content-Range: bytes 1-1/28
-Content-Location: http://foo.example.com/conf-tst13/hex-ascii
+Content-Location: http://foo.example.com/fname-tst/conf-tst13/hex-ascii
 Cache-Control: max-age=31536000,private
 Expires: Date::Manip/delta-secs=31536000
 Content-Disposition: filename=hex

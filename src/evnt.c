@@ -2631,6 +2631,25 @@ int evnt_sc_timeout_via_mtime(struct Evnt *evnt, unsigned long msecs)
   return (TRUE);
 }
 
+static void evnt__timed_updates(const struct timeval *tv)
+{
+  static time_t last_sec = 0;
+
+  if (!last_sec || (difftime(tv->tv_sec, last_sec) > (5 * 60)))
+  { /* do updates about once every 5 minutes (don't use timer_q as we don't
+     * want to be woken for this). */
+    struct stat buf[1];
+    
+    last_sec = tv->tv_sec;
+
+    /* Maybe have Libc stat/update /etc/localtime data.
+     * Note that if we are in a chroot() without one don't let
+     * GLibc fuck it up */
+    if (!stat ("/etc/localtime", buf))
+      tzset();
+  }
+}
+
 void evnt_sc_main_loop(size_t max_sz)
 {
   int ready = 0;
@@ -2652,6 +2671,8 @@ void evnt_sc_main_loop(size_t max_sz)
   EVNT__UPDATE_TV();
   EVNT__COPY_TV(tv);
   timer_q_run_norm(tv);
+
+  evnt__timed_updates(tv);
   
   evnt_out_dbg3("4");
   evnt_scan_send_fds();
@@ -3210,7 +3231,7 @@ int evnt_poll(void)
 {
   struct epoll_event events[EVNT__EPOLL_EVENTS];
   int msecs = evnt__get_timeout();
-  int ret = -1;
+  int ret = 0;
   unsigned int scan = 0;
   
   if (evnt_child_exited)
@@ -3222,7 +3243,15 @@ int evnt_poll(void)
   if (!evnt_poll_direct_enabled())
     return (socket_poll_update_all(msecs));
 
-  ret = epoll_wait(evnt__epoll_fd, events, EVNT__EPOLL_EVENTS, msecs);
+  if (msecs)
+  { /* do the double poll() that socket_poll_update_all() does for us */
+    ret = epoll_wait(evnt__epoll_fd, events, EVNT__EPOLL_EVENTS, 0);
+    if (ret == -1)
+      return (ret);
+  }
+
+  if (!ret)
+    ret = epoll_wait(evnt__epoll_fd, events, EVNT__EPOLL_EVENTS, msecs);
   if (ret == -1)
     return (ret);
 

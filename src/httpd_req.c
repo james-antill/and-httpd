@@ -577,7 +577,7 @@ int http_req_content_type(Httpd_req_data *req)
     else if ((errno == EOPNOTSUPP) || (errno == EPERM))
     { /* time limit the warn messages... */
       static time_t last = -1;
-      time_t now = evnt_sc_time();
+      time_t now = evnt_sc_time(); /* req->now might be "old" */
 
       if ((last == -1) || (difftime(last, now) > (10 * 60)))
       {
@@ -720,7 +720,7 @@ static int http_response_ok(struct Con *con, struct Httpd_req_data *req,
    * Modified header field whenever possible.
    */
   if (difftime(req->now, mtime) > 0)
-  { /* if mtime in future, or now ... don't allow checking */
+  { /* only allow checking if mtime is in the past */
     Date_store *ds = httpd_opts->date;
 
     date = date_rfc1123(ds, mtime);

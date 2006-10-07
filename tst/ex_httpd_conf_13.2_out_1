@@ -1,3 +1,23 @@
+HTTP/1.1 301 Moved Permanently
+Date:
+Server: foo-conf/13
+Last-Modified:
+Content-Type: text/html
+Content-Length: 384
+Location: http://foo.example.com/conf-tst13/cond
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <title>301 Moved Permanently</title>
+  </head>
+  <body>
+    <h1>301 Moved Permanently</h1>
+    <p>The document has moved <a href="http://foo.example.com/conf-tst13/cond">here</a>.</p>
+  <hr>
+  Generated using the <a href="http://www.and.org/and-httpd">And-httpd Web Server</a>.
+  </body>
+</html>
 HTTP/1.1 200 OK
 Date:
 Server: foo-conf/13

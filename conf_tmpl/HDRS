@@ -1,0 +1,25 @@
+; Send extra headers with the response
+(org.and.httpd-conf-req-1.0
+   ; Automatically worked out, from extension, if not here
+   Content-Type: text/plain
+
+   ; Caching data:
+   Expires:               <never>
+   Cache-Control: <expires-never>
+
+   ; URL for the current location, relative URLs are turned into absolute
+   Content-Location: http://www.example.com/foo
+   Content-Language: en
+   Content-Disposition: filename=snafu.bar
+
+   ; This will be auto generated, if not here
+   # ETag: foo
+   Link: ',</images/next.html>;rel=next'
+
+   # output from md5sum command...
+   # Content-MD5:       70c9a7bd87d1c9e8fe51f4b9ad13b8ea
+   # gzip/Content-MD5:  70c9a7bd87d1c9e8fe51f4b9ad13b8ea
+   # bzip2/Content-MD5: 70c9a7bd87d1c9e8fe51f4b9ad13b8ea
+
+   # P3P: ...
+   )

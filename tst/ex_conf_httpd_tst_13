@@ -12,6 +12,8 @@
     (listen addr 127.0.12.1 policy conf-httpd-tst-13.1-<default>)
     (listen addr 127.0.12.2 policy conf-httpd-tst-13.1-<default>)
 
+    (listen addr 127.0.12.3 policy conf-httpd-tst-13.4-<no-vhost>)
+
      cntl-file ex_httpd_cntl)
 
 ;; Done via. new default policy on listen
@@ -53,6 +55,10 @@
       HTTP auth basic-single  realm 'Text in the auth dialog2' token foo:bar)
 
 (org.and.httpd-conf-main-1.0
+   policy conf-httpd-tst-13.4-<no-vhost> [inherit conf-httpd-tst-13.1-<default>]
+      virtual-hosts false)
+
+(org.and.httpd-conf-main-1.0
   (match-request [policy== conf-httpd-tst-13.1-<default> path-beg /A2/]
       policy conf-httpd-tst-13.2-<auth>
       org.and.httpd-conf-req-1.0
@@ -65,3 +71,33 @@
       policy conf-httpd-tst-13.3-<auth>
       org.and.httpd-conf-req-1.0
          filename [limit path-beg /A3/] /)
+
+(org.and.httpd-conf-main-1.0
+   match-request [policy== conf-httpd-tst-13.1-<default> 
+                  path-beg /fname-tst/]
+      org.and.httpd-conf-req-1.0
+        (filename [limit path-beg /fname-tst/
+                   limit path-end /not-there/] -)
+        (filename [limit path==   /not-there/] -)
+        (filename [limit basename-beg /X/] -)
+        (filename [limit basename-eq /X/] -)
+        (filename [limit basename-end /X/] -)
+        (filename [limit <extension>-beg /X/
+                   limit <extension>-eq  /X/
+                   limit <extension>-end /X/] -)
+        (filename [limit <extensions>-beg /X/
+                   limit <extensions>-eq  /X/
+                   limit <extensions>-end /X/] -)
+        (filename [limit <basename-without-extension>-beg /X/
+                   limit <basename-without-extension>-eq  /X/
+                   limit <basename-without-extension>-end /X/] -)
+        (filename [limit <basename-without-extensions>-beg /X/
+                   limit <basename-without-extensions>-eq  /X/
+                   limit <basename-without-extensions>-end /X/] -)
+        (filename [limit basename
+                   limit extension
+                   limit extensions
+                   limit basename-without-extension
+                   limit basename-without-extensions]
+                  =     <basename-without-extensions>)
+         filename [limit path-beg /fname-tst/] /)

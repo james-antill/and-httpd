@@ -1,3 +1,45 @@
+2006-10-07  James Antill  <james@and.org>
+
+	* tst/httpd_tst_utils.pl (httpd__munge_expires): Add framework for
+	expires testing.
+	(setup): Add "generated_html" tests.
+
+	* src/evnt.c (evnt__timed_updates): Do low priority timed updates.
+
+	* src/and-httpd.c (cov): Add coverage function.
+
+	* conf_tmpl/HDRS: Add conf_tmpl file with example of all response 
+	headers.
+
+	* src/date.c (date__assert_strftime): Add assert for roll our own
+	strftime() code.
+
+2006-09-29  James Antill  <james@and.org>
+
+	* src/httpd_policy.c (httpd_policy__build_path): Add <vhost> symbol
+	for path building.
+
+	* conf_tmpl/GENERATED_HTML: Make it work well for vhosts enabled sites.
+
+2006-09-28  James Antill  <james@and.org>
+
+	* src/httpd_policy.c (httpd_policy_path_make): Move unref, on errors,
+	to inside function.
+	(httpd_policy_path_make): Unref any old references.
+
+2006-09-27  James Antill  <james@and.org>
+
+	* src/evnt.c (evnt_poll): Do the faster instant poll for epoll.
+
+2006-09-16  James Antill  <james@and.org>
+
+	* src/httpd_conf_req.c (httpd_conf_req_d0): Fix Content-Location
+	positioning.
+	(httpd__conf_req_d1): Allow Location: redirects after using filename
+	changes.
+	(httpd__conf_req_d1): Use canonize for Content-Location instead of
+	implicit abs_uri in req_d0.
+
 2006-09-10  James Antill  <james@and.org>
 
 	* NEWS: Release 0.99.11
