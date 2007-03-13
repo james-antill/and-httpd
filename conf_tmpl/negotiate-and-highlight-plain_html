@@ -1,0 +1,6 @@
+; This is negotiate-plain_html with a prefetch of the CSS file for C code
+(org.and.httpd-conf-req-1.0
+  (negotiate-content-type (text/plain '') (text/html .html))
+  (match-request [content-type== text/html]
+      Link: <http://www.and.org/f_c-1.0.css>;rel=prefetch)
+   filename += <content-type-extension>)

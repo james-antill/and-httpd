@@ -1,0 +1,6 @@
+; This is just GENERATE_HTML and a prefetch of the index.html pictures CSS file
+(org.and.httpd-conf-req-1.0
+   filename [skip-document-root true
+             limit <none>] = <doc-root/..> generated_html <virtual-host> <path>)
+(org.and.httpd-conf-req-1.0
+   Link: <http://www.and.org/and-pics-0.1.css>;rel=prefetch)

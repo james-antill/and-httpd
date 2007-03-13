@@ -1,0 +1,142 @@
+#! /usr/bin/python -tt
+
+import os
+import sys
+# import string
+import getopt
+import socket
+import urllib
+
+# Constructed env for CGI
+env = {}
+
+opts = ["hostname=", "server-hostname=",
+        "port=", "server-port=",
+        "remote-hostname=",
+        "query=", "method=", "op=", "software=",
+        "content=", "content-type=", "path=",
+        "http-header-key=", "http-header-val="]
+
+prog_name = sys.argv[0]
+opts,sys.argv = getopt.gnu_getopt(sys.argv[1:], "h:p:R:P:A:E:L:", opts)
+
+if len(sys.argv) < 1:
+    err(" Format: %s [opts] <cmd>" % os.path.basename(prog_name))
+
+cmd = sys.argv.pop(0)
+io_r = None
+
+if 'PATH' in os.environ:
+    env['PATH'] = os.environ['PATH']
+
+env['CONTENT_LENGTH']    = '0'
+env['CONTENT_TYPE']      = 'text/plain'
+env['GATEWAY_INTERFACE'] = 'CGI/1.1'
+env['PATH_INFO']         = os.path.basename(cmd)
+env['PATH_TRANSLATED']   = os.path.basename(cmd)
+env['QUERY_STRING']      = ''
+env['REMOTE_ADDR']       = '127.0.0.1'
+env['REMOTE_HOST']       = socket.gethostname()
+env['REQUEST_METHOD']    = 'GET'
+env['SCRIPT_NAME']       = cmd
+env['SERVER_NAME']       = socket.gethostname()
+env['SERVER_PORT']       = '80'
+env['SERVER_PROTOCOL']   = 'HTTP/1.1'
+env['SERVER_SOFTWARE']   = 'And-httpd'
+
+env['HTTP_ACCEPT']          = 'text/html;q=0.999,text/plain;q=0.998'
+env['HTTP_ACCEPT_LANGUAGE'] = 'en'
+
+http_hdr_key = None
+for opt,val in opts:
+    if False: pass
+    elif opt in ["-h", "--hostname", "--server-hostname"]:
+        env['SERVER_NAME'] = val
+    elif opt in ["-p", "--port", "--server-port"]:
+        env['SERVER_PORT'] = val
+    elif opt in ["-R", "--remote-hostname"]:
+        env['REMOTE_HOST'] = val
+        env['REMOTE_ADDR'] = resolve(val)
+    elif opt in ["-q", "--query"]:
+        pass
+    elif opt in ["-P", "--path"]: # To pass to CGI, not to use
+        pass
+    elif opt in ["--method", "--op"]:
+        env['REQUEST_METHOD'] = val
+    elif opt in ["--software"]:
+        env['SERVER_SOFTWARE'] = val
+    elif opt in ["--content"]:
+        io_r = open(val)
+        env['CONTENT_LENGTH'] = os.stat(val).st_size
+    elif opt in ["--content-type"]:
+        env['CONTENT_TYPE'] = val
+    elif opt in ["--http-header-key", "--http-key"]:
+        http_header_key = val
+    elif opt in ["--http-header-val", "--http-val"]:
+        env[http_header_key] = val
+    elif opt in ["-A", "--http-accept"]:
+        env['HTTP_ACCEPT'] = val
+    elif opt in ["-L", "--http-accept-language"]:
+        env['HTTP_ACCEPT_LANGUAGE'] = val
+
+if io_r == None:
+    io_r = open("/dev/zero")
+
+import tempfile
+
+# Stupid python interfaces...
+try:
+  if not os.path.exists("/tmp/cgi-%d" % os.getuid()):
+    os.mkdir("/tmp/cgi-%d" % os.getuid())
+  if not os.stat("/tmp/cgi-%d" % os.getuid()).st_uid == os.getuid():
+    throw
+  io_w, io_w_fname = tempfile.mkstemp(dir="/tmp/cgi-%d" % os.getuid())
+except:
+  io_w, io_w_fname = tempfile.mkstemp()
+
+os.close(io_w)
+io_w = open(io_w_fname, "w+")
+
+os.dup2(io_r.fileno(), sys.stdin.fileno())
+old_stdout = os.dup(sys.stdout.fileno())
+os.dup2(io_w.fileno(), sys.stdout.fileno())
+os.spawnle(os.P_WAIT, cmd, os.path.basename(cmd), env)
+
+os.dup2(old_stdout, sys.stdout.fileno())
+
+io_w.seek(0)
+
+hdrs = []
+data = ''
+hlen = 0
+
+# Some CGI's like the normal \n EOL some the HTTP \r\n EOL
+for line in io_w:
+  hlen += len(line)
+  if line == "\n" or line == "\r\n":
+      break
+  hdrs.append(line)
+
+last = ''
+nhdrs = {}
+for hdr in hdrs:
+    if hdr[0] == ' ' or hdr[0] == '\t':
+        nhdrs[last] += hdr
+    else:
+        off = hdr.find(":")
+        last = hdr[:off]
+        if hdr[off + 1] == ' ' or hdr[off + 1] == '\t': # Should be true
+            hdr = hdr[off + 2:]
+        else:
+            hdr = hdr[off + 1:]
+        if last not in nhdrs:
+            nhdrs[last] = hdr
+        else:
+            nhdrs[last] += ',' + hdr
+hdrs = nhdrs
+
+print " Headers are (%d):" % hlen
+print hdrs
+print " Data is in (%d):" % (os.stat(io_w.name).st_size - len(hdrs))
+print io_w.name
+

@@ -1,0 +1,498 @@
+#! /usr/bin/python -tt
+
+import os, sys, string
+import time
+import urllib
+import Image
+import getopt
+
+
+# Decent (UK/US English only) number formatting.
+import locale
+locale.setlocale(locale.LC_ALL, '') 
+
+MAX_PICS  = 15 # Only applies to sub-dir. pics.
+RECURSIVE = False
+GEN_IMGS  = False
+# RECURSIVE = True
+OBJECTS   = False
+TABLES    = False
+
+INDEX_FNAME = "index.html"
+
+NAME_FNAME = "index.name.txt"
+TITLE_FNAME = "index.title.txt"
+DESCRIPTION_FNAME = "index.desc.txt"
+
+AND_PICS_CSS = "http://www.and.org/and-pics-0.1.css"
+
+def err(x):
+    """ Print message and exit. """
+    sys.stderr.write(x + "\n")
+    sys.exit(1)
+
+def die(x):
+    """ Print error message and exit. """
+    err("Error: " + x + '.')
+
+def loc_num(x):
+    """ Return a string of a number in the readable "locale" format. """
+    return locale.format("%d", int(x), True)
+
+
+opts = ["css=", "css-file=",
+        "generate-images", "gen-imgs", "gen-images", "max-pics=",
+        "recursive"]
+
+prog_name = sys.argv[0]
+opts,sys.argv = getopt.gnu_getopt(sys.argv[1:], "c:GM:R", opts)
+
+if len(sys.argv) < 1:
+    err(" Format: %s [opts] <src> [dst]" % os.path.basename(prog_name))
+
+for opt,val in opts:
+    if False: pass
+    elif opt in ["-G", "--generate-images", "--gen-imgs", "--gen-images",]:
+        GEN_IMGS  = not GEN_IMGS
+    elif opt in ["-R", "--recursive"]:
+        RECURSIVE = not RECURSIVE
+    elif opt in ["-M", "--max-pics"]:
+        MAX_PICS  = int(val)
+    elif opt in ["-c", "--css", "--css-file"]:
+        AND_PICS_CSS = val
+
+src = sys.argv.pop(0)
+if len(sys.argv) < 2:
+    dst = src
+else:
+    dst = sys.argv.pop(0)
+
+if not os.path.isdir(src):
+    die("SRC must be a directory")
+if os.path.basename(dst) == INDEX_FNAME:
+    dst = os.path.dirname(dst)
+if not os.path.isdir(dst):
+    die("DST must be a directory")
+
+if src[-1] != '/':
+    src += '/'
+if dst[-1] != '/':
+    dst += '/'
+    
+files = []
+dirs  = []
+
+skip_dir_names = ['.', '..', 'img_10', 'img_40', 'img_55', 'img_75']
+
+def get_dirs(dirs, prefix=''):
+    """ Get all dirs. we are going to act on (recursive). """
+    srcpath = src + prefix
+    dirs.append({'src' : src, 'dst' : dst,
+                 'srcpath' : srcpath,
+                 'dstpath' : dst + prefix,
+                 'prefix' : prefix, 'name' : os.path.basename(os.path.dirname(srcpath))})
+    for i in os.listdir(src + prefix):
+        if os.path.isdir(srcpath + i) and i not in skip_dir_names:
+            get_dirs(dirs, prefix + i + '/')
+get_dirs(dirs)
+
+def get_files(files):
+    """ Get all files we are going to act on. """
+    for d in dirs:
+        for i in os.listdir(d['srcpath']):
+            name, ext = os.path.splitext(i)
+            if ext in ['.jpg', '.png', '.gif',
+                       '.JPG', '.PNG', '.GIF']: # Shouldn't HC
+                files.append({'src'     : d['src'],
+                              'dst'     : d['dst'],
+                              'prefix'  : d['prefix'], 
+                              'srcpath' : d['srcpath'],
+                              'dstpath' : d['dstpath'],
+                              'path100' : d['srcpath'] + i,
+                              'path075' : d['dstpath'] + 'img_75/' + i,
+                              'path055' : d['dstpath'] + 'img_55/' + i,
+                              'path040' : d['dstpath'] + 'img_40/' + i,
+                              'path010' : d['dstpath'] + 'img_10/' + i,
+                              'fname' : i, 'name' : name, 'ext' : ext})
+get_files(files)
+
+
+for d in dirs:
+    d['uiname'] = string.capitalize(d['name'])
+for i in files:
+    i['uiname'] = string.capitalize(i['name'])
+    i['mtime']  = os.stat(i['path100']).st_mtime
+
+
+if GEN_IMGS:
+    for d in dirs:
+        os.mkdir(d['dstpath'] + 'img_10/')
+        os.mkdir(d['dstpath'] + 'img_40/')
+        os.mkdir(d['dstpath'] + 'img_55/')
+        os.mkdir(d['dstpath'] + 'img_75/')
+        
+    if os.environ["PATH"] != '':
+        os.environ["PATH"] += ':'
+    os.environ["PATH"] += os.path.abspath(os.path.dirname(prog_name))
+    
+    for i in files:
+        msg = sys.stdout.write
+        msg( " Generating %s: 10" % i['path100'])
+        os.system("img_resize %d %s %s" % (10, i['path100'], i['path010']));
+        msg(" 40")
+        os.system("img_resize %d %s %s" % (40, i['path100'], i['path040']));
+        msg(" 55")
+        os.system("img_resize %d %s %s" % (55, i['path100'], i['path055']));
+        msg(" 75\n")
+        os.system("img_resize %d %s %s" % (75, i['path100'], i['path075']));
+
+dirs.sort(key=lambda x: x['name'])
+dirs.sort(key=lambda x: x['prefix'])
+nfiles = files[:]
+files.sort(key=lambda x: x['mtime'])
+files.reverse()
+nfiles.sort(key=lambda x: x['name'])
+nfiles.sort(key=lambda x: x['prefix'])
+
+def htmlquote(x):
+    """ Quote html entities, so we can put "anything" between tags. """
+    ret = list(x)
+    for i in range(len(ret)):
+        x = ret[i]
+        if x == '&':
+            ret[i] = '&amp;'
+        if x == '<':
+            ret[i] = '&lt;'
+        if x == '>':
+            ret[i] = '&gt;'
+    return ''.join(ret)
+
+def object_ent(f, i, prefix):
+    """ Print out a reference to the picture using an object. """
+    xp = i['prefix'][len(prefix):]
+    f.write("""\
+      <object class="pic" type="text/html" data="%s">%s</object>
+""" % (urllib.quote(xp + i['name'] + '.html'), htmlquote(xp + i['uiname'])))
+
+def table_ent(f, i, prefix):
+    """ Print out the picture inside a table. """
+    xp = i['prefix'][len(prefix):]
+    top = ''
+    if OBJECTS:
+        top=' target="_top"'
+    f.write("""\
+      <table id="%(urlname)s" class="pic">
+        <tr class="thumb"><td colspan="2">
+          <a class="anc"%(top)s href="%(comment)s%(urlname)s">
+          %(htmlname)s</a>
+          <a class="img"%(top)s href="%(xp)simg_40/%(urlnamee)s">
+          <pre class="img">
+            <img width="%(img_w)d" height="%(img_h)d" src="%(xp)simg_10/%(urlnamee)s" alt="%(htmlname)s" >
+          </pre>
+          </a>
+        </td></tr>
+        <tr class="ln">
+          <td class="pc"><a%(top)s href="%(xp)simg_40/%(urlnamee)s">40%%</a></td>
+          <td class="sz">(%(sz40)dK)</td>
+        </tr>
+        <tr class="ln">
+          <td><a class="pc"%(top)s href="%(xp)simg_55/%(urlnamee)s">55%%</a></td>
+          <td class="sz">(%(sz55)dK)</td>
+        </tr>
+        <tr class="ln">
+          <td class="pc"><a%(top)s href="%(xp)simg_75/%(urlnamee)s">75%%</a></td>
+          <td class="sz">(%(sz75)dK)</td>
+        </tr>
+        <tr class="ln">
+          <td class="pc"><a%(top)s href="%(xp)s%(urlnamee)s">Full Size</a></td>
+          <td class="sz">(%(sz)dK)</td>
+        </tr>
+      </table>
+""" % { 'urlname' : urllib.quote(i['name']),
+        'htmlname': htmlquote(i['name']),
+        'urlnamee' : urllib.quote(i['name']) + i['ext'],
+        'sz'      : os.stat(i['path100']).st_size / 1024,
+        'sz75'    : os.stat(i['path075']).st_size / 1024,
+        'sz55'    : os.stat(i['path055']).st_size / 1024,
+        'sz40'    : os.stat(i['path040']).st_size / 1024,
+        'img_w'   : i['img_sz'][0],
+        'img_h'   : i['img_sz'][1],
+        'comment' : '#', # Hack for python-mode
+        'xp'      : xp,
+        'top'     : top })
+    
+def div_ent(f, i, prefix):
+    """ Print out the picture inside a table. """
+    xp = i['prefix'][len(prefix):]
+    top = ''
+    if OBJECTS:
+        top=' target="_top"'
+    f.write("""\
+      <div id="%(urlname)s" class="pic">
+        <div class="thumb">
+          <a class="anc"%(top)s href="%(comment)s%(urlname)s">
+          %(htmlname)s</a>
+          <a class="img"%(top)s href="%(xp)simg_40/%(urlnamee)s">
+          <div class="img">
+          <img src="%(xp)simg_10/%(urlnamee)s" alt="%(htmlname)s" title="Last modified: %(mtime_ui)s" >
+          </div>
+          </a>
+        </div>
+        <div class="ln">
+          <span class="pc"><a%(top)s href="%(xp)simg_40/%(urlnamee)s">40%%</a></span>
+          <span class="sz">(%(sz40)dK)</span>
+        </div>
+        <div class="ln">
+          <span class="pc"><a%(top)s href="%(xp)simg_55/%(urlnamee)s">55%%</a></span>
+          <span class="sz">(%(sz55)dK)</span>
+        </div>
+        <div class="ln">
+          <span class="pc"><a%(top)s href="%(xp)simg_75/%(urlnamee)s">75%%</a></span>
+          <span class="sz">(%(sz75)dK)</span>
+        </div>
+        <div class="ln">
+          <span class="pc"><a%(top)s href="%(xp)s%(urlname)s">Full Size</a></span>
+          <span class="sz">(%(sz)dK)</span>
+        </div>
+      </div>
+""" % { 'urlname' : urllib.quote(i['name']),
+        'htmlname': htmlquote(i['name']),
+        'urlnamee': urllib.quote(i['name']) + i['ext'],
+        'sz'      : os.stat(i['path100']).st_size / 1024,
+        'sz75'    : os.stat(i['path075']).st_size / 1024,
+        'sz55'    : os.stat(i['path055']).st_size / 1024,
+        'sz40'    : os.stat(i['path040']).st_size / 1024,
+        'comment' : '#', # Hack for python-mode
+        'mtime_ui': time.ctime(i['mtime']),
+        'xp'      : xp,
+        'top'     : top })
+    
+def no_files():
+  """ Don't do all the object files atm. """
+  for i in files:
+    f = open(i['dstpath'] + i['name'] + '.html', "w")
+
+    f.write("""\
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>%(nicename)s</title>
+
+    <link rel="stylesheet" type="text/css" href="%(and-pics-css)s">
+    <style type="text/css">
+      body { margin: 0px; }
+    </style>
+
+<body>
+""" % { 'nicename': htmlquote(i['uiname']),
+        'and-pics-css': AND_PICS_CSS })
+
+    table_ent(f, i, i['prefix'])
+    f.write("</body>")
+    f.close()
+
+def img_sz(i, msz):
+    if 'img_sz' not in i:
+        i['img_sz'] = Image.open(i['path010']).size
+    if msz[0] < i['img_sz'][0]:
+        msz = (i['img_sz'][0], msz[1])
+    if msz[1] < i['img_sz'][1]:
+        msz = (msz[0], i['img_sz'][1])
+    return msz
+
+def create_css_data(prefix):
+    """ Create the local CSS data with the max width/height of the images. """
+
+    msz = 0,0
+    
+    for i in files:
+        if i['prefix'] != prefix:
+            continue
+
+        msz = img_sz(i, msz)
+
+    num = 0
+    for i in files:
+        if i['prefix'] == prefix: # Skip processed files
+            continue
+
+        if len(prefix) > len(i['prefix']): # Skip "higher" files...
+            continue
+        if i['prefix'][:len(prefix)] != prefix:
+            continue
+
+        # It's a file in a sub-dir.
+        num += 1
+        if num <= MAX_PICS:
+            msz = img_sz(i, msz)
+
+    if TABLES:
+        return """
+      table.pic tr.thumb { width: %dpx; height: %dpx; }
+""" % (msz[0], msz[1] + 32)
+
+    return """
+      div.pic div.thumb div.img { width: %dpx; height: %dpx; }
+""" % (msz[0] + 2, msz[1] + 2)
+
+def create_index_data(prefix):
+    html = dst + prefix + INDEX_FNAME
+
+    try:
+        name  = open(src + NAME_FNAME).read()
+    except:
+        name  = os.path.basename(os.path.dirname(src + prefix))
+    try:
+        title = open(src + TITLE_FNAME).read()
+    except:
+        title = name
+    try:
+        desc  = open(src + DESCRIPTION_FNAME).read()
+    except:
+        desc  = name
+
+    css = create_css_data(prefix)
+    
+    f = open(html, "w")
+    f.write("""\
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>Pics: %s</title>
+
+    <link rel="stylesheet" type="text/css" href="%s">
+    <style>%s
+    </style>
+
+    <meta name="generator" content="and-pics 1.0 - http://www.and.org/and-pics/">
+  </head>
+
+  <body>
+    <h1 class="title">Pics: %s</h1>
+
+    <p class="about">Pictures about: %s</p>
+
+    <p class="instructions">Instructions: <br>
+       Clicking on the thumbnail will download the 40%% version of the image.<br>
+       File sizes are located next to each link, all images but the "Full Size" image have been reduced to 75%% quality.
+    </p>
+
+    <ul class="controls">
+      <li class="bk">[<a href="../">back</a>]</li>
+""" % (title, AND_PICS_CSS, css, name, desc))
+
+    for d in dirs:
+        if len(prefix) > len(d['prefix']):
+            continue
+        if d['prefix'] == prefix:
+            continue
+        if d['prefix'][:-(len(d['name']) + 1)] != prefix:
+            continue
+
+        xp = d['prefix'][len(prefix):]
+        f.write("""\
+      <li class="bk">[<a href="%s">%s</a>]</li>
+""" % (urllib.quote(d['name']), htmlquote(d['uiname'])))    
+
+    f.write("""\
+    </ul>
+
+    <div class="collection">
+""")
+
+    num  = 0
+    lnum = 0 # Local number of pictures
+    nnum = 0 # Non-local number of pictures
+    for i in nfiles:
+        if i['prefix'] != prefix: # Skip non-local files
+            continue
+        # It's a file in this dir.
+        num  += 1
+        lnum += 1
+        
+        if OBJECTS:
+            object_ent(f, i, prefix)
+        elif TABLES:
+            table_ent(f, i, prefix)
+        else:
+            div_ent(f, i, prefix)
+    
+    for i in files:
+        if i['prefix'] == prefix: # Skip processed files
+            continue
+
+        if len(prefix) > len(i['prefix']): # Skip "higher" files...
+            continue
+        if i['prefix'][:len(prefix)] != prefix:
+            continue
+
+        # It's a file in a sub-dir.
+        num += 1
+
+        if False and lnum and not nnum:
+            f.write("""\
+            </div><hr><div class="collection">
+""")
+        if num <= MAX_PICS:
+            nnum += 1
+        else:
+            continue
+        
+        if OBJECTS:
+            object_ent(f, i, prefix)
+        elif TABLES:
+            table_ent(f, i, prefix)
+        else:
+            div_ent(f, i, prefix)
+    
+    xtra = ''
+    if num > (lnum + nnum):
+        if lnum > 0 and nnum > 0:
+            xtra = """\
+      <span>Displaying all %s local pics and the latest %s of %s pics...</span>
+""" % (loc_num(lnum), loc_num(nnum), loc_num(num - lnum))
+        elif lnum > 0:
+            xtra = """\
+      <span>Displaying all %s local pics and %s of %s pics...</span>
+""" % (loc_num(lnum), loc_num(nnum), loc_num(num - lnum))
+        else:
+            xtra = """\
+      <span>Displaying the latest %s of %s pics...</span>
+""" % (loc_num(nnum), loc_num(num))
+    
+    f.write("""\
+    </div>
+    <ul class="controls"> %s
+      <li class="bk">[<a href="../">back</a>]</li>
+""" % xtra)
+
+    for d in dirs:
+        if len(prefix) > len(d['prefix']):
+            continue
+        if d['prefix'] == prefix:
+            continue
+        if d['prefix'][:-(len(d['name']) + 1)] != prefix:
+            continue
+
+        xp = d['prefix'][len(prefix):]
+        f.write("""\
+      <li class="bk">[<a href="%s">%s</a>]</li>
+""" % (urllib.quote(d['name']), htmlquote(d['uiname'])))    
+
+    f.write("""\
+    </ul>
+    <p class="advert">Generated by
+      <a href="http://www.and.org/and-pics/">And-pics 1.0</a>
+    </p>
+  </body>
+</html>
+""")
+    f.close()
+
+if RECURSIVE:
+    for d in dirs:
+        create_index_data(d['prefix'])
+else:
+    create_index_data(dirs[0]['prefix'])
+
+

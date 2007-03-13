@@ -1,0 +1,57 @@
+
+ /* this is the styles for the pics -- table mode */
+   /* table.pic                 { float: left; clear: right; margin: 0.2em; }
+      table.pic tr.thumb a.anc  { margin-left: 0.8em;
+                                  color: #000; text-decoration: none;
+                                  text-align: left; display: block; }
+      table.pic tr.thumb td     { text-align: center; }
+      table.pic tr.ln           { margin-left: 0.8em; width: 100%; }
+      table.pic tr.ln  td.pc    { text-align: left; }
+      table.pic tr.ln  td.sz    { text-align: right; }
+
+      table.pic:hover                 { background: #EF9; }
+      table.pic:hover tr.thumb a.anc  { color: #000;
+                                        text-decoration: underline; }
+      table.pic:hover tr.thumb a.img  { color: #EF9; } */
+
+ /* this is the styles for the pics -- div/span mode */
+      div.pic                 { float: left; clear: right; margin: 0.2em; }
+      div.pic div.thumb a.anc { margin-left: 0.8em;
+                                color: #000; text-decoration: none;
+                                text-align: left; display: block; }
+      /* div.pic div.thumb { text-align: center; } */
+      div.pic div.ln          { margin-left: 0.8em; width: 100%; }
+      div.pic div.ln  span.pc { text-align: left; }
+      div.pic div.ln  span.sz { text-align: right; }
+
+      div.pic:hover                 { background: #EF9; }
+      div.pic:hover div.thumb a.anc  { color: #000;
+                                       text-decoration: underline; }
+      div.pic:hover div.thumb a.img  { color: #EF9; }
+
+ /* this is the styles for the rest of it */
+      body           { color: #000; background: #fff; }
+      a              { color: #55A; }
+      a:active       { color: #99A; }
+      a:hover        { color: #BBE; }
+      a:visited      { color: #77A; }
+
+      h1.title       { text-align: center; }
+
+      p.about        { text-align: center; font-size: 75%; }
+      p.advert       { text-align: center; font-size: 75%; }
+      p.instructions { text-align: center; font-size: 75%; }
+
+      ul.controls       { display: block; clear: both; text-align: center; }
+      ul.controls li    { list-style-type: none; }
+      ul.controls li.bk { font-size: 75%; }
+
+      /* div.collection    { text-align: center; } */
+
+ /* this is the styles for the object, if we use that */
+/*
+      object.pic { display: inline; float: left; clear: right; 
+                   margin: 0.2em; */
+                   /* width: 160px; height: 120px; */
+                   /* width: 11em; height: 16em; */
+                   /* } */

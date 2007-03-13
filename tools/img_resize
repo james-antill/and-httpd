@@ -1,0 +1,58 @@
+#! /usr/bin/python -tt
+
+import os, sys
+
+def err(x):
+    sys.stderr.write(x + "\n")
+    sys.exit(1)
+
+def die(x):
+    err("Error: " + x)
+
+if len(sys.argv) < 4:
+    err(" Format: %s <size> <src> <dst>" % os.path.basename(sys.argv[0]))
+
+pc  = sys.argv.pop(1)
+src = sys.argv.pop(1)
+dst = sys.argv.pop(1)
+
+if src == dst:
+    die("Cannot resize over same file " + src)
+    sys.exit(1)
+    
+try:
+    # This requires PIL
+    import Image
+except:
+    die("PIL is not installed, see http://www.pythonware.com/library/pil/ or python-imaging")
+
+size = 0, 0
+
+try:
+    im = Image.open(src)
+except IOError, (strerror):
+    die("Cannot open \"%s\": %s" % (src, strerror))
+except:
+    die("Cannot open " + src)
+
+pc = int(pc)
+if (pc > 100 or pc < 0):
+    pc = 100
+pc *= .01 # 40% == .4 75% == .75 etc.
+
+size = im.size
+size = int(size[0] * pc), int(size[1] * pc)
+
+try:
+    im.thumbnail(size)
+except IOError, (strerror):
+    die("Cannot resize \"%s\": %s" % (dst, strerror))
+except:
+    die("Cannot resize " + dst)
+
+try:
+    im.save(dst)
+except IOError, (strerror):
+    die("Cannot save \"%s\": %s" % (dst, strerror))
+except:
+    die("Cannot save " + dst)
