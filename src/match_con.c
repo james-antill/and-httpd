@@ -73,12 +73,12 @@ static int httpd__policy_connection_tst_d1(struct Con *con,
   else if (OPT_SERV_SYM_EQ("tag-eq") || OPT_SERV_SYM_EQ("tag=="))
     OPT_SERV_X_EQ(con->tag);
   else if (OPT_SERV_SYM_EQ("client-ipv4-cidr-eq") ||
-           OPT_SERV_SYM_EQ("client-ipv4-cidr=="))
+           OPT_SERV_SYM_EQ("client-ipv4-cidr==")) /* NOTE: need ipv6 */
     return (httpd_policy_ipv4_make(con, NULL, conf, token,
                                    HTTPD_POLICY_CLIENT_IPV4_CIDR_EQ,
                                    CON_CEVNT_SA(con), matches));
   else if (OPT_SERV_SYM_EQ("server-ipv4-cidr-eq") ||
-           OPT_SERV_SYM_EQ("server-ipv4-cidr=="))
+           OPT_SERV_SYM_EQ("server-ipv4-cidr==")) /* NOTE: need ipv6 */
     return (httpd_policy_ipv4_make(con, NULL, conf, token,
                                    HTTPD_POLICY_SERVER_IPV4_CIDR_EQ,
                                    CON_SEVNT_SA(con), matches));
@@ -97,6 +97,39 @@ static int httpd__policy_connection_tst_d1(struct Con *con,
       struct sockaddr_in *sin = CON_SEVNT_SA_IN4(con);
       *matches = tst_port == ntohs(sin->sin_port);
     }
+  }
+  else if (OPT_SERV_SYM_EQ("server-ipv6-port-eq") ||
+           OPT_SERV_SYM_EQ("server-ipv6-port=="))
+  {
+    struct sockaddr *sa   = CON_SEVNT_SA(con);
+    unsigned int tst_port = 0;
+
+    OPT_SERV_X_SINGLE_UINT(tst_port);
+
+    if (sa->sa_family != AF_INET6)
+      *matches = FALSE;
+    else
+    {
+      struct sockaddr_in6 *sin6 = CON_SEVNT_SA_IN6(con);
+      *matches = tst_port == ntohs(sin6->sin6_port);
+    }
+  }
+  else if (OPT_SERV_SYM_EQ("protect-vary") || OPT_SERV_SYM_EQ("save-vary"))
+  {
+    unsigned int depth = token->depth_num;
+    int con_vary_star = con->vary_star;
+
+    ASSERT(*matches);
+    while (*matches && conf_token_list_num(token, depth))
+    {
+      CONF_SC_PARSE_DEPTH_TOKEN_RET(conf, token, depth, FALSE);
+
+      if (!httpd__policy_connection_tst_d1(con, conf, token,
+                                           matches, prev_match))
+        return (FALSE);
+    }
+    
+    con->vary_star = con_vary_star;
   }
   
   else

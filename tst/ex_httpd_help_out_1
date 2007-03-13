@@ -11,6 +11,7 @@
                         options are given.
 
     --configuration-data-daemon
+    --config-data-daemon
                       - Parse configuration given in the
                         org.and.daemon-conf-1.0 namespace.
     --daemon          - Toggle becoming a daemon (default: off).
@@ -36,28 +37,17 @@
 
   HTTPD options
     --configuration-data-httpd
+    --config-data-httpd
                       - Parse configuration given in the
                         org.and.httpd-conf-main-1.0 namespace.
-    --mmap            - Toggle use of mmap() to load files (default: off).
-    --sendfile        - Toggle use of sendfile() to load files (default: on).
-    --keep-alive      - Toggle use of Keep-Alive handling (default: on).
-    --keep-alive-1.0  - Toggle use of Keep-Alive handling for HTTP/1.0 (default: on).
     --virtual-hosts
     --vhosts          - Toggle use of directory virtual hostnames (default: off).
-    --range           - Toggle use of partial responces (default: on).
-    --range-1.0       - Toggle use of partial responces for HTTP/1.0 (default: on).
     --public-only     - Toggle use of public only privilages (default: off).
     --directory-filename
     --dir-filename    - Filename to use when requesting directories.
     --server-name     - Contents of server header used in replies.
-    --gzip-content-replacement
-                      - Toggle use of gzip content replacement (default: on).
     --mime-types-main - Main mime types filename (default: /etc/mime.types).
     --mime-types-xtra - Additional mime types filename.
     --error-406       - Toggle sending 406 responses (default: on).
     --canonize-host   - Strip leading 'www.', strip trailing '.' (default: off).
-    --error-host-400  - Give an 400 error for a bad host (default: on).
-    --check-host      - Whether we check host headers at all (default: on).
-    --unspecified-hostname
-                      - Used for req with no Host header (default is hostname).
     --max-header-sz   - Max size of http header (0 = no limit).

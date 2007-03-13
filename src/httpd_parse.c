@@ -246,10 +246,11 @@ static int http__multi_hdr_cp(Vstr_base *comb,
 {
   size_t pos = comb->len + 1;
 
-  if (!hdr->len)
+  if (!hdr->pos)
     return (TRUE);
   
-  if (!vstr_add_vstr(comb, comb->len,
+  if (hdr->len &&
+      !vstr_add_vstr(comb, comb->len,
                      data, hdr->pos, hdr->len, VSTR_TYPE_ADD_BUF_PTR))
     return (FALSE);
 
@@ -275,7 +276,9 @@ static int http__app_multi_hdr(Vstr_base *data, struct Http_hdrs *hdrs,
 
   ASSERT((comb == data) || (comb == hdrs->multi->combiner_store));
   
-  if ((data == comb) && !hdr->pos)
+  if (hdr->pos && !len) /* just ignore the new addition */
+    return (TRUE);
+  if ((data == comb) && (!hdr->pos || !hdr->len))
   { /* Do the fast thing... */
     hdr->pos = pos;
     hdr->len = len;
@@ -301,8 +304,9 @@ static int http__app_multi_hdr(Vstr_base *data, struct Http_hdrs *hdrs,
   {
     hdr->pos = comb->len + 1;
     hdr->len = len;
-    return (vstr_add_vstr(comb, comb->len,
-                          data, pos, len, VSTR_TYPE_ADD_BUF_PTR));
+    
+    return (!hdr->len || vstr_add_vstr(comb, comb->len,
+                                       data, pos, len, VSTR_TYPE_ADD_BUF_PTR));
   }
 
   /* reverses the order, but that doesn't matter */
@@ -1654,7 +1658,7 @@ static int http_parse_wait_io_r(struct Con *con)
   /* so we aren't acting under the req policy anymore */
   httpd_policy_change_con(con, con->policy);
   
-  evnt_wait_cntl_add(con->evnt, POLLIN);
+  evnt_poll->wait_cntl_add(con->evnt, POLLIN);
   evnt_fd_set_cork(con->evnt, FALSE);
   
   return (TRUE);

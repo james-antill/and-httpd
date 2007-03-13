@@ -87,6 +87,8 @@ static int httpd__conf_main_policy_http_d1(Httpd_policy_opts *opts,
     {
       CONF_SC_MAKE_CLIST_BEG(checks_host, clist);
       
+      else if (OPT_SERV_SYM_EQ("unspecified"))
+        OPT_SERV_X_VSTR(opts->s->beg, opts->default_hostname);
       else if (OPT_SERV_SYM_EQ("canonize") ||
                OPT_SERV_SYM_EQ("make-canonical"))
         OPT_SERV_X_TOGGLE(opts->use_canonize_host);
@@ -282,7 +284,7 @@ static int httpd__conf_main_policy_d1(Httpd_policy_opts *opts,
            OPT_SERV_SYM_EQ("doc-root"))
     return (opt_serv_sc_make_static_path(opts->s->beg, conf, token,
                                          opts->document_root));
-  else if (OPT_SERV_SYM_EQ("unspecified-hostname"))
+  else if (OPT_SERV_SYM_EQ("unspecified-hostname")) /* compat. */
     OPT_SERV_X_VSTR(opts->s->beg, opts->default_hostname);
   else if (OPT_SERV_SYM_EQ("MIME/types-default-type"))
     OPT_SERV_X_VSTR(opts->s->beg, opts->mime_types_def_ct);
@@ -871,7 +873,7 @@ int httpd_conf_main_init(Httpd_opts *httpd_opts)
 {
   Httpd_policy_opts *opts = NULL;
 
-  if (!opt_serv_conf_init(httpd_opts->s))
+  if (!opt_serv_conf_init(httpd_opts->s, AF_INET))
     goto opts_init_fail;
   
   opts = (Httpd_policy_opts *)httpd_opts->s->def_policy;

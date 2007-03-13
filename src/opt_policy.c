@@ -81,7 +81,7 @@ int opt_policy_init(Opt_serv_opts *beg_opts, Opt_serv_policy_opts *opts)
   return (FALSE);
 }
 
-static void opt_policy_free(Vstr_ref *ref)
+void opt_policy_free(Vstr_ref *ref)
 {
   Opt_serv_policy_opts *opts = NULL;
   

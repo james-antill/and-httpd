@@ -41,12 +41,12 @@ GEN_LDLIBS = $(XVSTR_LDLIBS) @LDFLAGS@
 # GEN_CFLAGS += -DCONF_FULL_STATIC=1
 # endif
 
-CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c
+CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c evnt_poll.c
 CMDLINE_FILES_HDRS = date.h evnt.h hexdump.h opt.h vlg.h
 
 DAEMON_FILES_SRCS = bag.c conf.c cntl.c date.c evnt.c hexdump.c \
                     opt.c opt_policy.c opt_conf.c opt_serv.c vlg.c \
-                    conf_inline.c opt_policy_inline.c
+                    conf_inline.c opt_policy_inline.c evnt_poll.c
 DAEMON_FILES_HDRS = bag.h conf.h cntl.h date.h evnt.h hexdump.h \
                     opt.h opt_policy.h opt_conf.h opt_serv.h vlg.h
 

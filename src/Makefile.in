@@ -65,7 +65,7 @@ PROGRAMS = $(httpdadmin_PROGRAMS) $(httpdtool_PROGRAMS) \
 	$(httpduser_PROGRAMS)
 am__objects_1 = and_cntl-date.$(OBJEXT) and_cntl-evnt.$(OBJEXT) \
 	and_cntl-hexdump.$(OBJEXT) and_cntl-opt.$(OBJEXT) \
-	and_cntl-vlg.$(OBJEXT)
+	and_cntl-vlg.$(OBJEXT) and_cntl-evnt_poll.$(OBJEXT)
 am_and_cntl_OBJECTS = $(am__objects_1) and_cntl-and-cntl.$(OBJEXT)
 and_cntl_OBJECTS = $(am_and_cntl_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -101,7 +101,8 @@ am__objects_2 = and_httpd-bag.$(OBJEXT) and_httpd-conf.$(OBJEXT) \
 	and_httpd-opt.$(OBJEXT) and_httpd-opt_policy.$(OBJEXT) \
 	and_httpd-opt_conf.$(OBJEXT) and_httpd-opt_serv.$(OBJEXT) \
 	and_httpd-vlg.$(OBJEXT) and_httpd-conf_inline.$(OBJEXT) \
-	and_httpd-opt_policy_inline.$(OBJEXT)
+	and_httpd-opt_policy_inline.$(OBJEXT) \
+	and_httpd-evnt_poll.$(OBJEXT)
 am_and_httpd_OBJECTS = and_httpd-mime_types.$(OBJEXT) \
 	and_httpd-httpd_conf_main.$(OBJEXT) \
 	and_httpd-httpd_conf_req.$(OBJEXT) \
@@ -314,11 +315,11 @@ GEN_LDLIBS = $(XVSTR_LDLIBS) @LDFLAGS@
 # if USE_STATIC_LIBS
 # GEN_CFLAGS += -DCONF_FULL_STATIC=1
 # endif
-CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c
+CMDLINE_FILES_SRCS = date.c evnt.c hexdump.c opt.c vlg.c evnt_poll.c
 CMDLINE_FILES_HDRS = date.h evnt.h hexdump.h opt.h vlg.h
 DAEMON_FILES_SRCS = bag.c conf.c cntl.c date.c evnt.c hexdump.c \
                     opt.c opt_policy.c opt_conf.c opt_serv.c vlg.c \
-                    conf_inline.c opt_policy_inline.c
+                    conf_inline.c opt_policy_inline.c evnt_poll.c
 
 DAEMON_FILES_HDRS = bag.h conf.h cntl.h date.h evnt.h hexdump.h \
                     opt.h opt_policy.h opt_conf.h opt_serv.h vlg.h
@@ -609,6 +610,12 @@ and_cntl-vlg.o: vlg.c
 and_cntl-vlg.obj: vlg.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_cntl_CFLAGS) $(CFLAGS) -c -o and_cntl-vlg.obj `if test -f 'vlg.c'; then $(CYGPATH_W) 'vlg.c'; else $(CYGPATH_W) '$(srcdir)/vlg.c'; fi`
 
+and_cntl-evnt_poll.o: evnt_poll.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_cntl_CFLAGS) $(CFLAGS) -c -o and_cntl-evnt_poll.o `test -f 'evnt_poll.c' || echo '$(srcdir)/'`evnt_poll.c
+
+and_cntl-evnt_poll.obj: evnt_poll.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_cntl_CFLAGS) $(CFLAGS) -c -o and_cntl-evnt_poll.obj `if test -f 'evnt_poll.c'; then $(CYGPATH_W) 'evnt_poll.c'; else $(CYGPATH_W) '$(srcdir)/evnt_poll.c'; fi`
+
 and_cntl-and-cntl.o: and-cntl.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_cntl_CFLAGS) $(CFLAGS) -c -o and_cntl-and-cntl.o `test -f 'and-cntl.c' || echo '$(srcdir)/'`and-cntl.c
 
@@ -824,6 +831,12 @@ and_httpd-opt_policy_inline.o: opt_policy_inline.c
 
 and_httpd-opt_policy_inline.obj: opt_policy_inline.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-opt_policy_inline.obj `if test -f 'opt_policy_inline.c'; then $(CYGPATH_W) 'opt_policy_inline.c'; else $(CYGPATH_W) '$(srcdir)/opt_policy_inline.c'; fi`
+
+and_httpd-evnt_poll.o: evnt_poll.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-evnt_poll.o `test -f 'evnt_poll.c' || echo '$(srcdir)/'`evnt_poll.c
+
+and_httpd-evnt_poll.obj: evnt_poll.c
+	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-evnt_poll.obj `if test -f 'evnt_poll.c'; then $(CYGPATH_W) 'evnt_poll.c'; else $(CYGPATH_W) '$(srcdir)/evnt_poll.c'; fi`
 
 and_httpd-httpd.o: httpd.c
 	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(and_httpd_CFLAGS) $(CFLAGS) -c -o and_httpd-httpd.o `test -f 'httpd.c' || echo '$(srcdir)/'`httpd.c

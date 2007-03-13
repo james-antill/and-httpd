@@ -8,6 +8,8 @@ toolsmain_SCRIPTS =                         \
                 and-httpd-syslog2apache-httpd-combined-log \
                 conv_html2text \
                 gzip-r \
+                img_index \
+                img_resize \
                 make_index
 
 initddir = $(sysconfdir)/init.d

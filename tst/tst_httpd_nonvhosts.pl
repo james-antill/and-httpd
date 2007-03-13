@@ -12,7 +12,9 @@ setup();
 
 # V
 my $conf_arg = $conf_args_strict;
-my $args = $conf_arg . " --unspecified-hostname=default --mime-types-xtra=$ENV{_MIMEDIR}/mime_types_extra.txt ";
+my $args = $conf_arg;
+$args .= " --config-data-httpd 'policy <default> unspecified-hostname default'";
+$args .= " --mime-types-xtra=$ENV{_MIMEDIR}/mime_types_extra.txt";
 
 daemon_init("and-httpd", $root, "--pid-file=$root/abcd" . $args);
 my $abcd = daemon_get_io_r("$root/abcd");

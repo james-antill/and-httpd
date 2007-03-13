@@ -252,7 +252,8 @@ static int httpd_policy__build_path(struct Con *con, Httpd_req_data *req,
   }
   else if (OPT_SERV_SYM_EQ("<virtual-hostname>") ||
            OPT_SERV_SYM_EQ("<virtual-host>") || OPT_SERV_SYM_EQ("<vhost>"))
-  { /* this adds the vhost prefix, which might be the same as <hostname> */
+  { /* this adds the vhost prefix, which might be the same as <hostname>,
+     * but with a / ... and only if vhosts is enabled */
     *used_req = TRUE;
     HTTPD_APP_REF_VSTR(conf->tmp, req->fname, 1, vhost_prefix_len);
   }

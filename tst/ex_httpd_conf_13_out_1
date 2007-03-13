@@ -13,6 +13,16 @@ Date:
 Server: foo-conf/13
 Last-Modified:
 Vary: Accept,Accept-Encoding,Accept-Language
+Content-Type: text/plain
+Content-Length: 17
+Content-Language: en
+
+ERROR 404 en/txt
+HTTP/1.1 404 Not Found
+Date:
+Server: foo-conf/13
+Last-Modified:
+Vary: Accept,Accept-Encoding,Accept-Language
 Content-Type: text/html
 Content-Length: 185
 Content-Language: en

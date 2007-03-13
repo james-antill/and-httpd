@@ -4,6 +4,16 @@ import os
 import glob
 import string
 
+# NOTE: CentOS 3 doesn't have a python that includes yield
+def __sc_listdir_fullname(x):
+    if x[-1] != '/':
+        x += '/'
+    ret = []
+    for i in os.listdir(x):
+        ret.append(x + i)
+        # yield x + i
+    return ret
+
 def init_builders(bldr):
     global gzip_bld
     global bzip_bld
@@ -61,12 +71,23 @@ and-ssi $SSIARGS $SOURCE > $TARGET')
     make_examples_index_bld = bldr(action = '\
 make_index --filter-args="-A README -A Makefile -A SConstruct --acpt-name-end .c --acpt-name-end .h --deny-all" --output $TARGET $SOURCE')
 
+    make_pics_index_bld = bldr(action = '\
+img_index $SOURCE $TARGET')
+
     make_index_bld = bldr(action = '\
 make_index $MKINDXARGS --output $TARGET $SOURCE')
 
+    cp_bld  = bldr(action = 'cp $SOURCE $TARGET')
     ln_bld  = bldr(action = 'ln $SOURCE $TARGET')
     lns_bld = bldr(action = 'ln -s $SOURCE $TARGET')
 
+    cp_conf_addMD5_bld = bldr(action = 'cp_conf_add_MD5 $TARGET $SOURCES')
+
+    img_resize_10pc = bldr(action = 'img_resize 10 $SOURCE $TARGET')
+    img_resize_40pc = bldr(action = 'img_resize 40 $SOURCE $TARGET')
+    img_resize_55pc = bldr(action = 'img_resize 55 $SOURCE $TARGET')
+    img_resize_75pc = bldr(action = 'img_resize 75 $SOURCE $TARGET')
+    
     sc_path = "/usr/local/bin:/usr/bin:/bin:" + and_httpd_tools_path
     sc_blders = {'Highlight'    : and_highlight_bld,
                  'SSI'          : and_ssi_bld,
@@ -74,6 +95,14 @@ make_index $MKINDXARGS --output $TARGET $SOURCE')
                  'GZip'         : gzip_bld,
                  'BZip2'        : bzip2_bld,
                  'Make_ex_indx' : make_examples_index_bld,
+                 'Pics_img_10pc': img_resize_10pc,
+                 'Pics_img_40pc': img_resize_40pc,
+                 'Pics_img_55pc': img_resize_55pc,
+                 'Pics_img_75pc': img_resize_75pc,
+                 'Pics_indx'    : make_pics_index_bld,
+                 'CP_addMD5'    : cp_conf_addMD5_bld,
+                 'CP'           : cp_bld,
+                 'LNS'          : lns_bld,
                  'LN'           : ln_bld}
 
 def init_env(Env):
@@ -118,20 +147,26 @@ def gen_dif_idx(env, data, x, rec=False):
         if not rec:
             return
 		
-        for y in glob.glob(f2 + '*'):
+        for y in __sc_listdir_fullname(f2):
             if os.path.islink(y) or not os.path.isdir(y):
                 continue
             gen__name(x + '/' + os.path.basename(y))
     return gen__name
 
-def apply_dif_idx(data, Make_indx, LN, conf_gen_html=None, Zip=None):
+def apply_dif_idx(data, env, Make_indx=None, LN=None,
+                  conf_gen_html=None, Zip=None):
+    if Make_indx is None:
+        Make_indx = env.Make_indx
+    if LN is None:
+        LN = env.CP_addMD5
     if conf_gen_html is None:
-        conf_gen_html = "conf_tmpl/GENERATED_HTML"
+        conf_gen_html = "conf_tmpl/make_index"
+    if Zip is None:
+        Zip = sc_Zip
     for i in data:
         Make_indx(i[0], i[1])
-        LN(i[2], conf_gen_html)
-        if Zip is None:
-            Zip = sc_Zip
+        deps = [conf_gen_html, i[0], i[0] + '.gz', i[0] + '.bz2']
+        cfname_dep = LN(i[2], deps)
         Zip(i[0])
 
 
@@ -142,9 +177,10 @@ def gen_sam_idx(env, data, x, rec=False):
         indx = conf['GENERATE_INDEX_NAME']
         f1 = conf['ROOT_DIR'] + subdir + '/' + x + '/' + indx
         f2 = conf['ROOT_DIR'] + subdir + '/' + x + '/'
+        f3 = conf['CONF_DIR'] + subdir + '/' + x + '/' + indx
         # all this is needed due to bug#1185284
         files = []
-        for name in glob.glob(f2 + '*'):
+        for name in __sc_listdir_fullname(f2):
             if os.path.basename(name) == indx:
                 continue
             if os.path.basename(name) == indx + ".gz":
@@ -162,37 +198,53 @@ def gen_sam_idx(env, data, x, rec=False):
             else:
                 files.append(name)
         if len(files):
-            data.append([f1, env.Dir(f2), files])
+            data.append([f1, env.Dir(f2), f3, files])
         
         if not rec:
             return
 		
-        for y in glob.glob(f2 + '*'):
+        for y in __sc_listdir_fullname(f2):
             if os.path.islink(y) or not os.path.isdir(y):
                 continue
             gen__name(x + '/' + os.path.basename(y))
 		
     return gen__name
 
-def apply_sam_idx(data, env, Make_indx, Zip=None):
+def apply_sam_idx(data, env, Make_indx=None, LN=None,
+                  conf_gen_html=None, Zip=None):
+    if Make_indx is None:
+        Make_indx = env.Make_indx
+    if LN is None:
+        LN = env.CP_addMD5
+    if conf_gen_html is None:
+        conf_gen_html = "conf_tmpl/EMPTY"
+    if Zip is None:
+        Zip = sc_Zip
     for i in data:
         abcd = Make_indx(i[0], i[1])
-        for j in i[2]:
+        for j in i[3]:
             env.Depends(abcd, j)
         env.Ignore(abcd, i[1])
 
-        if Zip is None:
-            Zip = sc_Zip
+        deps = [conf_gen_html, i[0], i[0] + '.gz', i[0] + '.bz2']
+        LN(i[2], deps)
+        
         Zip(i[0])
 
 
-# Special code for the examples dir.
-def apply_sam_examples_code(data, Highlight, LN, 
+# Special code for the examples dir. indexing
+def apply_sam_examples_code(data, env, Highlight=None, LN=None, 
                             ex_neg=None, ex_txt=None, Zip=None):
+    if Highlight is None:
+        Highlight = env.Highlight
+    if LN is None:
+        LN = env.CP_addMD5
     if ex_neg is None:
-        ex_neg="conf_tmpl/negotiate-plain_html"
+        ex_neg="conf_tmpl/negotiate-and-highlight-plain_html"
     if ex_txt is None:
         ex_txt="conf_tmpl/UNCOOL_URI-txt"
+    if Zip is None:
+        Zip = sc_Zip
         
     for pat in data:
         for i in glob.glob(conf['ROOT_DIR'] + pat[0] + pat[1]):
@@ -200,40 +252,133 @@ def apply_sam_examples_code(data, Highlight, LN,
 
             name = os.path.basename(i)
             conf_name = conf['CONF_DIR'] + pat[0] + name
-            LN(conf_name, ex_neg)
-            LN(conf_name + ".txt", ex_txt)
             
-        if Zip is None:
-            Zip = sc_Zip
-        Zip(i + ".html")
-        Zip(i)
+            deps = [ex_neg, i + ".html", i + ".html.gz", i + ".html.bz2"]
+            cfname_dep = LN(conf_name, deps)
+            
+            deps = [ex_txt, i, i + ".gz", i + ".bz2"]
+            cfname_dep = LN(conf_name + ".txt", deps)
+            
+            Zip(i + ".html")
+            Zip(i)
 
-def apply_sam_examples_idx(data, env, Make_ex_indx, Zip=None):
+def apply_sam_examples_idx(data, env, Make_ex_indx=None, Zip=None,
+                           LN=None, ex_conf=None):
+    if Make_ex_indx is None:
+        Make_ex_indx = env.Make_ex_indx
+    if Zip is None:
+        Zip = sc_Zip
+    if LN is None:
+        LN = env.CP_addMD5
+    if ex_conf is None:
+        ex_conf = "conf_tmpl/EMPTY"
+        
     for src in data:
         name = conf['ROOT_DIR'] + src[0]
-        abcd = Make_ex_indx(name + "/" + conf['GENERATE_INDEX_NAME'],
-                            env.Dir(name))
+        fname = name + "/" + conf['GENERATE_INDEX_NAME']
+        abcd = Make_ex_indx(fname, env.Dir(name))
         for j in glob.glob(name + "/" + src[1]):
             env.Depends(abcd, j)
         env.Ignore(abcd, env.Dir(name))
-        if Zip is None:
-            Zip = sc_Zip
+
+        conf_name = conf['CONF_DIR'] + src[0]
+        conf_name = conf_name + "/" + conf['GENERATE_INDEX_NAME']
+        deps = [ex_conf, fname, fname + ".gz", fname + ".bz2"]
+        LN(conf_name, deps)
+        
         Zip(name + "/" + conf['GENERATE_INDEX_NAME'])
 
-# Apply over directories
+# Special code for the pictures dir. indexing
+def pics_idx(env, x, rec=False, Pics_indx=None, Pics_img_10pc=None,
+             Pics_img_40pc=None, Pics_img_55pc=None, Pics_img_75pc=None,
+             Zip=None, LN=None, conf_pics_indx=None, conf_gen_pic=None):
+    subdir = x
+    if Pics_indx is None:
+        Pics_indx = env.Pics_indx
+    if Pics_img_10pc is None:
+        Pics_img_10pc = env.Pics_img_10pc
+    if Pics_img_40pc is None:
+        Pics_img_40pc = env.Pics_img_40pc
+    if Pics_img_55pc is None:
+        Pics_img_55pc = env.Pics_img_55pc
+    if Pics_img_75pc is None:
+        Pics_img_75pc = env.Pics_img_75pc
+    if Zip is None:
+        Zip = sc_Zip
+    if LN is None:
+        LN = env.CP_addMD5
+    if conf_pics_indx is None:
+        conf_pics_indx = "conf_tmpl/make_pics_index"
+    if conf_gen_pic is None:
+        conf_gen_pic = "conf_tmpl/GENERATED_HTML"
+    def gen__name(x):
+        indx   = conf['GENERATE_INDEX_NAME']
+        gfname = conf['GENERATED_DIR'] + subdir + '/' + x + '/' + indx
+        gdir   = conf['GENERATED_DIR'] + subdir + '/' + x + '/'
+        rdir   = conf['ROOT_DIR']      + subdir + '/' + x + '/'
+        cfname = conf['CONF_DIR']      + subdir + '/' + x + '/' + indx
+        cdir   = conf['CONF_DIR']      + subdir + '/' + x + '/'
+
+        gfname_dep = Pics_indx(gfname, env.Dir(rdir))
+        Zip(gfname)
+        
+        deps = [conf_pics_indx, gfname, gfname + ".gz", gfname + ".bz2"]
+        LN(cfname, deps)
+
+        skip_dir_names = ['.', '..', 'img_10', 'img_40', 'img_55', 'img_75']
+        for i in __sc_listdir_fullname(rdir):
+            name, ext = os.path.splitext(i)
+            if ext not in ['.jpg', '.png', '.gif']: # Shouldn't HC
+                bname = os.path.basename(i)
+                if os.path.isdir(i) and bname not in skip_dir_names:
+                    glowerdir = gdir + bname + "/" + indx
+                    env.Depends(gfname_dep, glowerdir)
+                continue
+            if os.path.isdir(i):
+                continue
+
+            bname = os.path.basename(i)
+            
+            env.Depends(gfname_dep, i)
+            deps = [conf_gen_pic, i, i + ".gz", i + ".bz2"]
+            for d in ["img_10/", "img_40/", "img_55/", "img_75/"]:
+                env.Depends(gfname_dep, gdir + d + bname)
+                LN(cdir + d + bname, deps)
+
+            Pics_img_10pc(gdir + "img_10/" + bname, i)
+            Pics_img_40pc(gdir + "img_40/" + bname, i)
+            Pics_img_55pc(gdir + "img_55/" + bname, i)
+            Pics_img_75pc(gdir + "img_75/" + bname, i)
+            
+        env.Ignore(gfname_dep, env.Dir(rdir))
+        
+        if not rec:
+            return
+		
+        for bname in os.listdir(rdir):
+            if bname in skip_dir_names:
+                continue
+            if not os.path.isdir(rdir + '/' + bname):
+                continue
+            gen__name(x + '/' + bname)
+    return gen__name
+
+# SSI Processing
 def gen_files_sam_ext(env, data, x, rec=False):
     subdir = x
     def gen__name(x, ext_in=".shtml", ext_out=".html"):
         indx = conf['GENERATE_INDEX_NAME']
         f2 = conf['ROOT_DIR'] + subdir + '/' + x + '/'
+        f3 = conf['CONF_DIR'] + subdir + '/' + x + '/'
         # all this is needed due to bug#1185284
         files = []
         for name in glob.glob(f2 + '*' + ext_in):
-            if os.path.basename(name) == indx:
+            basename = os.path.basename(name)
+            if basename == indx:
                 continue
-            if os.path.basename(name) == indx + ".gz":
+            if basename == indx + ".gz":
                 continue
-            if os.path.basename(name) == indx + ".bz2":
+            if basename == indx + ".bz2":
                 continue
 			
             if os.path.islink(name) and not os.path.isfile(name):
@@ -241,29 +386,42 @@ def gen_files_sam_ext(env, data, x, rec=False):
             if os.path.getsize(name) > (1000 * 1000 * 1000):
                 continue # string error bug#1185299
 
-            out_name = name[:-len(ext_in)] + ext_out
-            files.append([out_name, name])
+            out_name  = name[:-len(ext_in)] + ext_out
+            conf_out_name = f3 + basename[:-len(ext_in)] + ext_out
+            conf_name     = f3 + basename
+            files.append([out_name, name, conf_out_name, conf_name])
         if len(files):
             data.append([ext_in, ext_out, files])
         
         if not rec:
             return
 		
-        for y in glob.glob(f2 + '*'):
+        for y in __sc_listdir_fullname(f2):
             if os.path.islink(y) or not os.path.isdir(y):
                 continue
             gen__name(x + '/' + os.path.basename(y))
 		
     return gen__name
 
-def apply_sam_ssi(data, SSI, Zip=None):
+def apply_sam_ssi(data, env, SSI=None, Zip=None, LN=None, ex_conf=None):
+    if SSI is None:
+        SSI = env.SSI
+    if Zip is None:
+        Zip = sc_Zip
+    if LN is None:
+        LN = env.CP_addMD5
+    if ex_conf is None:
+        ex_conf = "conf_tmpl/EMPTY"
     for i in data:
         ext_in  = i[0]
         ext_out = i[1]
         for fname in i[2]:
             SSI(fname[0], fname[1])
-            if Zip is None:
-                Zip = sc_Zip
+            conf_name = fname[3]
+            if not os.path.isfile(conf_name):
+                conf_name = ex_conf
+            deps = [conf_name, fname[0], fname[0] + '.gz', fname[0] + '.bz2']
+            LN(fname[2], deps)
             Zip(fname[0])
 
 def __sc_zip_bld(ext, bld):

@@ -7,7 +7,6 @@
 
   evnt
 
-	allow groups, make Evnt smaller (moveout cb's/conf to group data)
 	have enumeration bind, Ie. bind to each IP address ... 
           helps for testing recv socket.
 
@@ -55,7 +54,7 @@ http://www.sans.org/top20/#u2
         test expires
         scons
           make_index, ATOM && pictures
-          md5sum
+          expires on pictures?
 
 	man pages
 	http://people.apache.org/~pquerna/modules/mod_flvx.c

@@ -1,5 +1,6 @@
 
 # These should be std. in /etc/mime.types but fuckwittage prevails
+application/metalink+xml metalink
 application/x-bittorrent torrent
 application/x-zsync      zsync
 image/x-icon             ico

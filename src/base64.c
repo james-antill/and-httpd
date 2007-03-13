@@ -26,7 +26,9 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
   {
     unsigned int i24 = 0;
     unsigned int used = 3;
-    
+
+    /* operate on 24 bits at once, zero extending */
+    /* 3 8bit bytes IN */
     if (slen >= 3)
       vstr_export_buf(src, spos, used, sbuf, sizeof(sbuf));
     else
@@ -36,6 +38,8 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
       {
         case 1: sbuf[1] = 0;
         case 2: sbuf[2] = 0;
+          
+          ASSERT_NO_SWITCH_DEF();
       }
     }
 
@@ -43,6 +47,7 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
     i24 |= sbuf[1]; i24 <<= 8;
     i24 |= sbuf[2];
 
+    /* 4 6bit "bytes" OUT */    
     ASSERT(sizeof(b64) == 64);
     ASSERT(((i24 & 0x00FC0000) >> 18) < 64);
     ASSERT(((i24 & 0x0003F000) >> 12) < 64);
@@ -61,10 +66,11 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
       dpos += sizeof(dbuf);
     }
     else
-    {
+    { /* if we didn't use 3 8bit bytes, we are at the end ... so do special
+       * case for = byte endings */
       unsigned int out_map[3] = {0, 2, 3};
 
-      ASSERT(out_map[used] <= sizeof(dbuf));
+      ASSERT(used && (out_map[used] <= sizeof(dbuf)));
       if (!vstr_add_buf(dst, dpos, dbuf, out_map[used]))
         goto failed_add;
       dpos += out_map[used];
@@ -76,7 +82,7 @@ int vstr_x_conv_base64_encode(Vstr_base *dst, size_t dpos,
     
     slen -= used; spos += used;
     
-    if (flags && (!--nonl || !slen))
+    if (flags && (!--nonl || !slen)) /* ever 76 output bytes, newline */
     {
       nonl = 76 / 4;
       if (!vstr_add_cstr_buf(dst, dpos, "\n"))

@@ -69,21 +69,6 @@
 #define VEQ(vstr, p, l, cstr)  vstr_cmp_cstr_eq(vstr, p, l, cstr)
 #define VIEQ(vstr, p, l, cstr) vstr_cmp_case_cstr_eq(vstr, p, l, cstr)
 
-#define HTTP__HDR_SET(req, h, p, l) do {               \
-      (req)-> http_hdrs -> hdr_ ## h ->pos = (p);          \
-      (req)-> http_hdrs -> hdr_ ## h ->len = (l);          \
-    } while (FALSE)
-#define HTTP__HDR_MULTI_SET(req, h, p, l) do {         \
-      (req)-> http_hdrs -> multi -> hdr_ ## h ->pos = (p); \
-      (req)-> http_hdrs -> multi -> hdr_ ## h ->len = (l); \
-    } while (FALSE)
-
-#define HTTP__XTRA_HDR_INIT(x) do {             \
-      req-> x ## _vs1 = NULL;                   \
-      req-> x ## _pos = 0;                      \
-      req-> x ## _len = 0;                      \
-    } while (FALSE)
-
 static Vlg *vlg = NULL;
 
 void httpd_req_init(Vlg *passed_vlg)
@@ -560,7 +545,7 @@ int http_req_content_type(Httpd_req_data *req)
     if ((ret = getxattr(fname_cstr, key, buf, sizeof(buf))) != -1)
     {
       pos = req->xtra_content->len + 1;
-      len = ret;
+      len = ret; /* FIXME: use xattr_sc_getxattr() */
       if (!vstr_add_buf(req->xtra_content, req->xtra_content->len, buf, len))
         return (FALSE);
 

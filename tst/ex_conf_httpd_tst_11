@@ -156,3 +156,19 @@
         Content-Type: text/plain
         filename [limit path] /index.html
         return <gone>)
+
+; Test read limits...
+  (org.and.daemon-conf-1.0
+   policy conf-httpd-tst-11.1-<limited>
+     limit io
+    (policy-process/s    read 1_000)
+     policy-connection/s read  500)
+
+
+(org.and.httpd-conf-main-1.0
+   match-connection [protect-vary || 
+                                    client-ipv4-cidr-eq 217.0.0.1/8
+                                    server-ipv4-cidr-eq 217.0.0.1/32
+                                    server-ipv4-port-eq 80
+                                    server-ipv6-port-eq 80]
+      <close>)

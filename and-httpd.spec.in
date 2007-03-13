@@ -40,7 +40,7 @@ Group: System Environment/Daemons
 URL: http://www.and.org/and-httpd
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: vstr >= 1.0.14
+Requires: vstr >= 1.0.14, chkconfig
 BuildRequires: pkgconfig >= 0.8
 BuildRequires: vstr-devel, timer_q-devel, socket_poll-devel, libcap-devel
 BuildRequires: perl

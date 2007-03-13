@@ -108,7 +108,7 @@ MALLOC_CHECK_DECL();
      vstr_cmp_case_buf_eq(vstr, p, CLEN(cstr), cstr, CLEN(cstr)))
 
 /* for simplicity */
-#define VEQ(vstr, p, l, cstr) vstr_cmp_cstr_eq(vstr, p, l, cstr)
+#define VALLEQ(vstr, cstr) vstr_cmp_cstr_eq(vstr, 1, (vstr)->len, cstr)
 
 static Vlg *vlg = NULL;
 
@@ -132,6 +132,7 @@ static void usage(const char *program_name, int ret, const char *prefix)
                         options are given.\n\
 \n\
     --configuration-data-daemon\n\
+    --config-data-daemon\n\
                       - Parse configuration given in the\n\
                         org.and.daemon-conf-1.0 namespace.\n\
     --daemon          - Toggle becoming a daemon%s.\n\
@@ -157,48 +158,28 @@ static void usage(const char *program_name, int ret, const char *prefix)
 \n\
   HTTPD options\n\
     --configuration-data-httpd\n\
+    --config-data-httpd\n\
                       - Parse configuration given in the\n\
                         org.and.httpd-conf-main-1.0 namespace.\n\
-    --mmap            - Toggle use of mmap() to load files%s.\n\
-    --sendfile        - Toggle use of sendfile() to load files%s.\n\
-    --keep-alive      - Toggle use of Keep-Alive handling%s.\n\
-    --keep-alive-1.0  - Toggle use of Keep-Alive handling for HTTP/1.0%s.\n\
     --virtual-hosts\n\
     --vhosts          - Toggle use of directory virtual hostnames%s.\n\
-    --range           - Toggle use of partial responces%s.\n\
-    --range-1.0       - Toggle use of partial responces for HTTP/1.0%s.\n\
     --public-only     - Toggle use of public only privilages%s.\n\
     --directory-filename\n\
     --dir-filename    - Filename to use when requesting directories.\n\
     --server-name     - Contents of server header used in replies.\n\
-    --gzip-content-replacement\n\
-                      - Toggle use of gzip content replacement%s.\n\
     --mime-types-main - Main mime types filename (default: /etc/mime.types).\n\
     --mime-types-xtra - Additional mime types filename.\n\
     --error-406       - Toggle sending 406 responses%s.\n\
     --canonize-host   - Strip leading 'www.', strip trailing '.'%s.\n\
-    --error-host-400  - Give an 400 error for a bad host%s.\n\
-    --check-host      - Whether we check host headers at all%s.\n\
-    --unspecified-hostname\n\
-                      - Used for req with no Host header (default is hostname).\n\
     --max-header-sz   - Max size of http header (0 = no limit).\n\
 ",
                prefix, program_name,
                opt_def_toggle(FALSE), opt_def_toggle(FALSE),
                opt_def_toggle(EVNT_CONF_NAGLE),
-               opt_def_toggle(HTTPD_CONF_USE_MMAP),
-               opt_def_toggle(HTTPD_CONF_USE_SENDFILE),
-               opt_def_toggle(HTTPD_CONF_USE_KEEPA),
-               opt_def_toggle(HTTPD_CONF_USE_KEEPA_1_0),
                opt_def_toggle(HTTPD_CONF_USE_VHOSTS_NAME),
-               opt_def_toggle(HTTPD_CONF_USE_RANGE),
-               opt_def_toggle(HTTPD_CONF_USE_RANGE_1_0),
                opt_def_toggle(HTTPD_CONF_USE_PUBLIC_ONLY),
-               opt_def_toggle(HTTPD_CONF_USE_ENC_CONTENT_REPLACEMENT),
                opt_def_toggle(HTTPD_CONF_USE_ERR_406),
-               opt_def_toggle(HTTPD_CONF_USE_CANONIZE_HOST),
-               opt_def_toggle(HTTPD_CONF_USE_HOST_ERR_400),
-               opt_def_toggle(HTTPD_CONF_USE_HOST_CHK));
+               opt_def_toggle(HTTPD_CONF_USE_CANONIZE_HOST));
 
   if (io_put_all(out, ret ? STDERR_FILENO : STDOUT_FILENO) == IO_FAIL)
     err(EXIT_FAILURE, "write");
@@ -251,7 +232,6 @@ static void serv_init(void)
       errno = ENOMEM, err(EXIT_FAILURE, "init");
   
   evnt_logger(vlg);
-  evnt_poll_init();
   evnt_timeout_init();
 
   vlg_time_set(vlg, evnt_sc_time);
@@ -305,6 +285,18 @@ static void serv_cb_func_free(struct Evnt *evnt)
   F(con);
 }
 
+static const struct Evnt_cbs and_httpd__con_evnt_cbs =
+{
+ evnt_cb_func_accept,    /* def */
+ evnt_cb_func_connect,   /* def */
+
+ serv_cb_func_recv,
+ serv_cb_func_send,
+
+ serv_cb_func_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
 static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
                                         struct sockaddr *sa, socklen_t len)
 {
@@ -314,16 +306,13 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
   if (sa->sa_family != AF_INET) /* only support IPv4 atm. */
     goto sa_fail;
   
-  if (!(con->tag = vstr_dup_cstr_ptr(NULL, "<default>")))
+  if (!con || !(con->tag = vstr_dup_cstr_ptr(NULL, "<default>")))
     goto con_tag_fail;
   
-  if (!con || !evnt_make_acpt_dup(con->evnt, fd, sa, len))
+  if (!evnt_make_acpt_dup(con->evnt, fd, sa, len))
     goto make_acpt_fail;
-
-  con->evnt->cbs->cb_func_recv       = serv_cb_func_recv;
-  con->evnt->cbs->cb_func_send       = serv_cb_func_send;
-  con->evnt->cbs->cb_func_free       = serv_cb_func_free;
-
+  con->evnt->cbs = &and_httpd__con_evnt_cbs;
+  
   if (!evnt_limit_dup(con->evnt, &httpd_opts->s->io_nslimit))
     goto evnt_fail; /* redone on policy changes... */
   
@@ -368,6 +357,18 @@ static struct Evnt *serv_cb_func_accept(struct Evnt *from_evnt, int fd,
   VLG_WARNNOMEM_RET(NULL, (vlg, "%s: HTTPD sa == ipv4 fail\n", "accept"));
 }
 
+static const struct Evnt_cbs and_httpd__serv_evnt_cbs = 
+{
+ serv_cb_func_accept,
+ evnt_cb_func_connect,   /* def */
+
+ evnt_cb_func_recv,      /* def */
+ evnt_cb_func_send,      /* def */
+
+ evnt_sc_serv_cb_func_acpt_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
 static void serv_make_bind(const char *program_name)
 {
   Opt_serv_addr_opts *addr = httpd_opts->s->addr_beg;
@@ -385,12 +386,26 @@ static void serv_make_bind(const char *program_name)
                        "accept filter file");
     OPT_SC_EXPORT_CSTR(acpt_cong,        addr->acpt_cong,        FALSE,
                        "accept congestion mode");
-    
-    evnt = evnt_sc_serv_make_bind_ipv4(acpt_address, addr->tcp_port,
-                                       addr->q_listen_len,
-                                       addr->max_connections,
-                                       addr->defer_accept,
-                                       acpt_filter_file, acpt_cong);
+
+    switch (addr->family) /* FIXME: move this somewhere */
+    {
+      case AF_LOCAL:
+        evnt = evnt_sc_serv_make_bind_local(acpt_address,
+                                            addr->q_listen_len,
+                                            addr->max_connections,
+                                            addr->local_perms,
+                                            acpt_filter_file);
+        break;
+      case AF_INET:
+        evnt = evnt_sc_serv_make_bind_ipv4(acpt_address, addr->tcp_port,
+                                           addr->q_listen_len,
+                                           addr->max_connections,
+                                           addr->defer_accept,
+                                           acpt_filter_file, acpt_cong);
+        /* break; */
+        /* case AF_INET6: */
+        ASSERT_NO_SWITCH_DEF();
+    }
 
     if (addr->def_policy->len)
     {
@@ -405,7 +420,7 @@ static void serv_make_bind(const char *program_name)
       acpt_listener->def_policy = vstr_ref_add(po->ref);
     }
     
-    evnt->cbs->cb_func_accept = serv_cb_func_accept;
+    evnt->cbs = &and_httpd__serv_evnt_cbs;
 
     addr = addr->next;
   }
@@ -534,7 +549,7 @@ static int serv_def_conf(Vstr_base *out)
   if ((stat64(pc_file, d_stat) != -1) &&
       !httpd_conf_main_parse_file(out, httpd_opts, pc_file))
     return (FALSE);
-  if ((stat64(pc_file, d_stat) != -1) &&
+  if ((stat64(pc_dir,  d_stat) != -1) &&
       !opt_serv_sc_config_dir(out, httpd_opts, pc_dir,
                               httpd_sc_conf_main_parse_dir_file))
     return (FALSE);
@@ -598,20 +613,17 @@ static void serv_cmd_line(int argc, char *argv[])
    {"default-configuration", no_argument, NULL, 149},
    {"def-config",            no_argument, NULL, 149},
    
-   {"sendfile", optional_argument, NULL, 31},
-   {"mmap", optional_argument, NULL, 30},
-   
    {"max-header-sz", required_argument, NULL, 128},
-   {"keep-alive", optional_argument, NULL, 129},
-   {"keep-alive-1.0", optional_argument, NULL, 130},
+   /* 129 */
+   /* 130 */
    {"vhosts", optional_argument, NULL, 131},
    {"virtual-hosts", optional_argument, NULL, 131},
-   {"range", optional_argument, NULL, 132},
-   {"range-1.0", optional_argument, NULL, 133},
+   /* 132 */
+   /* 133 */
    {"public-only", optional_argument, NULL, 134}, /* FIXME: rm ? */
    {"dir-filename", required_argument, NULL, 135},
    {"server-name", required_argument, NULL, 136},
-   {"gzip-content-replacement", optional_argument, NULL, 137},
+   /* 137 */
    /* 138 */
    {"error-406", optional_argument, NULL, 139},
    /* 140 -- config. dir above */
@@ -620,12 +632,11 @@ static void serv_cmd_line(int argc, char *argv[])
    {"mime-types-xtra", required_argument, NULL, 142},
    /* 143 -- config data above */
    /* 144 -- config data above */
-   {"unspecified-hostname", required_argument, NULL, 145},
+   /* 145 */
    {"canonize-host", optional_argument, NULL, 146},
-   {"error-host-400", optional_argument, NULL, 147},
-   {"check-host", optional_argument, NULL, 148},
+   /* 147 */
+   /* 148 */
    /* 149 -- config data above */
-   /* {"404-file", required_argument, NULL, 0}, */
    {NULL, 0, NULL, 0}
   };
   const char *chroot_dir = NULL;
@@ -695,29 +706,22 @@ static void serv_cmd_line(int argc, char *argv[])
         break;
         
       case 128: POPT_NUM_NR_ARG(max_header_sz, "max header size"); break;
-        
-      case  31: POPT_TOGGLE_ARG(use_sendfile);                     break;
-      case  30: POPT_TOGGLE_ARG(use_mmap);                         break;
-        
-      case 129: POPT_TOGGLE_ARG(use_keep_alive);                   break;
-      case 130: POPT_TOGGLE_ARG(use_keep_alive_1_0);               break;
       case 131: POPT_TOGGLE_ARG(use_vhosts_name);                  break;
-      case 132: POPT_TOGGLE_ARG(use_range);                        break;
-      case 133: POPT_TOGGLE_ARG(use_range_1_0);                    break;
+        /* case 132: */
+        /* case 133: */
       case 134: POPT_TOGGLE_ARG(use_public_only);                  break;
       case 135: POPT_VSTR_ARG(dir_filename);                       break;
       case 136: POPT_VSTR_ARG(server_name);                        break;
-      case 137: POPT_TOGGLE_ARG(use_enc_content_replacement);      break;
+        /* case 137: */
+        /* case 138: */
       case 139: POPT_TOGGLE_ARG(use_err_406);                      break;
         /* case 140: */
       case 141: POPT_VSTR_ARG(mime_types_main);                    break;
       case 142: POPT_VSTR_ARG(mime_types_xtra);                    break;
         /* case 143: */
         /* case 144: */
-      case 145: POPT_VSTR_ARG(default_hostname);                   break;
-      case 146: POPT_TOGGLE_ARG(use_canonize_host);                break;
-      case 147: POPT_TOGGLE_ARG(use_host_err_400);                 break;
-      case 148: POPT_TOGGLE_ARG(use_host_chk);
+        /* case 145: */
+      case 146: POPT_TOGGLE_ARG(use_canonize_host);
         
       
       ASSERT_NO_SWITCH_DEF();
@@ -749,6 +753,18 @@ static void serv_cmd_line(int argc, char *argv[])
     const char *pid_file = NULL;
     Opt_serv_opts *opts = httpd_opts->s;
     
+    /* FIXME: move somewhere else */
+    if (!opts->poll_backend->len)
+      evnt_poll = &EVNT_POLL_BE_DEF;
+    else if (VALLEQ(opts->poll_backend, "poll"))
+      evnt_poll = &evnt_poll_be_poll;
+    else if (VALLEQ(opts->poll_backend, "epoll"))
+      evnt_poll = &evnt_poll_be_epoll;
+    else
+      usage(program_name, EXIT_FAILURE,
+            " Not specified a valid poll backend.\n");
+    evnt_poll->init();
+  
     vlg_syslog_facility_set(vlg, opts->syslog_facility);
     /* vlg_date_set(vlg, opts->vlg_date_fmt_type); */
     if (!opts->vlg_tweaked_size)
@@ -913,7 +929,10 @@ int main(int argc, char *argv[])
   while (evnt_waiting())
   {
     evnt_sc_main_loop(HTTPD_CONF_MAX_WAIT_SEND);
-    opt_serv_sc_check_children();
+    
+    opt_serv_sc_check_sig_children();
+    opt_serv_sc_check_sig_term();
+      
     opt_serv_sc_cntl_resources(httpd_opts->s);
   }
   evnt_out_dbg3("E");

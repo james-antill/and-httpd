@@ -71,21 +71,6 @@
 #define VEQ(vstr, p, l, cstr)  vstr_cmp_cstr_eq(vstr, p, l, cstr)
 #define VIEQ(vstr, p, l, cstr) vstr_cmp_case_cstr_eq(vstr, p, l, cstr)
 
-#define HTTP__HDR_SET(req, h, p, l) do {               \
-      (req)-> http_hdrs -> hdr_ ## h ->pos = (p);          \
-      (req)-> http_hdrs -> hdr_ ## h ->len = (l);          \
-    } while (FALSE)
-#define HTTP__HDR_MULTI_SET(req, h, p, l) do {         \
-      (req)-> http_hdrs -> multi -> hdr_ ## h ->pos = (p); \
-      (req)-> http_hdrs -> multi -> hdr_ ## h ->len = (l); \
-    } while (FALSE)
-
-#define HTTP__XTRA_HDR_INIT(x) do {             \
-      req-> x ## _vs1 = NULL;                   \
-      req-> x ## _pos = 0;                      \
-      req-> x ## _len = 0;                      \
-    } while (FALSE)
-
 #include <syslog.h>
 
 HTTPD_CONF_MAIN_DECL_OPTS(httpd_opts);
@@ -228,7 +213,8 @@ static void http_vlg_def(struct Con *con, struct Httpd_req_data *req, int meth)
   else
   {
     ASSERT(req->sects->num >= 3);
-    vlg_info(vlg, " ver[\"$<vstr.sect:%p%p%u>\"]", data, req->sects, 3);
+    vlg_info(vlg, " ver[\"$<http-esc.vstr.sect:%p%p%u>\"]",
+             data, req->sects, 3);
   }
 
   vlg_info(vlg, ": $<http-esc.vstr:%p%zu%zu>\n",
@@ -295,7 +281,7 @@ static int http_fin_req(struct Con *con, Httpd_req_data *req)
   
   if (!con->keep_alive) /* all input is here */
   {
-    evnt_wait_cntl_del(con->evnt, POLLIN);
+    evnt_poll->wait_cntl_del(con->evnt, POLLIN);
     req->len = con->evnt->io_r->len; /* delete it all */
   }
   
@@ -1046,8 +1032,9 @@ int http_fin_err_req(struct Con *con, Httpd_req_data *req)
 
     if (req->error_code == 401)
       http_app_hdr_fmt(out, "WWW-Authenticate",
-                       "Basic realm=\"$<vstr.all:%p>\"",
-                       req->policy->auth_realm);
+                       "Basic realm=\"${vstr:%p%zu%zu%u}\"",
+                       req->policy->auth_realm, (size_t)1,
+                       req->policy->auth_realm->len, VSTR_TYPE_ADD_BUF_REF);
     
     if ((req->error_code == 405) || (req->error_code == 501))
       HTTP_APP_HDR_CONST_CSTR(out, "Allow", "GET, HEAD, OPTIONS, TRACE");
@@ -1767,7 +1754,7 @@ int httpd_serv_recv(struct Con *con)
     ASSERT(con->keep_alive || con->parsed_method_ver_1_0);
     
     if (con->policy->max_header_sz && (data->len > con->policy->max_header_sz))
-      evnt_wait_cntl_del(con->evnt, POLLIN);
+      evnt_poll->wait_cntl_del(con->evnt, POLLIN);
 
     return (TRUE);
   }

@@ -8,14 +8,34 @@
 
 #include "glibc-strverscmp.h"
 
+void bag_del(Bag *bag, size_t num)
+{
+  ASSERT(num && (bag->num >= num));
+  
+  bag->free_key_func((void *)bag->data[num - 1].key);
+  bag->free_val_func(bag->data[num - 1].val);
+
+  if (bag->num == num)
+    --bag->num;
+  else
+  {
+    size_t scan = num - 1;
+
+    --bag->num;
+    while (scan < bag->num)
+    {
+      bag->data[scan] = bag->data[scan + 1];
+      ++scan;
+    }
+  }
+}
+
 void bag_del_all(Bag *bag)
 {
-  while (bag->num--)
-  {
-    bag->free_key_func((void *)bag->data[bag->num].key);
-    bag->free_val_func(bag->data[bag->num].val);
-  }
-  bag->num = 0;
+  while (bag->num)
+    bag_del(bag, bag->num);
+  
+  ASSERT(!bag->num);
 }
 
 Bag *bag_make(size_t sz,
@@ -73,6 +93,16 @@ Bag *bag_add_obj(Bag *bag, const char *key, void *val)
   ++bag->num;
 
   return (bag);
+}
+
+void bag_set_obj(Bag *bag, size_t num, const char *key, void *val)
+{
+  ASSERT(bag);
+  ASSERT(bag->num <= bag->sz);
+  ASSERT(num && (num <= bag->num));
+  
+  bag->data[bag->num - 1].key = key;
+  bag->data[bag->num - 1].val = val;
 }
 
 Bag *bag_add_cstr(Bag *bag, const char *key, char *val)
@@ -137,11 +167,10 @@ const Bag_obj *bag_iter_beg(Bag *bag, Bag_iter *iter)
   return (bag_iter_nxt(iter));
 }
 
-const Bag_obj *bag_srch_eq(Bag *bag,
+const Bag_obj *bag_srch_eq(Bag *bag, Bag_iter *iter,
                            int (*cmp_func)(const Bag_obj *, const void *),
                            const void *val)
 {
-  Bag_iter iter[1];
   const Bag_obj *obj = bag_iter_beg(bag, iter);
 
   while (obj)
@@ -153,6 +182,27 @@ const Bag_obj *bag_srch_eq(Bag *bag,
   }
 
   return (NULL);
+}
+
+const Bag_obj *bag_sc_srch_eq(Bag *bag,
+                              int (*cmp_func)(const Bag_obj *, const void *),
+                              const void *val)
+{
+  Bag_iter iter[1];
+
+  return (bag_srch_eq(bag, iter, cmp_func, val));
+}
+
+size_t bag_sc_srch_num_eq(Bag *bag,
+                          int (*cmp_func)(const Bag_obj *, const void *),
+                          const void *val)
+{
+  Bag_iter iter[1];
+
+  if (!bag_srch_eq(bag, iter, cmp_func, val))
+    return (0);
+
+  return (iter->num);
 }
 
 int bag_cb_srch_eq_key_ptr(const Bag_obj *obj, const void *val)

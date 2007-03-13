@@ -518,11 +518,13 @@ static Opt_serv_addr_opts *opt_serv_make_addr(Opt_serv_opts *opts)
     goto addr_init_fail;
   
   addr->next = NULL;
-  
+
+  addr->family          = opts->addr_beg->family;
   addr->tcp_port        = opts->addr_beg->tcp_port;
   addr->defer_accept    = opts->addr_beg->defer_accept;
   addr->q_listen_len    = opts->addr_beg->q_listen_len;
   addr->max_connections = opts->addr_beg->max_connections;
+  addr->local_perms     = opts->addr_beg->local_perms;
 
   addr->next = opts->addr_beg;
   opts->addr_beg = addr;
@@ -654,13 +656,34 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
 
     else if (!addr) return (FALSE);
     
-    else if (OPT_SERV_SYM_EQ("defer-accept"))
+    else if (OPT_SERV_SYM_EQ("family"))
+    {
+      CONF_SC_MAKE_CLIST_BEG(family, clist);
+
+      else if (OPT_SERV_SYM_EQ("ipv4") || OPT_SERV_SYM_EQ("inet"))
+        addr->family = AF_INET;
+      else if (OPT_SERV_SYM_EQ("ipv6") || OPT_SERV_SYM_EQ("inet6"))
+        addr->family = AF_INET6;
+      else if (OPT_SERV_SYM_EQ("local") || OPT_SERV_SYM_EQ("unix"))
+        addr->family = AF_LOCAL;
+
+      CONF_SC_MAKE_CLIST_END();
+    }
+    else if ((addr->family != AF_LOCAL) && OPT_SERV_SYM_EQ("defer-accept"))
       OPT_SERV_X_UINT(addr->defer_accept);
-    else if (OPT_SERV_SYM_EQ("port"))
+    else if ((addr->family != AF_LOCAL) && OPT_SERV_SYM_EQ("port"))
       OPT_SERV_X_UINT(addr->tcp_port);
+    else if ((addr->family == AF_LOCAL) && OPT_SERV_SYM_EQ("file"))
+      OPT_SERV_X_VSTR(opts, addr->acpt_address);
+    else if (((addr->family == AF_LOCAL) && OPT_SERV_SYM_EQ("perms")) ||
+             ((addr->family == AF_LOCAL) && OPT_SERV_SYM_EQ("permissions")))
+    { /* FIXME: need some sybols */
+      OPT_SERV_X_UINT(addr->local_perms);
+    }
     else if (OPT_SERV_SYM_EQ("addr") || OPT_SERV_SYM_EQ("address"))
       OPT_SERV_X_VSTR(opts, addr->acpt_address);
-    else if (OPT_SERV_SYM_EQ("cong") || OPT_SERV_SYM_EQ("congestion"))
+    else if ((addr->family != AF_LOCAL) &&
+             (OPT_SERV_SYM_EQ("cong") || OPT_SERV_SYM_EQ("congestion")))
       OPT_SERV_X_VSTR(opts, addr->acpt_cong);
     else if (OPT_SERV_SYM_EQ("policy"))
       OPT_SERV_X_VSTR(opts, addr->def_policy);
@@ -688,6 +711,9 @@ static int opt_serv__conf_d1(struct Opt_serv_opts *opts,
     OPT_SERV_X_TOGGLE(opts->use_pdeathsig);
   else if (OPT_SERV_SYM_EQ("pid-file"))
     return (opt_serv_sc_make_static_path(opts, conf, token, opts->pid_file));
+  else if (OPT_SERV_SYM_EQ("poll-backend"))
+    return (opt_serv_sc_make_static_path(opts, conf, token,
+                                         opts->poll_backend));
   else if (OPT_SERV_SYM_EQ("processes") ||
            OPT_SERV_SYM_EQ("procs"))
   {
@@ -1021,6 +1047,7 @@ void opt_serv_conf_free_beg(struct Opt_serv_opts *opts)
     return;
   
   vstr_free_base(opts->pid_file);         opts->pid_file         = NULL;
+  vstr_free_base(opts->poll_backend);     opts->poll_backend     = NULL;
   vstr_free_base(opts->cntl_file);        opts->cntl_file        = NULL;
   vstr_free_base(opts->chroot_dir);       opts->chroot_dir       = NULL;
   vstr_free_base(opts->vpriv_uid);        opts->vpriv_uid        = NULL;
@@ -1064,7 +1091,7 @@ static void opt_serv__io_lim_ref_cb(struct Vstr_ref *ref)
   opts->ref_io_limit = NULL; /* more magic */
 }
 
-int opt_serv_conf_init(Opt_serv_opts *opts)
+int opt_serv_conf_init(Opt_serv_opts *opts, sa_family_t family)
 {
   struct Opt_serv_policy_opts *popts = NULL;
   Opt_serv_addr_opts *addr = MK(sizeof(Opt_serv_addr_opts));
@@ -1087,18 +1114,23 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
     goto policy_init_fail;
 
   opts->pid_file         = vstr_make_base(NULL);
+  opts->poll_backend     = vstr_make_base(NULL);
   opts->cntl_file        = vstr_make_base(NULL);
   opts->chroot_dir       = vstr_make_base(NULL);
   opts->vpriv_uid        = vstr_make_base(NULL);
   opts->vpriv_gid        = vstr_make_base(NULL);
+
+  addr->family           = family;
   addr->acpt_filter_file = vstr_make_base(NULL);
   addr->acpt_address     = vstr_make_base(NULL);
   addr->acpt_cong        = vstr_make_base(NULL);
   addr->def_policy       = vstr_make_base(NULL);
+
   opts->ref_io_limit     = vstr_ref_make_ptr(&opts->io_limit,
                                              opt_serv__io_lim_ref_cb);
     
   if (!opts->pid_file         ||
+      !opts->poll_backend     ||
       !opts->cntl_file        ||
       !opts->chroot_dir       ||
       !opts->vpriv_uid        ||
@@ -1113,6 +1145,7 @@ int opt_serv_conf_init(Opt_serv_opts *opts)
 
   addr->next = NULL;
   
+  addr->local_perms     = 0;
   addr->tcp_port        = 0;
   addr->defer_accept    = OPT_SERV_CONF_DEF_TCP_DEFER_ACCEPT;
   addr->q_listen_len    = OPT_SERV_CONF_DEF_Q_LISTEN_LEN;
@@ -1214,7 +1247,7 @@ int opt_serv_sc_acpt_end(const Opt_serv_policy_opts *popts,
   {
     vlg_dbg1(vlg, "ACPT DEL ($<sa:%p>,%u,%u)\n", EVNT_SA(from_evnt),
              acpt_num, acpt_max);
-    evnt_wait_cntl_del(from_evnt, POLLIN);
+    evnt_poll->wait_cntl_del(from_evnt, POLLIN);
   }
   
   if (popts->max_connections && (evnt_num_all() > popts->max_connections))
@@ -1242,7 +1275,7 @@ void opt_serv_sc_free_beg(struct Evnt *evnt, const char *info_rep)
     {
       vlg_dbg1(vlg, "ACPT ADD ($<sa:%p>,%u,%u)\n", EVNT_SA(acpt_data->evnt),
                acpt_num, acpt_max);
-      evnt_wait_cntl_add(acpt_data->evnt, POLLIN);
+      evnt_poll->wait_cntl_add(acpt_data->evnt, POLLIN);
     }
     
     evnt_stats_add(acpt_data->evnt, evnt);
@@ -1276,6 +1309,12 @@ static void opt_serv__sig_raise_cont(int s_ig_num)
   raise(s_ig_num);
 }
 
+static void opt_serv__sig_term(int s_ig_num)
+{
+  vlg_sig_warn(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
+  evnt_signal_term = TRUE;
+}
+
 static void opt_serv__sig_cont(int s_ig_num)
 {
   if (0) /* s_ig_num == SIGCONT) */
@@ -1296,7 +1335,7 @@ static void opt_serv__sig_cont(int s_ig_num)
 static void opt_serv__sig_child(int s_ig_num)
 {
   ASSERT(s_ig_num == SIGCHLD);
-  evnt_child_exited = TRUE;
+  evnt_signal_child_exited = TRUE;
 }
 
 void opt_serv_sc_signals(void)
@@ -1333,21 +1372,34 @@ void opt_serv_sc_signals(void)
   OPT_SERV__SIG_OR_ERR(SIGHUP);
   OPT_SERV__SIG_OR_ERR(SIGCONT);
   
+  sa.sa_handler = opt_serv__sig_term;
+  OPT_SERV__SIG_OR_ERR(SIGTERM);
+
   sa.sa_handler = opt_serv__sig_raise_cont; /* queue print, and re-raise */
   
   OPT_SERV__SIG_OR_ERR(SIGTSTP);
-  OPT_SERV__SIG_OR_ERR(SIGTERM);
 }
 #undef SERV__SIG_OR_ERR
 
-void opt_serv_sc_check_children(void)
+void opt_serv_sc_check_sig_children(void)
 {
-  if (evnt_child_exited)
+  if (evnt_signal_child_exited)
   {
-    vlg_warn(vlg, "Child exited.\n");
+    vlg_warn(vlg, "Child exited, closing down.\n");
     evnt_acpt_close_all();
     evnt_scan_q_close();
-    evnt_child_exited = FALSE;
+    evnt_signal_child_exited = FALSE;
+  }
+}
+
+void opt_serv_sc_check_sig_term(void)
+{
+  if (evnt_signal_term)
+  {
+    vlg_info(vlg, "Termination signal received, closing down.\n");
+    evnt_acpt_close_all();
+    evnt_scan_q_close();
+    evnt_signal_term = FALSE;
   }
 }
 
@@ -1464,7 +1516,7 @@ static int opt_serv__build_str(struct Opt_serv_opts *opts,
 static int opt_serv__sc_make_str(struct Opt_serv_opts *opts,
                                  Conf_parse *conf, Conf_token *token,
                                  Vstr_base *s1, size_t pos, size_t len,
-                                 int doing_init)
+                                 int doing_init, int doing_input)
 {
   int clist = FALSE;
 
@@ -1475,7 +1527,9 @@ static int opt_serv__sc_make_str(struct Opt_serv_opts *opts,
 
   if (0) { }
   
-  else if (OPT_SERV_SYM_EQ("<none>") || OPT_SERV_SYM_EQ("<empty>"))
+  else if (OPT_SERV_SYM_EQ("<none>") || OPT_SERV_SYM_EQ("<empty>") ||
+           (doing_input &&
+            (OPT_SERV_SYM_EQ("<stdin>") || OPT_SERV_SYM_EQ("<STDIN>"))))
   {
     return (vstr_del(s1, pos, len));
   }
@@ -1523,14 +1577,23 @@ int opt_serv_sc_make_str(struct Opt_serv_opts *opts,
                          Conf_parse *conf, Conf_token *token,
                          Vstr_base *s1, size_t pos, size_t len)
 {
-  return (opt_serv__sc_make_str(opts, conf, token, s1, pos, len, FALSE));
+  return (opt_serv__sc_make_str(opts, conf, token, s1, pos, len, FALSE, FALSE));
 }
 
 int opt_serv_sc_make_static_path(struct Opt_serv_opts *opts,
                                  Conf_parse *conf, Conf_token *token,
                                  Vstr_base *s1)
 {
-  return (opt_serv__sc_make_str(opts, conf, token, s1, 1, s1->len, TRUE));
+  return (opt_serv__sc_make_str(opts, conf, token, s1, 1, s1->len,
+                                TRUE, FALSE));
+}
+
+int opt_serv_sc_make_static_input(struct Opt_serv_opts *opts,
+                                  Conf_parse *conf, Conf_token *token,
+                                  Vstr_base *s1)
+{
+  return (opt_serv__sc_make_str(opts, conf, token, s1, 1, s1->len,
+                                TRUE, TRUE));
 }
 
 static int opt_serv__build_uintmax(Conf_parse *conf, Conf_token *token,

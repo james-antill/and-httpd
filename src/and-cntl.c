@@ -268,6 +268,18 @@ static void cl_cb_func_free(struct Evnt *evnt)
   --server_clients_count;
 }
 
+static const struct Evnt_cbs and_cntl__evnt_cbs =
+{
+ evnt_cb_func_accept,    /* def */
+ cl_cb_func_connect,
+
+ cl_cb_func_recv,
+ evnt_cb_func_send,      /* def */
+
+ cl_cb_func_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
 static struct con *cl_make(const char *server_fname)
 {
   struct con *ret = MK(sizeof(struct con));
@@ -277,9 +289,7 @@ static struct con *cl_make(const char *server_fname)
   if (!evnt_make_con_local(ret->ev, server_fname))
     err(EXIT_FAILURE, "%s", __func__);
 
-  ret->ev->cbs->cb_func_connect = cl_cb_func_connect;
-  ret->ev->cbs->cb_func_recv    = cl_cb_func_recv;
-  ret->ev->cbs->cb_func_free    = cl_cb_func_free;
+  ret->ev->cbs = &and_cntl__evnt_cbs;
   
   ++server_clients_count;
 
@@ -653,11 +663,13 @@ int main(int argc, char *argv[])
   
   cl_cmd_line(argc, argv);
 
+  evnt_poll = &EVNT_POLL_BE_DEF;
+
   cl_beg();
   
   while (io_ind_w && (io_w->len || evnt_waiting() || io_ind_r || io_r->len))
   {
-    int ready = evnt_poll();
+    int ready = evnt_poll->poll();
     struct timeval tv;
     
     if ((ready == -1) && (errno != EINTR))

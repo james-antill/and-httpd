@@ -364,3 +364,31 @@
   364. <Symbol> = /index.html
   365. <Symbol> = return
   366. <Symbol> = <gone>
+367. [Circular bracket list]
+  368. <Symbol> = org.and.daemon-conf-1.0
+  369. <Symbol> = policy
+  370. <Symbol> = conf-httpd-tst-11.1-<limited>
+  371. <Symbol> = limit
+  372. <Symbol> = io
+  373. [Circular bracket list]
+    374. <Symbol> = policy-process/s
+    375. <Symbol> = read
+    376. <Symbol> = 1_000
+  377. <Symbol> = policy-connection/s
+  378. <Symbol> = read
+  379. <Symbol> = 500
+380. [Circular bracket list]
+  381. <Symbol> = org.and.httpd-conf-main-1.0
+  382. <Symbol> = match-connection
+  383. [Square bracket list]
+    384. <Symbol> = protect-vary
+    385. <Symbol> = ||
+    386. <Symbol> = client-ipv4-cidr-eq
+    387. <Symbol> = 217.0.0.1/8
+    388. <Symbol> = server-ipv4-cidr-eq
+    389. <Symbol> = 217.0.0.1/32
+    390. <Symbol> = server-ipv4-port-eq
+    391. <Symbol> = 80
+    392. <Symbol> = server-ipv6-port-eq
+    393. <Symbol> = 80
+  394. <Symbol> = <close>

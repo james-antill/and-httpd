@@ -137,6 +137,41 @@ Accept-Encoding: gzip
 
 dillo, snarf == HTTP/1.0 minimum
 
+           SonyEricssonZ300a/R4H TelecaBrowser/4.08 UP.Link/6.3.0.0.0
+           ----------------------------------------------------------
+
+GET / HTTP/1.1
+Host: work.and.org
+accept: application/vnd.wap.wmlc, application/vnd.wap.wbxml, application/vnd.wap.wmlscriptc, */*,text/x-hdml,image/mng,image/x-mng,video/mng,video/x-mng,image/bmp,text/html,text/vnd.wap.wml
+accept-application: 1, 2, 3
+accept-charset: us-ascii, iso-8859-1, utf-8, iso-10646-ucs-2,*
+accept-language: en
+bearer-indication: 0
+encoding-version: 1.3
+user-agent: SonyEricssonZ300a/R4H TelecaBrowser/4.08 UP.Link/6.3.0.0.0
+x-up-devcap-charset: US-ASCII,ISO-8859-1,ISO-10646-UCS-2
+x-up-devcap-max-pdu: 30000
+x-up-uplink: vmag.mycingular.net
+x-up-wtls-info: off
+x-wap-profile: "http://www.sonyericsson.com/UAprof/Z300aR101.xml"
+x-up-devcap-iscolor: 1
+x-up-deolor: 1
+x-up-devcap-screendepth: 12
+x-up-devcap-numsoftkeys: 0
+x-up-devcap-screenpixels: 128,128
+x-up-subno: PPU_1160410876509_6382_1156909609_vmag.mycingular.net
+Via: 1.1 schmagr1fe10-dmz.mycingular.net
+Connection: close
+
+
+          http://feeds.technorati.com/contacts/
+          -------------------------------------
+GET / HTTP/1.1
+User-Agent: Technorati contacts proxy (http://technorati.com/contacts/)
+Host: code.and.org:8008
+Pragma: no-cache
+Accept: */*
+
 
            zsync-0.3.3
            -----------

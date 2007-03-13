@@ -405,6 +405,18 @@ static int vlg__fmt_add_vstr_add_hexdump_vstr(Vstr_conf *conf, const char *name)
                        VSTR_TYPE_FMT_END));
 }
 
+static size_t xstrnspn_alnum(const char *ptr, size_t len)
+{
+  const char *orig_ptr = ptr;
+  
+  while (len-- && strchr("0123456789"
+                         "abcdefghijklmnopqrstuvwxyz"
+                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ", *ptr))
+    ++ptr;
+
+  return (ptr - orig_ptr);
+}
+
 /* easy way to print socket options... */
 static int vlg__fmt__add_vstr_add_sockopt_s(Vstr_base *base, size_t pos,
                                             Vstr_fmt_spec *spec)
@@ -425,9 +437,10 @@ static int vlg__fmt__add_vstr_add_sockopt_s(Vstr_base *base, size_t pos,
   {
     socklen_t len = sizeof(buf);
     int ret = -1;
-    
+
+    /* kernel is returning stuff with crap at the end */
     if ((ret = getsockopt(fd, level, optname, buf, &len)) != -1)
-      obj_len = len;
+      obj_len = xstrnspn_alnum(buf, len);
     else
     {
       ptr = "<error>";
@@ -542,7 +555,7 @@ static int vlg__fmt_add_vstr_add_sa(Vstr_conf *conf, const char *name)
                        VSTR_TYPE_FMT_END));
 }
 
-int vlg_sc_fmt_add_all(Vstr_conf *conf)
+static int vlg__sc_fmt_add_all(Vstr_conf *conf) /* internal... */
 {
   return (VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_vstr,
                           "<vstr", "p%zu%zu", ">") &&
@@ -552,6 +565,16 @@ int vlg_sc_fmt_add_all(Vstr_conf *conf)
                           "<vstr.hexdump", "p%zu%zu", ">") &&
           VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sect_vstr,
                           "<vstr.sect", "p%p%u", ">") &&
+          VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sa,
+                          "<sa", "p", ">") &&
+          VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sockopt_s,
+                          "<sockopt.s", "d%d%d", ">"));
+}
+
+int vlg_sc_fmt_add_all(Vstr_conf *conf)
+{
+  return (VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_hexdump_vstr,
+                          "<vstr.hexdump", "p%zu%zu", ">") &&
           VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sa,
                           "<sa", "p", ">") &&
           VSTR_SC_FMT_ADD(conf, vlg__fmt_add_vstr_add_sockopt_s,
@@ -642,14 +665,14 @@ void vlg_init(void)
       !vstr_cntl_conf(vlg__conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP, "_") ||
       !vstr_cntl_conf(vlg__conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP, "\3") ||
       !vstr_sc_fmt_add_all(vlg__conf) ||
-      !vlg_sc_fmt_add_all(vlg__conf) ||
+      !vlg__sc_fmt_add_all(vlg__conf) ||
       FALSE)
     goto malloc_err_vstr_fmt_all;
   if (!vstr_cntl_conf(vlg__sig_conf, VSTR_CNTL_CONF_SET_FMT_CHAR_ESC, '$') ||
       !vstr_cntl_conf(vlg__sig_conf, VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_SEP,"_")||
       !vstr_cntl_conf(vlg__sig_conf,VSTR_CNTL_CONF_SET_LOC_CSTR_THOU_GRP,"\3")||
       !vstr_sc_fmt_add_all(vlg__sig_conf) ||
-      !vlg_sc_fmt_add_all(vlg__sig_conf) ||
+      !vlg__sc_fmt_add_all(vlg__sig_conf) ||
       FALSE)
     goto malloc_err_vstr_fmt_all;
 

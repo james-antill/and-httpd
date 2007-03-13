@@ -19,6 +19,12 @@ def ui_range(start, end=None, step=None):
 		step = 1
 	return xrange(start, end + 1, step)
 
+# This is really required for the cp_conf_addMD5 builder ... otherwise
+# regenerating generated files can screw up the MD5's. The problem is that it
+# makes scons-0.96.1 eat memory. scons-0.96.93 seems good though.
+#  So _don't_ delete files generated with dates etc.
+# TargetSignatures('content')
+
 ## Use this to drop the CPU utilization, but maybe screwup rebuilds...
 ## SourceSignatures('timestamp')
 
@@ -39,7 +45,7 @@ srcs = []
 
 ##  Apply the above using the default "make index" and "link" functions (and
 ## the default configuration for the generated html).
-hlprs.apply_dif_idx(srcs, env.Make_indx, env.LN)
+hlprs.apply_dif_idx(srcs, env)
 srcs = []
 
 
@@ -47,8 +53,8 @@ srcs = []
 example_dirs = [["example.com/foo/examples/", "*.[ch]"],
                 ["example.net/bar/abcd/", "*.[c]"]]
 
-# hlprs.apply_sam_examples_code(example_dirs, env.Highlight, env.LN)
-# hlprs.apply_sam_examples_idx(example_dirs,  env, env.Make_ex_indx)
+# hlprs.apply_sam_examples_code(example_dirs, env)
+# hlprs.apply_sam_examples_idx(example_dirs,  env)
 
 ## Highlight a single file...
 #

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002, 2003, 2004, 2005, 2006  James Antill
+ *  Copyright (C) 2002, 2003, 2004, 2005, 2006, 2007  James Antill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -37,16 +37,25 @@
 
 #include "bag.h"
 
-struct Cntl_child_obj
+struct Cntl_child
 {
  struct Evnt evnt[1];
  pid_t pid;
+
+ Bag *waiters; /* list of struct Cntl_con */
+
+ struct Cntl_child *next; /* list of all childs... */
+ struct Cntl_child *prev;
 };
 
-struct Cntl_waiter_obj
+struct Cntl_con
 {
- struct Evnt *evnt;
- unsigned int num;
+ struct Evnt evnt[1];
+
+ unsigned int num_child_waiting_procs; /* waiting for X child procs. */
+
+ struct Cntl_con *next; /* list of all cntl cons... */
+ struct Cntl_con *prev;
 };
 
 /* for simplicity */
@@ -56,11 +65,56 @@ static Vlg *vlg = NULL;
 static struct Evnt *acpt_cntl_evnt = NULL;
 static struct Evnt *acpt_pipe_evnt = NULL;
 
-static Bag *childs  = NULL;
-static Bag *waiters = NULL;
+static struct Cntl_child *cntl_childs_beg = NULL;
+static struct Cntl_con *cntl_cons_beg = NULL;
 
-static unsigned int potential_waiters = 0;
+#if COMPILE_DEBUG
+static unsigned int cntl__childs_waiting_num(void)
+{
+  struct Cntl_child *scan = cntl_childs_beg;
+  unsigned int ret = 0;
+  
+  while (scan)
+  {
+    Bag_iter iter[1];
+    const Bag_obj *obj = bag_iter_beg(scan->waiters, iter);
+    
+    ASSERT(!scan->next || (scan->next->prev == scan));
+    ASSERT((scan == cntl_childs_beg) ||
+           (scan->prev && (scan->prev->next == scan)));
+    
+    while (obj)
+    {
+      if (obj->val)
+        ++ret;
+      obj = bag_iter_nxt(iter);
+    }
 
+    scan = scan->next;
+  }
+
+  return (ret);
+}
+
+static unsigned int cntl__cons_waiting_num(void)
+{
+  struct Cntl_con *scan = cntl_cons_beg;
+  unsigned int ret = 0;
+  
+  while (scan)
+  {
+    ASSERT(!scan->next || (scan->next->prev == scan));
+    ASSERT((scan == cntl_cons_beg) ||
+           (scan->prev && (scan->prev->next == scan)));
+
+    ret += scan->num_child_waiting_procs;
+
+    scan = scan->next;
+  }
+
+  return (ret);
+}
+#endif
 
 static void cntl__fin(Vstr_base *out)
 {
@@ -75,105 +129,83 @@ static void cntl__fin(Vstr_base *out)
   vstr_add_netstr_end(out, ns1, out->len);
 }
 
-static struct Cntl_waiter_obj *cntl_waiter_get_first(void)
+static const Bag_obj *cntl_waiter_get_first(struct Cntl_child *child)
 {
   Bag_iter iter[1];
-  const Bag_obj *obj = bag_iter_beg(waiters, iter);
+  const Bag_obj *obj = bag_iter_beg(child->waiters, iter);
 
-  while (obj)
-  {
-    struct Cntl_waiter_obj *val = obj->val;
-      
-    if (val->num)
-      return (val);
-    
-    obj = bag_iter_nxt(iter);
-  }
+  if (obj)
+    return (obj);
 
   return (NULL);
 }
 
-static int cntl_waiter_add(struct Evnt *evnt, size_t pos, size_t len, int *stop)
+static int cntl_waiter_add(struct Cntl_con *con, size_t pos, size_t len)
 {
-  Bag_iter iter[1];
-  const Bag_obj *obj = NULL;
-  struct Cntl_waiter_obj *val = NULL;
-  Bag *tmp = NULL;
+  struct Evnt *evnt = con->evnt;
+  struct Cntl_child *scan = cntl_childs_beg;
   
-  ASSERT(stop);
-  
-  if (!childs)
+  if (!scan)
   {
     cntl__fin(evnt->io_w);
     return (TRUE);
   }
-  
-  if (!(val = MK(sizeof(struct Cntl_waiter_obj))))
-    return (FALSE);
-  
-  if (!(tmp = bag_add_obj(waiters, NULL, val)))
-  {
-    F(val);
-    VLG_WARNNOMEM_RET(FALSE, (vlg, "%s: %m\n", "cntl waiters"));
-  }
-  
-  waiters = tmp;
-  
-  val->evnt = evnt;
-  val->num  = childs->num;
-  
-  obj = bag_iter_beg(childs, iter);
-  while (obj)
-  {
-    struct Cntl_child_obj *child = (void *)obj->val;
-    Vstr_base *out = NULL;
 
-    if (!child)
-      return (FALSE);
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+  while (scan)
+  {
+    Bag *tmp = NULL;
+    Vstr_base *out = NULL;
     
-    out = child->evnt->io_w;
+    if (!(tmp = bag_add_obj(scan->waiters, "", con)))
+      VLG_WARNNOMEM_RET(FALSE, (vlg, "%s: %m\n", "cntl waiters"));
+    scan->waiters = tmp;
     
+    ++con->num_child_waiting_procs;
+
+    out = scan->evnt->io_w;
     if (!vstr_add_vstr(out, out->len, evnt->io_r, pos, len, VSTR_TYPE_ADD_DEF))
     {
       out->conf->malloc_bad = FALSE;
       return (FALSE);
     }
     
-    if (!evnt_send_add(child->evnt, FALSE, 32))
+    if (!evnt_send_add(scan->evnt, FALSE, 32))
     {
-      evnt_close(child->evnt);
+      evnt_close(scan->evnt);
       return (FALSE);
     }
     
-    evnt_put_pkt(child->evnt);
-    obj = bag_iter_nxt(iter);
+    evnt_put_pkt(scan->evnt);
+    
+    scan = scan->next;
   }
-  
-  evnt_wait_cntl_del(evnt, POLLIN);
-  *stop = TRUE;
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+
+  evnt_poll->wait_cntl_del(evnt, POLLIN);
   
   return (TRUE);
 }
 
-static void cntl_waiter_del(struct Evnt *child_evnt,
-                            struct Cntl_waiter_obj *val)
+static void cntl_waiter_del(struct Cntl_child *child,
+                            struct Cntl_con *con)
 {
-  evnt_got_pkt(child_evnt);
+  evnt_got_pkt(child->evnt);
 
-  if (!--val->num)
+  ASSERT(cntl_waiter_get_first(child) &&
+         (cntl_waiter_get_first(child)->val == con));
+  
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+  if (con && !--con->num_child_waiting_procs)
   {
-    if (val->evnt)
-    {
-      cntl__fin(val->evnt->io_w);
-      if (!evnt_send_add(val->evnt, FALSE, 32))
-        evnt_close(val->evnt);
-      else
-        evnt_wait_cntl_add(val->evnt, POLLIN);
-    }
-    
-    if (!cntl_waiter_get_first()) /* no more left... */
-      bag_del_all(waiters);
+    cntl__fin(con->evnt->io_w);
+    if (!evnt_send_add(con->evnt, FALSE, 32))
+      evnt_close(con->evnt);
+    else
+      evnt_poll->wait_cntl_add(con->evnt, POLLIN);
   }
+  bag_del(child->waiters, 1);
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
 }
 
 static void cntl__ns_out_cstr_ptr(Vstr_base *out, const char *ptr)
@@ -260,9 +292,9 @@ static void cntl__scan_events(Vstr_base *out, const char *tag, struct Evnt *beg)
                      (unsigned long)ev->mtime.tv_sec,
                      (unsigned long)ev->mtime.tv_usec);
     cntl__ns_out_fmt(out, "pid[%lu]", (unsigned long)getpid());
-    cntl__ns_out_fmt(out, "req_got[%'u:%u]",
+    cntl__ns_out_fmt(out, "req_got[%'ju:%ju]",
                      ev->acct.req_got, ev->acct.req_got);
-    cntl__ns_out_fmt(out, "req_put[%'u:%u]",
+    cntl__ns_out_fmt(out, "req_put[%'ju:%ju]",
                      ev->acct.req_put, ev->acct.req_put);
     cntl__ns_out_fmt(out, "recv[${BKMG.ju:%ju}:%ju]",
                      ev->acct.bytes_r, ev->acct.bytes_r);
@@ -313,51 +345,67 @@ static void cntl__dbg(Vstr_base *out)
   vstr_add_netstr_end(out, ns1, out->len);
 }
 
-static int cntl__srch_waiter_evnt(const Bag_obj *obj, const void *data)
+/* if we have no connections, and no way to get new connections then close
+ * the coms channel with the children. */
+static void cntl__check_child_shutdown(void)
 {
-  const struct Cntl_waiter_obj *val = obj->val;
-  const struct Evnt *evnt = data;
-
-  return (val->evnt == evnt);
+  if (!acpt_cntl_evnt && !cntl_cons_beg)
+  {
+    struct Cntl_child *scan = cntl_childs_beg;
+    
+    while (scan)
+    {
+      evnt_close(scan->evnt);
+      scan = scan->next;
+    }
+  }
 }
 
 static void cntl__cb_func_free(struct Evnt *evnt)
 {
+  struct Cntl_con *con = (struct Cntl_con *)evnt;
+  struct Cntl_child *scan = cntl_childs_beg;
+  
   opt_serv_sc_free_beg(evnt, "CNTL FREE");
 
-  if (waiters)
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+  while (con->num_child_waiting_procs && scan)
   {
-    const Bag_obj *obj = bag_srch_eq(waiters, cntl__srch_waiter_evnt, evnt);
+    size_t num = bag_sc_srch_num_eq(scan->waiters,
+                                    bag_cb_srch_eq_val_ptr, evnt);
     
-    if (obj)
+    if (num)
     {
-      struct Cntl_waiter_obj *val = obj->val;
-
-      ASSERT(val->evnt == evnt);
-      val->evnt = NULL;
+      bag_set_obj(scan->waiters, num, "", NULL);
+      --con->num_child_waiting_procs;
     }
+    
+    scan = scan->next;
   }
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+  
+  if (con->prev)
+    con->prev->next = con->next;
+  else
+    cntl_cons_beg = con->next;
+  if (con->next)
+    con->next->prev = con->prev;
+
+  cntl__check_child_shutdown();
   
   F(evnt);
-  
-  ASSERT(potential_waiters >= 1);
-  --potential_waiters;
-
-  if (childs && !potential_waiters && !acpt_cntl_evnt)
-    bag_del_all(childs);
 }
 
 static int cntl__cb_func_recv(struct Evnt *evnt)
 {
-  int ret = evnt_cb_func_recv(evnt);
-  int stop = FALSE;
+  struct Cntl_con *con = (struct Cntl_con *)evnt;
   
-  if (!ret)
+  if (!evnt_cb_func_recv(evnt))
     goto malloc_bad;
 
-  vlg_dbg2(vlg, "CNTL recv %zu\n", evnt->io_r->len);
+  vlg_dbg2(vlg, "CNTL recv() io_r->len=%zu\n", evnt->io_r->len);
 
-  while (evnt->io_r->len && !stop)
+  while (evnt->io_r->len && !con->num_child_waiting_procs)
   {
     size_t pos  = 0;
     size_t len  = 0;
@@ -385,7 +433,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
     { /* FIXME: if arg. ns2  ... search for that and close */
       cntl__close(evnt->io_w);
       
-      if (!cntl_waiter_add(evnt, 1, ns1, &stop))
+      if (!cntl_waiter_add(con, 1, ns1))
         goto malloc_bad;
     }
     else if (VEQ(evnt->io_r, pos, len, "DBG"))
@@ -393,7 +441,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       vlg_debug(vlg);
       cntl__dbg(evnt->io_w);
 
-      if (!cntl_waiter_add(evnt, 1, ns1, &stop))
+      if (!cntl_waiter_add(con, 1, ns1))
         goto malloc_bad;
     }
     else if (VEQ(evnt->io_r, pos, len, "UNDBG"))
@@ -401,7 +449,7 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       vlg_undbg(vlg);
       cntl__dbg(evnt->io_w);
 
-      if (!cntl_waiter_add(evnt, 1, ns1, &stop))
+      if (!cntl_waiter_add(con, 1, ns1))
         goto malloc_bad;
     }
     else if (VEQ(evnt->io_r, pos, len, "LIST"))
@@ -413,14 +461,14 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
       cntl__scan_events(evnt->io_w, "NONE",      evnt_queue("none"));
       cntl__scan_events(evnt->io_w, "SEND_NOW",  evnt_queue("send_now"));
       
-      if (!cntl_waiter_add(evnt, 1, ns1, &stop))
+      if (!cntl_waiter_add(con, 1, ns1))
         goto malloc_bad;
     }
     else if (VEQ(evnt->io_r, pos, len, "STATUS"))
     {
       cntl__status(evnt->io_w);
 
-      if (!cntl_waiter_add(evnt, 1, ns1, &stop))
+      if (!cntl_waiter_add(con, 1, ns1))
         goto malloc_bad;
     }
     else
@@ -444,6 +492,17 @@ static int cntl__cb_func_recv(struct Evnt *evnt)
   return (FALSE);
 }
 
+static const struct Evnt_cbs cntl__evnt_cbs =
+{
+ evnt_cb_func_accept,    /* def */
+ evnt_cb_func_connect,   /* def */
+
+ cntl__cb_func_recv,
+ evnt_cb_func_send,      /* def */
+
+ cntl__cb_func_free,
+ evnt_cb_func_shutdown_r /* def */
+};
 
 static void cntl__cb_func_acpt_free(struct Evnt *evnt)
 {
@@ -470,15 +529,15 @@ static void cntl__cb_func_acpt_free(struct Evnt *evnt)
   vstr_free_base(fname);
   
   evnt_acpt_close_all();
-  
-  if (childs && !potential_waiters)
-    bag_del_all(childs);
+
+  cntl__check_child_shutdown();
 }
 
 static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
                                          struct sockaddr *sa, socklen_t len)
 {
   Acpt_listener *acpt_listener = (Acpt_listener *)from_evnt;
+  struct Cntl_con *con = NULL;
   struct Evnt *evnt = NULL;
   
   ASSERT(acpt_cntl_evnt);
@@ -489,8 +548,17 @@ static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
   if (sa->sa_family != AF_LOCAL)
     goto valid_family_fail;
   
-  if (!(evnt = MK(sizeof(struct Evnt))))
+  if (!(con = MK(sizeof(struct Cntl_con))))
     goto mk_acpt_fail;
+  evnt = con->evnt;
+  
+  con->prev = NULL;
+  if ((con->next = cntl_cons_beg))
+    con->next->prev = con;
+  cntl_cons_beg = con;
+
+  ((struct Cntl_con *)evnt)->num_child_waiting_procs = 0;
+  
   if (!evnt_make_acpt_ref(evnt, fd, from_evnt->sa_ref))
     goto make_acpt_fail;
 
@@ -498,12 +566,9 @@ static struct Evnt *cntl__cb_func_accept(struct Evnt *from_evnt, int fd,
 
   vlg_info(vlg, "CNTL CONNECT from[$<sa:%p>]\n", EVNT_SA(evnt));
 
-  evnt->cbs->cb_func_recv = cntl__cb_func_recv;
-  evnt->cbs->cb_func_free = cntl__cb_func_free;
+  evnt->cbs = &cntl__evnt_cbs;
 
   evnt->acpt_sa_ref = vstr_ref_add(acpt_listener->ref);
-  
-  ++potential_waiters;
   
   return (evnt);
   
@@ -527,6 +592,18 @@ static void cntl__sc_serv_make_acpt_data_cb(Vstr_ref *ref)
   F(ptr);
   free(ref);
 }
+
+static const struct Evnt_cbs cntl__acpt_evnt_cbs =
+{
+ cntl__cb_func_accept,
+ evnt_cb_func_connect,   /* def */
+
+ evnt_cb_func_recv,      /* def */
+ evnt_cb_func_send,      /* def */
+
+ cntl__cb_func_acpt_free,
+ evnt_cb_func_shutdown_r /* def */
+};
 
 void cntl_make_file(Vlg *passed_vlg, const Vstr_base *fname)
 {
@@ -571,13 +648,12 @@ void cntl_make_file(Vlg *passed_vlg, const Vstr_base *fname)
   acpt_listener->ref = ref;
 
   /* cp vstr for name */
-  if (!evnt_make_bind_local(evnt, fname_cstr, q_listen_len))
+  if (!evnt_make_bind_local(evnt, fname_cstr, q_listen_len, 0600))
     vlg_err(vlg, EXIT_FAILURE, "cntl file(%s): %m\n", fname_cstr);
   acpt_data->evnt = evnt;
   acpt_data->sa   = vstr_ref_add(evnt->sa_ref);
 
-  evnt->cbs->cb_func_accept = cntl__cb_func_accept;
-  evnt->cbs->cb_func_free   = cntl__cb_func_acpt_free;
+  evnt->cbs = &cntl__acpt_evnt_cbs;
 
   acpt_cntl_evnt = evnt;
 }
@@ -614,6 +690,30 @@ static void cntl__cb_func_pipe_acpt_free(struct Evnt *evnt)
   evnt_acpt_close_all();
 }
 
+static const struct Evnt_cbs cntl__acpt_cntl_evnt_cbs =
+{
+ evnt_cb_func_accept,    /* def */
+ evnt_cb_func_connect,   /* def */
+
+ cntl__cb_func_recv,
+ evnt_cb_func_send,      /* def */
+
+ cntl__cb_func_cntl_acpt_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
+static const struct Evnt_cbs cntl__acpt_pipe_evnt_cbs =
+{
+ evnt_cb_func_accept,    /* def */
+ evnt_cb_func_connect,   /* def */
+
+ evnt_cb_func_recv,      /* def */
+ evnt_cb_func_send,      /* def */
+
+ cntl__cb_func_pipe_acpt_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
 /* used to get death sig or pass through cntl data */
 static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
 {
@@ -626,13 +726,12 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
     
     ASSERT(vlg       == passed_vlg);
 
-    if (!evnt_poll_swap_accept_read(acpt_cntl_evnt, fd))
+    if (!evnt_poll->swap_accept_read(acpt_cntl_evnt, fd))
       vlg_abort(vlg, "%s: %m\n", "swap_acpt");
 
     close(old_fd);
     
-    acpt_cntl_evnt->cbs->cb_func_recv = cntl__cb_func_recv;
-    acpt_cntl_evnt->cbs->cb_func_free = cntl__cb_func_cntl_acpt_free;
+    acpt_cntl_evnt->cbs = &cntl__acpt_cntl_evnt_cbs;
 
     vstr_free_base(acpt_listener->fname);
     acpt_listener->fname = NULL;
@@ -662,44 +761,33 @@ static void cntl_pipe_acpt_fds(Vlg *passed_vlg, int fd, int allow_pdeathsig)
     
     if (!evnt_make_custom(acpt_pipe_evnt, fd, 0, 0))
       vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", "pipe evnt");
-    
-    acpt_pipe_evnt->cbs->cb_func_free = cntl__cb_func_pipe_acpt_free;
+
+    acpt_cntl_evnt->cbs = &cntl__acpt_pipe_evnt_cbs;
   }
 }
 
-static void cntl__bag_cb_free_evnt(void *val)
-{
-  evnt_close(val);
-}
-
-static void cntl__bag_cb_free_F(void *val)
-{
-  F(val);
-}
-
-void cntl_child_make(unsigned int num)
-{
-  ASSERT(!childs && !waiters && acpt_cntl_evnt);
-  
-  if (!(childs  = bag_make(num, bag_cb_free_nothing, cntl__bag_cb_free_evnt)))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "%s: %m\n", "cntl children"));
-  if (!(waiters = bag_make(4,   bag_cb_free_nothing, cntl__bag_cb_free_F)))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "%s: %m\n", "cntl children"));
-}
-
 void cntl_child_free(void)
-{
-  bag_free(childs);  childs  = NULL;
-  bag_free(waiters); waiters = NULL;
+{ /* close all Child events... */
+  struct Cntl_child *scan = cntl_childs_beg;
+  
+  while (scan)
+  {
+    evnt_close(scan->evnt);
+    scan = scan->next;
+  }
 }
 
 static int cntl__cb_func_child_recv(struct Evnt *evnt)
 {
-  struct Cntl_waiter_obj *val = cntl_waiter_get_first();
+  struct Cntl_child *child = (struct Cntl_child *)evnt;
+  struct Cntl_con *con = NULL;
+  int ret = -1;
 
-  ASSERT(val);
-  
-  if (!evnt_cb_func_recv(evnt))
+  ret = evnt_cb_func_recv(evnt);
+  if (!ret && evnt->io_r_shutdown)
+    return (FALSE); /* we're probably going all the way down now */
+
+  if (!ret)
     goto malloc_bad;
 
   while (evnt->io_r->len)
@@ -711,8 +799,11 @@ static int cntl__cb_func_child_recv(struct Evnt *evnt)
     size_t vlen = 0;
     size_t nse2 = 0;
     int done = FALSE;
+    const Bag_obj *bobj = cntl_waiter_get_first(child);
     
-    ASSERT(val);
+    ASSERT(bobj);
+
+    con = bobj->val;
   
     if (!(ns1 = vstr_parse_netstr(evnt->io_r, 1, evnt->io_r->len, &pos, &len)))
     {
@@ -725,9 +816,8 @@ static int cntl__cb_func_child_recv(struct Evnt *evnt)
     {
       if (!done && !vlen && (nse2 == len))
       {
-        cntl_waiter_del(evnt, val);
+        cntl_waiter_del(child, con);
         vstr_del(evnt->io_r, 1, ns1);
-        val = cntl_waiter_get_first();
         break;
       }
       
@@ -740,11 +830,11 @@ static int cntl__cb_func_child_recv(struct Evnt *evnt)
     if (len)
       VLG_WARN_RET(FALSE, (vlg, "invalid entry\n"));
 
-    if (!val->evnt)
+    if (!con)
       vstr_del(evnt->io_r, 1, ns1);
     else
     {
-      struct Evnt *out = val->evnt;
+      struct Evnt *out = con->evnt;
       
       if (!vstr_mov(out->io_w, out->io_w->len, evnt->io_r, 1, ns1))
         goto malloc_bad;
@@ -754,44 +844,83 @@ static int cntl__cb_func_child_recv(struct Evnt *evnt)
   return (TRUE);
   
  malloc_bad:
-  evnt_close(val->evnt);
+  if (con) /* if a con is available cascade the error down to it */
+    evnt_close(con->evnt);
   evnt->io_r->conf->malloc_bad = FALSE;
   evnt->io_w->conf->malloc_bad = FALSE;
-  return (TRUE); /* this is "true" because the app. dies if we kill this con */
+  return (TRUE); /* this is "true" because the app. dies if we kill the child */
 }
 
 static void cntl__cb_func_child_free(struct Evnt *evnt)
 {
-  if (childs)
-  {
-    const Bag_obj *obj = bag_srch_eq(childs, bag_cb_srch_eq_val_ptr, evnt);
-    
-    if (obj) /* FIXME: const cast */
-      ((Bag_obj *)obj)->val = NULL;
-  }
+  struct Cntl_child *child = (struct Cntl_child *)evnt;
+  const Bag_obj *scan = NULL;
   
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+  while ((scan = cntl_waiter_get_first(child)))
+  {
+    struct Cntl_con *con = scan->val;
+    
+    bag_del(child->waiters, 1);
+
+    if (con)
+    {
+      --con->num_child_waiting_procs;
+      evnt_poll->wait_cntl_add(con->evnt, POLLIN);
+    }
+  }
+  ASSERT(!child->waiters->num);
+  ASSERT(cntl__childs_waiting_num() == cntl__cons_waiting_num());
+
+  if (child->prev)
+    child->prev->next = child->next;
+  else
+    cntl_childs_beg = child->next;
+  if (child->next)
+    child->next->prev = child->prev;
+  
+  bag_free(child->waiters);
   F(evnt);
 }
 
-void cntl_child_pid(pid_t pid, int fd)
+static const struct Evnt_cbs cntl__child_evnt_cbs =
 {
-  struct Cntl_child_obj *obj = NULL;
+ evnt_cb_func_accept,    /* def */
+ evnt_cb_func_connect,   /* def */
+
+ cntl__cb_func_child_recv,
+ evnt_cb_func_send,      /* def */
+
+ cntl__cb_func_child_free,
+ evnt_cb_func_shutdown_r /* def */
+};
+
+void cntl_child_pid(pid_t pid, int use_cntl, int fd)
+{
+  struct Cntl_child *child = NULL;
 
   ASSERT(acpt_cntl_evnt);
     
-  if (!(obj = MK(sizeof(struct Cntl_child_obj))))
+  if (!(child = MK(sizeof(struct Cntl_child))))
     VLG_ERRNOMEM((vlg, EXIT_FAILURE, "%s: %m\n", "cntl children"));
 
-  obj->pid = pid;
+  child->pid = pid;
+  child->waiters = NULL;
+
+  child->prev = NULL;
+  if ((child->next = cntl_childs_beg))
+    child->next->prev = child;
+  cntl_childs_beg = child;
   
-  if (!evnt_make_custom(obj->evnt, fd, 0, POLLIN))
+  if (use_cntl &&
+      !(child->waiters = bag_make(4,
+                                  bag_cb_free_nothing, bag_cb_free_nothing)))
+    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "%s: %m\n", "cntl children"));
+    
+  if (!evnt_make_custom(child->evnt, fd, 0, POLLIN))
     vlg_err(vlg, EXIT_FAILURE, "%s: %m\n", "cntl children");
 
-  obj->evnt->cbs->cb_func_free = cntl__cb_func_child_free;
-  obj->evnt->cbs->cb_func_recv = cntl__cb_func_child_recv;
-  
-  if (!(childs = bag_add_obj(childs, NULL, obj)))
-    VLG_ERRNOMEM((vlg, EXIT_FAILURE, "%s: %m\n", "cntl children"));
+  child->evnt->cbs = &cntl__child_evnt_cbs;
 }
 
 /* Here we fork multiple procs. however:
@@ -818,15 +947,12 @@ void cntl_sc_multiproc(Vlg *passed_vlg,
   
   if (!use_cntl && (pipe(pfds) == -1))
     vlg_err(vlg, EXIT_FAILURE, "pipe(): %m\n");
-
-  if (use_cntl)
-    cntl_child_make(num - 1);
   
   while (--num)
   {
     pid_t cpid = -1;
       
-    if (use_cntl && (socketpair(PF_LOCAL, SOCK_STREAM, IPPROTO_IP, pfds) == -1))
+    if (use_cntl && (socketpair(PF_LOCAL, SOCK_STREAM, 0, pfds) == -1))
       vlg_err(vlg, EXIT_FAILURE, "socketpair(): %m\n");
 
     if ((cpid = evnt_make_child()) == -1)
@@ -835,7 +961,7 @@ void cntl_sc_multiproc(Vlg *passed_vlg,
     if (use_cntl && cpid) /* parent */
     {
       close(pfds[0]);
-      cntl_child_pid(cpid, pfds[1]);
+      cntl_child_pid(cpid, use_cntl, pfds[1]);
     }
     else if (!cpid)
     { /* child */

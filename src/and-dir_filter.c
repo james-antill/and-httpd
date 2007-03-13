@@ -218,6 +218,17 @@ static void usage(const char *program_name, int ret, const char *prefix)
   exit (ret);
 }
 
+static void safe_bag__add_cstr(Bag *bag, const char *key, char *val)
+{ /* we pre-allocate when we call this, so we don't need to check */
+  Bag *tmp = NULL;
+
+  ASSERT(bag->sz > bag->num);
+  
+  tmp = bag_add_cstr(bag, key, val);
+  
+  ASSERT(tmp == bag);
+}
+
 static void ex_dir_filter_cmd_line(int *passed_argc, char **passed_argv[])
 {
   int    argc = *passed_argc;
@@ -284,16 +295,16 @@ Uses Vstr string library.\n\
         
         exit (EXIT_SUCCESS);
 
-      case 'A': bag_add_cstr(filters, "acpt-name-eq",  optarg); break;
-      case 'D': bag_add_cstr(filters, "deny-name-eq",  optarg); break;
-      case   1: bag_add_cstr(filters, "acpt-name-beg", optarg); break;
-      case   2: bag_add_cstr(filters, "deny-name-beg", optarg); break;
-      case   3: bag_add_cstr(filters, "acpt-name-end", optarg); break;
-      case   4: bag_add_cstr(filters, "deny-name-end", optarg); break;
-      case   5: bag_add_cstr(filters, "acpt-name-any", optarg); break;
-      case   6: bag_add_cstr(filters, "deny-name-any", optarg); break;
-      case   7: bag_add_cstr(filters, "acpt-all",      NULL);   break;
-      case   8: bag_add_cstr(filters, "deny-all",      NULL);   break;
+      case 'A': safe_bag__add_cstr(filters, "acpt-name-eq",  optarg); break;
+      case 'D': safe_bag__add_cstr(filters, "deny-name-eq",  optarg); break;
+      case   1: safe_bag__add_cstr(filters, "acpt-name-beg", optarg); break;
+      case   2: safe_bag__add_cstr(filters, "deny-name-beg", optarg); break;
+      case   3: safe_bag__add_cstr(filters, "acpt-name-end", optarg); break;
+      case   4: safe_bag__add_cstr(filters, "deny-name-end", optarg); break;
+      case   5: safe_bag__add_cstr(filters, "acpt-name-any", optarg); break;
+      case   6: safe_bag__add_cstr(filters, "deny-name-any", optarg); break;
+      case   7: safe_bag__add_cstr(filters, "acpt-all",      NULL);   break;
+      case   8: safe_bag__add_cstr(filters, "deny-all",      NULL);   break;
         
       default:
         ASSERT(FALSE);

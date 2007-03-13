@@ -63,7 +63,7 @@ struct Evnt
  struct Evnt *next;
  struct Evnt *prev;
 
- struct Evnt_cbs cbs[1];
+ const struct Evnt_cbs *cbs;
 
  Vstr_ref **lims; /* array of references to struct Evnt_limit */
  unsigned int lim_num;
@@ -91,38 +91,72 @@ struct Evnt
  uintmax_t prev_bytes_r;
  struct
  {
-  unsigned int req_put;
-  unsigned int req_got;
-  uintmax_t    bytes_r;
-  uintmax_t    bytes_w;
+  uintmax_t req_put;
+  uintmax_t req_got;
+  uintmax_t bytes_r;
+  uintmax_t bytes_w;
  } acct;
  
- unsigned int flag_q_accept    : 1;
- unsigned int flag_q_connect   : 1;
- unsigned int flag_q_recv      : 1;
- unsigned int flag_q_send_recv : 1;
- unsigned int flag_q_none      : 1;
+ unsigned int flag_q_accept     : 1;
+ unsigned int flag_q_connect    : 1;
+ unsigned int flag_q_recv       : 1;
+ unsigned int flag_q_send_recv  : 1;
+ unsigned int flag_q_none       : 1;
  
- unsigned int flag_q_send_now  : 1;
- unsigned int flag_q_closed    : 1;
+ unsigned int flag_q_send_now   : 1;
+ unsigned int flag_q_closed     : 1;
 
- unsigned int flag_q_pkt_move  : 1; /* 8 */
+ unsigned int flag_q_pkt_move   : 1; /* 8 */
 
- unsigned int flag_io_nagle    : 1;
- unsigned int flag_io_cork     : 1;
+ unsigned int flag_io_nagle     : 1;
+ unsigned int flag_io_cork      : 1;
 
- unsigned int flag_io_filter   : 1;
+ unsigned int flag_io_filter    : 1;
 
- unsigned int flag_fully_acpt  : 1;
+ unsigned int flag_fully_acpt   : 1;
 
- unsigned int flag_insta_close : 1;
+ unsigned int flag_insta_close  : 1;
 
- unsigned int io_r_shutdown    : 1;
- unsigned int io_w_shutdown    : 1;
+ unsigned int io_r_shutdown     : 1;
+ unsigned int io_w_shutdown     : 1;
 
- unsigned int io_r_limited     : 1; /* 16 */
- unsigned int io_w_limited     : 1; /* 17 */
+ unsigned int flag_io_r_limited : 1; /* 16 */
+ unsigned int flag_io_w_limited : 1;
+
+ unsigned int flag_io_wonly_tm  : 1; /* 18 */
 };
+
+#ifndef  EVNT_USE_EPOLL
+# ifdef  HAVE_SYS_EPOLL_H
+#  define EVNT_USE_EPOLL 1
+# else
+#  define EVNT_USE_EPOLL 0
+# endif
+#endif
+
+struct Evnt_poll
+{
+  int (*init)(void);
+  int (*direct_enabled)(void);
+  int (*child_init)(void);
+  
+  void (*wait_cntl_add)(struct Evnt *evnt, int flags);
+  void (*wait_cntl_del)(struct Evnt *evnt, int flags);
+
+  unsigned int (*add)(struct Evnt *evnt, int fd);
+  void         (*del)(struct Evnt *evnt);
+
+  int (*swap_accept_read)(struct Evnt *evnt, int fd);
+
+  int (*poll)(void);
+};
+
+extern const struct Evnt_poll *evnt_poll;
+extern const struct Evnt_poll evnt_poll_be_poll;
+extern const struct Evnt_poll evnt_poll_be_epoll;
+
+/* NOTE: ifdef city when we have kqueue etc. */
+#define EVNT_POLL_BE_DEF evnt_poll_be_epoll
 
 #if ! COMPILE_DEBUG
 # define EVNT_SA(x)     ((struct sockaddr     *)(x)->sa_ref->ptr)
@@ -208,18 +242,19 @@ typedef struct Acpt_listener
  Vstr_ref *ref;
 } Acpt_listener;
 
-extern volatile sig_atomic_t evnt_child_exited;
+extern volatile sig_atomic_t evnt_signal_child_exited;
+extern volatile sig_atomic_t evnt_signal_term;
+
+#define EVNT_GOT_SIGNAL() (evnt_signal_child_exited || evnt_signal_term)
 
 extern int evnt_opt_nagle;
 
 extern void evnt_logger(Vlg *);
+extern void evnt_poll_logger(Vlg *);
 
 extern void evnt_fd__set_nonblock(int, int);
 
 extern int evnt_fd(struct Evnt *);
-
-extern void evnt_wait_cntl_add(struct Evnt *, int);
-extern void evnt_wait_cntl_del(struct Evnt *, int);
 
 extern int evnt_cb_func_connect(struct Evnt *);
 extern struct Evnt *evnt_cb_func_accept(struct Evnt *,
@@ -241,7 +276,8 @@ extern int evnt_make_con_ipv4(struct Evnt *, const char *, short);
 extern int evnt_make_con_local(struct Evnt *, const char *);
 extern int evnt_make_bind_ipv4(struct Evnt *, const char *, short,
                                unsigned int, const char *);
-extern int evnt_make_bind_local(struct Evnt *, const char *, unsigned int);
+extern int evnt_make_bind_local(struct Evnt *, const char *,
+                                unsigned int, unsigned int);
 extern int evnt_make_acpt_ref(struct Evnt *, int, Vstr_ref *);
 extern int evnt_make_acpt_dup(struct Evnt *, int, struct sockaddr *, socklen_t);
 extern int evnt_make_custom(struct Evnt *, int, Vstr_ref *, int);
@@ -250,10 +286,10 @@ extern void evnt_free(struct Evnt *);
 extern void evnt_close(struct Evnt *);
 extern void evnt_close_all(void);
 
-extern void evnt_add(struct Evnt **, struct Evnt *);
-extern void evnt_del(struct Evnt **, struct Evnt *);
+extern void evnt_pkt_wait_r(struct Evnt *);
 extern void evnt_put_pkt(struct Evnt *);
 extern void evnt_got_pkt(struct Evnt *);
+
 extern int evnt_shutdown_r(struct Evnt *, int);
 extern int evnt_shutdown_w(struct Evnt *);
 extern int evnt_recv(struct Evnt *, unsigned int *);
@@ -283,9 +319,7 @@ extern void evnt_timeout_init(void);
 extern void evnt_timeout_exit(void);
 
 extern pid_t evnt_make_child(void);
-extern int evnt_is_child(void);
-extern int evnt_child_block_beg(void);
-extern int evnt_child_block_end(void);
+extern int   evnt_is_child(void);
 
 extern int evnt_sc_timeout_via_mtime(struct Evnt *, unsigned long);
 
@@ -298,22 +332,23 @@ extern struct Evnt *evnt_sc_serv_make_bind_ipv4(const char *, unsigned short,
                                                 unsigned int, unsigned int,
                                                 unsigned int, const char *,
                                                 const char *);
+extern struct Evnt *evnt_sc_serv_make_bind_local(const char *, unsigned int,
+                                                 unsigned int, unsigned int,
+                                                 const char *);
 
 extern void evnt_vlg_stats_info(struct Evnt *, const char *);
-
-extern int evnt_poll_init(void);
-extern int evnt_poll_direct_enabled(void);
-extern int evnt_poll_child_init(void);
-
-extern unsigned int evnt_poll_add(struct Evnt *, int);
-extern void evnt_poll_del(struct Evnt *);
-extern int evnt_poll_swap_accept_read(struct Evnt *, int);
-extern int evnt_poll(void);
 
 extern struct Evnt *evnt_find_least_used(void);
 
 extern struct Evnt *evnt_queue(const char *);
 
 extern void evnt_out_dbg3(const char *);
+
+extern int evnt_timeout_msecs(void);
+extern int evnt_q_tst_accept(int);
+extern void evnt_swap_accept_read(struct Evnt *);
+extern int evnt_block_poll_accept(void);
+extern void evnt_q_move_front(struct Evnt *);
+
 
 #endif

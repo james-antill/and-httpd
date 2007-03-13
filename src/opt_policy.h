@@ -14,8 +14,10 @@ typedef struct Opt_policy_ipv4
 } Opt_policy_ipv4;
 
 extern void opt_policy_exit(Opt_serv_policy_opts *);
+extern void opt_policy_free(Vstr_ref *);
 extern int opt_policy_init(Opt_serv_opts *, Opt_serv_policy_opts *);
 extern Opt_serv_policy_opts *opt_policy_make(Opt_serv_opts *);
+extern void opt_policy_change_con(struct Evnt *, Opt_serv_policy_opts *);
 extern int opt_policy_copy(Opt_serv_policy_opts *,
                            const Opt_serv_policy_opts *);
 
@@ -70,6 +72,15 @@ extern void opt_policy_sc_all_ref_del(Opt_serv_opts *);
 
 #define OPT_POLICY__TRUE  1
 #define OPT_POLICY__FALSE 0
+
+OPT_POLICY__EI void opt_policy_change_con(struct Evnt *evnt,
+                                          Opt_serv_policy_opts *policy)
+{
+  evnt->flag_insta_close = policy->use_insta_close;
+  
+  evnt_limit_alt(evnt, 0, &policy->io_nslimit);
+  evnt_limit_chg(evnt, 1,  policy->ref_io_limit);
+}
 
 OPT_POLICY__EI int opt_policy_copy(Opt_serv_policy_opts *dst,
                                    const Opt_serv_policy_opts *src)

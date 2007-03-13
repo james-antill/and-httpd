@@ -63,12 +63,14 @@ typedef struct Opt_serv_addr_opts
  struct Opt_serv_addr_opts *next;
  Vstr_base *acpt_filter_file;
  Vstr_base *acpt_address;
- Vstr_base *acpt_cong;
+ Vstr_base *acpt_cong; /* tcp only */
  Vstr_base *def_policy;
- unsigned short tcp_port;
- unsigned int defer_accept;
+ sa_family_t family;
+ unsigned short tcp_port; /* tcp/udp/etc. only */
+ unsigned int defer_accept; /* tcp only */
  unsigned int q_listen_len;
  unsigned int max_connections;
+ unsigned int local_perms;
 } Opt_serv_addr_opts;
 
 typedef struct Opt_serv_opts
@@ -110,9 +112,12 @@ typedef struct Opt_serv_opts
  Vstr_base *cntl_file;
  Vstr_base *chroot_dir;
 
+ Vstr_base *poll_backend;
+ 
  Vstr_base *vpriv_uid;
- uid_t priv_uid;
  Vstr_base *vpriv_gid;
+ 
+ uid_t priv_uid;
  gid_t priv_gid;
  unsigned int num_procs;
 
@@ -157,9 +162,9 @@ typedef struct Opt_serv_opts
     OPT_SERV_CONF_VLG_SYSLOG_NATIVE,                                    \
     OPT_SERV_CONF_VLG_TWEAKED_SIZE,                                     \
     OPT_SERV_CONF_VLG_SIZE_DEF,                                         \
-    NULL, NULL, NULL,                                                   \
-    NULL, OPT_SERV_CONF_DEF_PRIV_UID,                                   \
-    NULL, OPT_SERV_CONF_DEF_PRIV_GID,                                   \
+    NULL, NULL, NULL, NULL, NULL, NULL,                                 \
+    OPT_SERV_CONF_DEF_PRIV_UID,                                         \
+    OPT_SERV_CONF_DEF_PRIV_GID,                                         \
     OPT_SERV_CONF_DEF_NUM_PROCS,                                        \
     LOG_DAEMON,                                                         \
     OPT_SERV_CONF_DEF_RLIM_AS_NUM,                                      \
@@ -178,7 +183,7 @@ typedef struct Opt_serv_opts
 
 extern void opt_serv_conf_free_beg(Opt_serv_opts *);
 extern void opt_serv_conf_free_end(Opt_serv_opts *);
-extern int  opt_serv_conf_init(Opt_serv_opts *);
+extern int  opt_serv_conf_init(Opt_serv_opts *, sa_family_t);
 
 extern int opt_serv_conf(Opt_serv_opts *, Conf_parse *, Conf_token *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
@@ -210,7 +215,9 @@ extern int  opt_serv_sc_acpt_end(const Opt_serv_policy_opts *,
 extern void opt_serv_sc_free_beg(struct Evnt *, const char *)
     COMPILE_ATTR_NONNULL_A();
 extern void opt_serv_sc_signals(void);
-extern void opt_serv_sc_check_children(void);
+extern void opt_serv_sc_check_sig_children(void);
+extern void opt_serv_sc_check_sig_term(void);
+
 extern void opt_serv_sc_cntl_resources(const Opt_serv_opts *)
     COMPILE_ATTR_NONNULL_A();
 extern int opt_serv_sc_append_hostname(Vstr_base *, size_t)
@@ -228,6 +235,10 @@ extern int opt_serv_sc_make_str(struct Opt_serv_opts *,
 extern int opt_serv_sc_make_static_path(struct Opt_serv_opts *,
                                         Conf_parse *, Conf_token *,
                                         Vstr_base *)
+    COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
+extern int opt_serv_sc_make_static_input(struct Opt_serv_opts *,
+                                         Conf_parse *, Conf_token *,
+                                         Vstr_base *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
 extern int opt_serv_sc_make_uint(Conf_parse *, Conf_token *, unsigned int *)
     COMPILE_ATTR_NONNULL_A() COMPILE_ATTR_WARN_UNUSED_RET();
@@ -266,6 +277,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
    {"procs", required_argument, NULL, 9},               \
    {"debug", no_argument, NULL, 'd'},                   \
    {"host", required_argument, NULL, 'H'},              \
+   {"local", required_argument, NULL, 'L'},             \
    {"port", required_argument, NULL, 'P'},              \
    {"nagle", optional_argument, NULL, 'n'},             \
    {"max-connections", required_argument, NULL, 'M'},   \
@@ -280,6 +292,7 @@ extern int opt_serv_sc_config_dir(Vstr_base *, void *, const char *,
 #define OPT_SERV_GETOPTS(opts)                                          \
     case 't': opts->def_policy->idle_timeout = atoi(optarg);        break; \
     case 'H': OPT_VSTR_ARG(opts->addr_beg->acpt_address);           break; \
+    case 'L': OPT_VSTR_ARG(opts->addr_beg->acpt_address);           break; \
     case 'M': OPT_NUM_NR_ARG(opts->addr_beg->max_connections,           \
                              "max connections");                        \
     opts->def_policy->max_connections = opts->addr_beg->max_connections; \

@@ -13,13 +13,15 @@ setup();
 
 # V
 my $conf_arg = $conf_args_strict;
-my $nargs  = $conf_arg . " --unspecified-hostname=default ";
-   $nargs .= "--mime-types-main=$ENV{_MIMEDIR}/mime_types_extra.txt ";
+my $nargs  = $conf_arg;
+   $nargs .= " --mime-types-main=$ENV{_MIMEDIR}/mime_types_extra.txt ";
    $nargs .= "--mime-types-xtra=$ENV{_TSTDIR}/ex_httpd_bad_mime ";
    $nargs .= "--virtual-hosts=true ";
-   $nargs .= "--keep-alive=false ";
-   $nargs .= "--range=false ";
-   $nargs .= "--gzip-content-replacement=false ";
+   $nargs .= "--config-data-httpd 'policy <default> HTTP keep-alive false ";
+       $nargs .= "range false ";
+       $nargs .= "encoded-content-replacement false ";
+       $nargs .= "(strictness host unspecified default) ";
+       $nargs .= "(strictness host validation  virtual-hosts-default)' ";
    $nargs .= "--error-406=false ";
    $nargs .= "--defer-accept=1 ";
    $nargs .= "--max-connections=32 ";
@@ -31,7 +33,6 @@ my $nargs  = $conf_arg . " --unspecified-hostname=default ";
    $nargs .= "--accept-filter-file=$ENV{_TSTDIR}/ex_httpd_null_tst_1 ";
    $nargs .= "--server-name='Apache/2.0.40 (Red Hat Linux)' ";
    $nargs .= "--canonize-host=true ";
-   $nargs .= "--error-host-400=false ";
 
    $nargs .= "--configuration-data-and-httpd";
    $nargs .= " '(policy <default> (MIME/types-default-type bar/baz))' ";
