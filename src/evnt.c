@@ -724,13 +724,15 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
   
+  vstr_ref_del(ref);
+  ref = NULL;
+  
   ASSERT(port && (saddr->sin_addr.s_addr != htonl(INADDR_ANY)));
   
   if (connect(fd, EVNT_SA(evnt), alloc_len) == -1)
   {
     if (errno == EINPROGRESS)
     { /* The connection needs more time....*/
-      vstr_ref_del(ref);
       evnt->flag_q_connect = TRUE;
       return (evnt__make_end(&q_connect, evnt, POLLOUT));
     }
@@ -738,7 +740,6 @@ int evnt_make_con_ipv4(struct Evnt *evnt, const char *ipv4_string, short port)
     goto connect_fail;
   }
   
-  vstr_ref_del(ref);
   evnt->flag_q_none = TRUE;
   return (evnt__make_end(&q_none, evnt, 0));
   
@@ -779,11 +780,13 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
     goto init_fail;
   evnt->flag_q_pkt_move = TRUE;
   
+  vstr_ref_del(ref);
+  ref = NULL;
+  
   if (connect(fd, EVNT_SA(evnt), alloc_len) == -1)
   {
     if (errno == EINPROGRESS)
     { /* The connection needs more time....*/
-      vstr_ref_del(ref);
       evnt->flag_q_connect = TRUE;
       return (evnt__make_end(&q_connect, evnt, POLLOUT));
     }
@@ -791,7 +794,6 @@ int evnt_make_con_local(struct Evnt *evnt, const char *fname)
     goto connect_fail;
   }
 
-  vstr_ref_del(ref);
   evnt->flag_q_none = TRUE;
   return (evnt__make_end(&q_none, evnt, 0));
   
@@ -872,6 +874,9 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   if (!evnt_init(evnt, fd, ref, NULL))
     VLG_WARNNOMEM_GOTO(init_fail, (vlg, "%s(): %m\n", __func__));
 
+  vstr_ref_del(ref);
+  ref = NULL;
+  
   if (!evnt_fd__set_reuse(fd, TRUE))
     VLG_WARNNOMEM_GOTO(reuse_fail, (vlg, "%s(): %m\n", __func__));
   
@@ -890,7 +895,6 @@ int evnt_make_bind_ipv4(struct Evnt *evnt,
   if (listen(fd, listen_len) == -1)
     VLG_WARN_GOTO(listen_fail, (vlg, "listen(%d): %m\n", listen_len));
 
-  vstr_ref_del(ref);
   return (evnt__make_bind_end(evnt));
   
  listen_fail:
@@ -917,6 +921,7 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   socklen_t alloc_len = 0;
   Vstr_ref *ref = NULL;
   mode_t omask = 0;
+  int ret = -1;
   
   tmp_sun.sun_path[0] = 0;
   alloc_len = SUN_LEN(&tmp_sun) + len;
@@ -936,36 +941,46 @@ int evnt_make_bind_local(struct Evnt *evnt, const char *fname,
   if (!evnt_init(evnt, fd, ref, NULL))
     goto init_fail;
 
+  vstr_ref_del(ref);
+  ref = NULL;
+  
   if (unlink(fname) != -1)
     vlg_warn(vlg, "HAD to unlink(%s) for bind\n", fname);
-
-  ASSERT(!local_perms || (local_perms & 0777));
-  if (FALSE && local_perms) /* NOTE: umask() does not work! */
-    omask = umask(local_perms);
-  if (bind(fd, EVNT_SA(evnt), alloc_len) == -1)
-    goto bind_fail;
-  if (FALSE && local_perms)
-    umask(omask);
-
-  local_perms &= 0777;
-  if (local_perms)
-    if (chmod(fname, local_perms) == -1) /* NOTE: fchmod() does not work! */
-      goto chmod_fail;
+  else if (errno != ENOENT)
+  {
+    vlg_warn(vlg, "unlink(%s) for bind failed: %m\n", fname);
+    goto unlink_fail;
+  }
   
-  if (listen(fd, listen_len) == -1)
+  ASSERT(!local_perms || (local_perms & 0777));
+  local_perms &= 0777;
+  if (local_perms) /* NOTE: umask() works on listen(), even though the file is
+                    * created at bind() time. */
+    omask = umask(local_perms ^ 0777);
+
+  if (bind(fd, EVNT_SA(evnt), alloc_len) == -1)
+  {
+    saved_errno = errno;
+    if (local_perms)
+      umask(omask);
+    vlg_warn(vlg, "bind(%s): %m\n", fname);
+    errno = saved_errno;
+    goto bind_fail;
+  }
+
+  ret = listen(fd, listen_len);
+  
+  if (local_perms)
+    umask(omask);
+  
+  if (ret == -1)
     goto listen_fail;
 
-  vstr_ref_del(ref);
   return (evnt__make_bind_end(evnt));
   
- bind_fail:
-  saved_errno = errno;
-  if (local_perms)
-    umask(omask);
-  vlg_warn(vlg, "bind(%s): %m\n", fname);
-  errno = saved_errno;
- chmod_fail:
  listen_fail:
+ bind_fail:
+ unlink_fail:
   evnt__uninit(evnt);
  init_fail:
   vstr_ref_del(ref);
@@ -1515,16 +1530,24 @@ static int evnt__call_send(struct Evnt *evnt, unsigned int *ern)
   int fd = evnt_fd(evnt);
   struct Evnt_limit *lim = NULL;
 
+  evnt->flag_got_EAGAIN = FALSE;
   if (!(lim = evnt_limit_w(evnt, evnt->io_w->len)))
   {
-    if (!vstr_sc_write_fd(evnt->io_w, 1, tmp, fd, ern) && (errno != EAGAIN))
-      return (FALSE);
+    if (!vstr_sc_write_fd(evnt->io_w, 1, tmp, fd, ern))
+    {
+      if (errno != EAGAIN)
+        return (FALSE);
+      evnt->flag_got_EAGAIN = TRUE;
+    }
   }
   else if (lim->io_w_cur)
   {
-    if (!vstr_sc_write_fd(evnt->io_w, 1, lim->io_w_cur, fd, ern) &&
-        (errno != EAGAIN))
-      return (FALSE);
+    if (!vstr_sc_write_fd(evnt->io_w, 1, lim->io_w_cur, fd, ern))
+    {
+      if (errno != EAGAIN)
+        return (FALSE);
+      evnt->flag_got_EAGAIN = TRUE;
+    }
   }
 
   tmp -= evnt->io_w->len;
@@ -1561,7 +1584,7 @@ int evnt_send_add(struct Evnt *evnt, int force_q, size_t max_sz)
     }
   }
 
-  /* already on send_q -- or already polling (and not forcing) */
+  /* already on send_q -- or already polling/timedout/forced */
   if (evnt->flag_q_send_now || evnt->tm_l_w ||
       (evnt->flag_q_send_recv && !force_q))
   {
@@ -1623,38 +1646,42 @@ int evnt_shutdown_r(struct Evnt *evnt, int got_eof)
   return (TRUE);
 }
 
-static void evnt__send_fin(struct Evnt *evnt)
-{
-  if (0)
-  { /* nothing */ }
-  else if ( evnt->flag_q_send_recv && !evnt->io_w->len)
+static void evnt__move_r(struct Evnt *evnt)
+{ /* move event so it only gets IO_R events, or none at all */
+  evnt_del(&q_send_recv, evnt); evnt->flag_q_send_recv = FALSE;
+  if (evnt->flag_q_pkt_move && (evnt->acct.req_put == evnt->acct.req_got))
   {
-    evnt_del(&q_send_recv, evnt); evnt->flag_q_send_recv = FALSE;
-    if (evnt->flag_q_pkt_move && (evnt->acct.req_put == evnt->acct.req_got))
-    {
-      evnt_add(&q_none, evnt); evnt->flag_q_none = TRUE;
-      evnt_poll->wait_cntl_del(evnt, POLLIN | POLLOUT);
-    }
-    else
-    {
-      evnt_add(&q_recv, evnt); evnt->flag_q_recv = TRUE;
-      evnt_poll->wait_cntl_del(evnt, POLLOUT);
-    }
+    evnt_add(&q_none, evnt); evnt->flag_q_none = TRUE;
+    evnt_poll->wait_cntl_del(evnt, POLLOUT);
+    /* evnt_poll->wait_cntl_del(evnt, POLLIN | POLLOUT); */
   }
-  else if (!evnt->flag_q_send_recv &&  evnt->io_w->len)
+  else
   {
-    int pflags = evnt->tm_l_w ? 0 : POLLOUT;
-    ASSERT(evnt->flag_q_none || evnt->flag_q_recv);
-    if (evnt->flag_q_none)
-      evnt_del(&q_none, evnt), evnt->flag_q_none = FALSE;
-    else
-      evnt_del(&q_recv, evnt), evnt->flag_q_recv = FALSE;
-    evnt_add(&q_send_recv, evnt); evnt->flag_q_send_recv = TRUE;
-    if (!evnt->io_r_shutdown && !evnt->tm_l_r) pflags |= POLLIN;
-    if (!pflags)
-      ++evnt__scan_ready_moved_send_zero_fds;
-    evnt_poll->wait_cntl_add(evnt, pflags);
+    evnt_add(&q_recv, evnt); evnt->flag_q_recv = TRUE;
+    evnt_poll->wait_cntl_del(evnt, POLLOUT);
   }
+}
+
+static void evnt__move_w(struct Evnt *evnt)
+{ /* move event so it gets IO_R and IO_W events */
+  int pflags = evnt->tm_l_w ? 0 : POLLOUT;
+  
+  ASSERT(evnt->flag_q_none || evnt->flag_q_recv);
+  
+  if (evnt->flag_q_none)
+    evnt_del(&q_none, evnt), evnt->flag_q_none = FALSE;
+  else
+    evnt_del(&q_recv, evnt), evnt->flag_q_recv = FALSE;
+  evnt_add(&q_send_recv, evnt); evnt->flag_q_send_recv = TRUE;
+  
+  /* FIXME: WTF. did I add this for? ... this is bad if we've removed POLLIN
+   *        from the connection (say, no keep-alive and doing the req.).
+   */
+  /* if (!evnt->io_r_shutdown && !evnt->tm_l_r) pflags |= POLLIN; */
+  
+  if (!pflags)
+    ++evnt__scan_ready_moved_send_zero_fds;
+  evnt_poll->wait_cntl_add(evnt, pflags);
 }
 
 int evnt_shutdown_w(struct Evnt *evnt)
@@ -1679,7 +1706,8 @@ int evnt_shutdown_w(struct Evnt *evnt)
   vstr_del(evnt->io_w, 1, evnt->io_w->len);
   vstr_del(evnt->io_r, 1, evnt->io_r->len);
   
-  evnt__send_fin(evnt);
+  if (evnt->flag_q_send_recv)
+    evnt__move_r(evnt);
   
   if (evnt->flag_q_recv)
     evnt_poll->wait_cntl_add(evnt, POLLIN);
@@ -1765,8 +1793,13 @@ int evnt_send(struct Evnt *evnt)
     return (FALSE);
 
   EVNT__COPY_TV(&evnt->mtime);
-
-  evnt__send_fin(evnt);
+  
+  if (0)
+  { /* nothing */ }
+  else if ( evnt->flag_q_send_recv && !evnt->io_w->len)
+    evnt__move_r(evnt);
+  else if (!evnt->flag_q_send_recv &&  evnt->io_w->len)
+    evnt__move_w(evnt);
   
   ASSERT(evnt__valid(evnt));
   
@@ -1796,19 +1829,31 @@ int evnt_sendfile(struct Evnt *evnt, int ffd,
   
   if ((lim = evnt_limit_w(evnt, tmp_len)))
     tmp_len = lim->io_w_cur;
-  
+
+  evnt->flag_got_EAGAIN = FALSE;
   if ((ret = sendfile64(evnt_fd(evnt), ffd, &tmp_off, tmp_len)) == -1)
   {
     if (errno == EAGAIN)
+    {
+      evnt->flag_got_EAGAIN = TRUE;
+      if (!evnt->flag_q_send_recv)
+        evnt__move_w(evnt);
+
+      ASSERT(evnt__valid(evnt));
       return (TRUE);
+    }
     
     *ern = VSTR_TYPE_SC_READ_FD_ERR_READ_ERRNO;
+
+    ASSERT(evnt__valid(evnt));
     return (FALSE);
   }
 
   if (!ret && (!lim || lim->io_w_cur))
   {
     *ern = VSTR_TYPE_SC_READ_FD_ERR_EOF;
+
+    ASSERT(evnt__valid(evnt));
     return (FALSE);
   }
   
@@ -1818,6 +1863,7 @@ int evnt_sendfile(struct Evnt *evnt, int ffd,
   if (!evnt_limit_timeout_w(evnt, lim))
   {
     errno = ENOMEM, *ern = VSTR_TYPE_SC_WRITE_FD_ERR_MEM;
+    ASSERT(evnt__valid(evnt));
     return (FALSE);
   }
   
@@ -1825,6 +1871,8 @@ int evnt_sendfile(struct Evnt *evnt, int ffd,
   
   *f_len -= ret;
 
+  ASSERT(evnt__valid(evnt));
+  
   return (TRUE);
 }
 
@@ -1888,7 +1936,7 @@ int evnt_timeout_msecs(void)
       msecs = 0;
   }
 
-  vlg_dbg2(vlg, "get_timeout = %'d\n", msecs);
+  vlg_dbg1(vlg, "timeout = %'d\n", msecs);
   
   return (msecs);
 }

@@ -34,7 +34,7 @@ my $nargs  = $conf_arg;
    $nargs .= "--server-name='Apache/2.0.40 (Red Hat Linux)' ";
    $nargs .= "--canonize-host=true ";
 
-   $nargs .= "--configuration-data-and-httpd";
+   $nargs .= "--configuration-data-httpd";
    $nargs .= " '(policy <default> (MIME/types-default-type bar/baz))' ";
 
 daemon_init("and-httpd", $root, $nargs);

@@ -161,8 +161,10 @@ static void usage(const char *program_name, int ret, const char *prefix)
     --config-data-httpd\n\
                       - Parse configuration given in the\n\
                         org.and.httpd-conf-main-1.0 namespace.\n\
+    --keep-alive      - Toggle use of Keep-Alive handling%s.\n\
     --virtual-hosts\n\
     --vhosts          - Toggle use of directory virtual hostnames%s.\n\
+    --range           - Toggle use of partial responses%s.\n\
     --public-only     - Toggle use of public only privilages%s.\n\
     --directory-filename\n\
     --dir-filename    - Filename to use when requesting directories.\n\
@@ -176,7 +178,9 @@ static void usage(const char *program_name, int ret, const char *prefix)
                prefix, program_name,
                opt_def_toggle(FALSE), opt_def_toggle(FALSE),
                opt_def_toggle(EVNT_CONF_NAGLE),
+               opt_def_toggle(HTTPD_CONF_USE_KEEPA),
                opt_def_toggle(HTTPD_CONF_USE_VHOSTS_NAME),
+               opt_def_toggle(HTTPD_CONF_USE_RANGE),
                opt_def_toggle(HTTPD_CONF_USE_PUBLIC_ONLY),
                opt_def_toggle(HTTPD_CONF_USE_ERR_406),
                opt_def_toggle(HTTPD_CONF_USE_CANONIZE_HOST));
@@ -606,19 +610,19 @@ static void serv_cmd_line(int argc, char *argv[])
    {"conf-dir",                required_argument, NULL, 140},
    {"configuration-data-daemon", required_argument, NULL, 143},
    {"config-data-daemon",        required_argument, NULL, 143},
+   {"conf-data-daemon",        required_argument, NULL, 143},
    {"configuration-data-httpd", required_argument, NULL, 144},
    {"config-data-httpd",        required_argument, NULL, 144},
-   {"configuration-data-and-httpd", required_argument, NULL, 144},
-   {"config-data-and-httpd",        required_argument, NULL, 144},
+   {"conf-data-httpd",        required_argument, NULL, 144},
    {"default-configuration", no_argument, NULL, 149},
    {"def-config",            no_argument, NULL, 149},
    
    {"max-header-sz", required_argument, NULL, 128},
-   /* 129 */
+   {"keep-alive", optional_argument, NULL, 129},
    /* 130 */
    {"vhosts", optional_argument, NULL, 131},
    {"virtual-hosts", optional_argument, NULL, 131},
-   /* 132 */
+   {"range", optional_argument, NULL, 132},
    /* 133 */
    {"public-only", optional_argument, NULL, 134}, /* FIXME: rm ? */
    {"dir-filename", required_argument, NULL, 135},
@@ -706,8 +710,9 @@ static void serv_cmd_line(int argc, char *argv[])
         break;
         
       case 128: POPT_NUM_NR_ARG(max_header_sz, "max header size"); break;
+      case 129: POPT_TOGGLE_ARG(use_keep_alive);                   break;
       case 131: POPT_TOGGLE_ARG(use_vhosts_name);                  break;
-        /* case 132: */
+      case 132: POPT_TOGGLE_ARG(use_range);                        break;
         /* case 133: */
       case 134: POPT_TOGGLE_ARG(use_public_only);                  break;
       case 135: POPT_VSTR_ARG(dir_filename);                       break;

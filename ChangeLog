@@ -1,3 +1,43 @@
+2007-05-07  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv_sc_signals): Cleanup error messages.
+	(opt_serv_sc_signals): Use vlg for error messages.
+
+2007-05-06  James Antill  <james@and.org>
+
+	* src/opt_serv.c (opt_serv__sig_raise_cont): Change to use 
+	vlg_sig_sig().
+	(opt_serv_sc_signals): Change death functions from calling abort() to
+	calling __sig_raise_cont.
+	(opt_serv_sc_signals): Add handler for SIGABRT.
+
+	* src/vlg.c (vlg_sig, vlg_sig_sig, vlg_vsig): Add log function to "end"
+	with a signal. Note that it can continue, although most usage is
+	probably not going to be this case.
+
+2007-05-05  James Antill  <james@and.org>
+
+	* src/httpd.c (httpd__serv_send_lim): Use flag_got_EAGAIN to insta.
+	get out of write IO loop.
+	(httpd_serv_send): Use flag_got_EAGAIN to insta. get out of sendfile IO
+	loop.
+
+	* src/evnt.c (evnt_sendfile, evnt__move_r, evnt__move_w, evnt_send): 
+	Fix and cleanup adding events to the send/receive queue.
+
+2007-04-28  James Antill  <james@and.org>
+
+	* src/httpd_parse.c (http_parse_connection): Don't allow 1_0 keep alive
+	without allowing 1.1+ keep alive ... it's just insane for the sysadmin.
+
+	* src/httpd.c (httpd__serv_fin_send): Drop a few syscalls when
+	insta_close is set.
+
+	* src/httpd_policy.h (httpd_policy_change_con): Update to use
+	opt_policy_change_con().
+
+	* src/and-httpd.c (serv_cmd_line): Add keep-alive/range toggles back in.
+
 2007-03-12  James Antill  <james@and.org>
 
 	* src/evnt.c (evnt_sc_serv_make_bind_local): Use umask() instead of

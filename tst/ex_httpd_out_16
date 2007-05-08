@@ -1,6 +1,6 @@
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified: Sun, 10 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -9,7 +9,7 @@ Content-Length: 159
 
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -18,7 +18,7 @@ Content-Length: 393
 
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified: Sun, 10 Oct 2004 07:02:24 GMT
 Vary: Accept-Encoding
 Content-Type: text/html
@@ -28,7 +28,7 @@ Content-Range: bytes 158-158/159
 
 HTTP/1.1 304 Not Modified
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified: Sun, 10 Oct 2004 07:02:24 GMT
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -37,7 +37,7 @@ Content-Length: 159
 
 HTTP/1.1 412 Precondition Failed
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified:
 Accept-Ranges: bytes
 Vary: Accept-Encoding
@@ -46,7 +46,7 @@ Content-Length: 393
 
 HTTP/1.1 206 Partial content
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified: Sun, 10 Oct 2004 07:02:24 GMT
 Connection: close
 Vary: Accept-Encoding

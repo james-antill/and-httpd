@@ -144,12 +144,8 @@ extern int httpd_policy_copy(Opt_serv_policy_opts *,
 
 HTTPD_POLICY__EI void httpd_policy_change_con(struct Con *con,
                                               const Httpd_policy_opts *policy)
-{ /* BEG: should be in opt_policy_change_con() */
-  con->evnt->flag_insta_close = policy->s->use_insta_close;
-  
-  evnt_limit_alt(con->evnt, 0, &policy->s->io_nslimit);
-  evnt_limit_chg(con->evnt, 1,  policy->s->ref_io_limit);
-  /* END: should be in opt_policy_change_con() */
+{
+  opt_policy_change_con(con->evnt, policy->s);
     
   con->use_sendfile      = policy->use_sendfile;
   con->use_posix_fadvise = policy->use_posix_fadvise;

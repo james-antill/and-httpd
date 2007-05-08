@@ -1285,101 +1285,118 @@ void opt_serv_sc_free_beg(struct Evnt *evnt, const char *info_rep)
     evnt_vlg_stats_info(evnt, info_rep);
 }
 
-#define OPT_SERV__SIG_OR_ERR(x)                 \
-    if (sigaction(x, &sa, NULL) == -1)          \
-      err(EXIT_FAILURE, "signal(%d:%s)", x, strsignal(x))
-
-static void opt_serv__sig_crash(int s_ig_num)
+#if 0
+static void opt_serv__sig_crash(int s_ignum)
 {
   vlg_sig_abort(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
 }
+#endif
 
-static void opt_serv__sig_raise_cont(int s_ig_num)
+#define OPT_SERV__SIG_EMPTY(x)                                          \
+    if (sigemptyset(&(x)->sa_mask) == -1)                               \
+      vlg_sig_abort(vlg, "sigemptyset() failed in %s", __func__)
+#define OPT_SERV__SIG_OR_ERR(x, y)                              \
+    if (sigaction(y, (x), NULL) == -1)                          \
+      vlg_sig_abort(vlg, "sigaction(%d:%s) failed in %s",       \
+                    y, strsignal(y), __func__)
+
+static void opt_serv__sig_raise_cont(int s_ignum)
 {
-  struct sigaction sa;
-  
-  if (sigemptyset(&sa.sa_mask) == -1)
-    err(EXIT_FAILURE, "signal init");
+  struct sigaction sa[1];
 
-  sa.sa_flags   = SA_RESTART;
-  sa.sa_handler = SIG_DFL;
-  OPT_SERV__SIG_OR_ERR(s_ig_num);
+  OPT_SERV__SIG_EMPTY(sa);
 
-  vlg_sig_warn(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
-  raise(s_ig_num);
+  sa->sa_flags   = SA_RESTART;
+  sa->sa_handler = SIG_DFL;
+  OPT_SERV__SIG_OR_ERR(sa, s_ignum);
+
+  vlg_sig_sig(vlg, s_ignum, "SIG[%d]: %s\n", s_ignum, strsignal(s_ignum));
 }
 
-static void opt_serv__sig_term(int s_ig_num)
+static void opt_serv__sig_term(int s_ignum)
 {
-  vlg_sig_warn(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
+  vlg_sig_warn(vlg, "SIG[%d]: %s\n", s_ignum, strsignal(s_ignum));
   evnt_signal_term = TRUE;
 }
 
-static void opt_serv__sig_cont(int s_ig_num)
+static void opt_serv__sig_cont(int s_ignum)
 {
-  if (0) /* s_ig_num == SIGCONT) */
+  if (s_ignum == SIGCONT)
   {
-    struct sigaction sa;
+    struct sigaction sa[1];
   
-    if (sigemptyset(&sa.sa_mask) == -1)
-      err(EXIT_FAILURE, "signal init");
+    OPT_SERV__SIG_EMPTY(sa);
 
-    sa.sa_flags   = SA_RESTART;
-    sa.sa_handler = opt_serv__sig_raise_cont;
-    OPT_SERV__SIG_OR_ERR(SIGTSTP);
+    sa->sa_flags   = SA_RESTART;
+    sa->sa_handler = opt_serv__sig_raise_cont;
+    OPT_SERV__SIG_OR_ERR(sa, SIGTSTP);
   }
   
-  vlg_sig_info(vlg, "SIG[%d]: %s\n", s_ig_num, strsignal(s_ig_num));
+  vlg_sig_info(vlg, "SIG[%d]: %s\n", s_ignum, strsignal(s_ignum));
 }
 
-static void opt_serv__sig_child(int s_ig_num)
+static void opt_serv__sig_child(int s_ignum)
 {
-  ASSERT(s_ig_num == SIGCHLD);
+  ASSERT(s_ignum == SIGCHLD);
   evnt_signal_child_exited = TRUE;
 }
+#undef OPT_SERV__SIG_OR_ERR
+#undef OPT_SERV__SIG_EMPTY
 
+#define OPT_SERV__SIG_EMPTY(x)                                          \
+    if (sigemptyset(&(x)->sa_mask) == -1)                               \
+      vlg_abort(vlg, "sigemptyset() failed in %s", __func__)
+#define OPT_SERV__SIG_OR_ERR(x, y)                              \
+    if (sigaction(y, (x), NULL) == -1)                          \
+      vlg_abort(vlg, "sigaction(%d:%s) failed in %s",           \
+                y, strsignal(y), __func__)
 void opt_serv_sc_signals(void)
 {
-  struct sigaction sa;
-  
-  if (sigemptyset(&sa.sa_mask) == -1)
-    err(EXIT_FAILURE, "signal init %s", "sigemptyset");
+  struct sigaction sa[1];
+
+  OPT_SERV__SIG_EMPTY(sa);
   
   /* don't use SA_RESTART ... */
-  sa.sa_flags   = 0;
+  sa->sa_flags   = 0;
   /* ignore it... we don't have a use for it */
-  sa.sa_handler = SIG_IGN;
-  
-  OPT_SERV__SIG_OR_ERR(SIGPIPE);
+  sa->sa_handler = SIG_IGN;
+  OPT_SERV__SIG_OR_ERR(sa, SIGPIPE);
 
-  sa.sa_handler = opt_serv__sig_crash;
-  
-  OPT_SERV__SIG_OR_ERR(SIGSEGV);
-  OPT_SERV__SIG_OR_ERR(SIGBUS);
-  OPT_SERV__SIG_OR_ERR(SIGILL);
-  OPT_SERV__SIG_OR_ERR(SIGFPE);
-  OPT_SERV__SIG_OR_ERR(SIGXFSZ);
+  /* sa->sa_handler = opt_serv__sig_crash; */
+  sa->sa_handler = opt_serv__sig_raise_cont;
+  OPT_SERV__SIG_OR_ERR(sa, SIGSEGV);
+  OPT_SERV__SIG_OR_ERR(sa, SIGBUS);
+  OPT_SERV__SIG_OR_ERR(sa, SIGILL);
+  OPT_SERV__SIG_OR_ERR(sa, SIGFPE);
+  OPT_SERV__SIG_OR_ERR(sa, SIGXFSZ);
+  OPT_SERV__SIG_OR_ERR(sa, SIGABRT);
 
-  sa.sa_flags   = SA_RESTART;
-  sa.sa_handler = opt_serv__sig_child;
-  OPT_SERV__SIG_OR_ERR(SIGCHLD);
-  
-  sa.sa_flags   = SA_RESTART;
-  sa.sa_handler = opt_serv__sig_cont; /* print, and do nothing */
-  
-  OPT_SERV__SIG_OR_ERR(SIGUSR1);
-  OPT_SERV__SIG_OR_ERR(SIGUSR2);
-  OPT_SERV__SIG_OR_ERR(SIGHUP);
-  OPT_SERV__SIG_OR_ERR(SIGCONT);
-  
-  sa.sa_handler = opt_serv__sig_term;
-  OPT_SERV__SIG_OR_ERR(SIGTERM);
 
-  sa.sa_handler = opt_serv__sig_raise_cont; /* queue print, and re-raise */
+  /* set var */
+  sa->sa_flags   = SA_RESTART;
+  sa->sa_handler = opt_serv__sig_child;
+  OPT_SERV__SIG_OR_ERR(sa, SIGCHLD);
+
+
+  /* print, and do nothing */
+  sa->sa_flags   = SA_RESTART;
+  sa->sa_handler = opt_serv__sig_cont;
+  OPT_SERV__SIG_OR_ERR(sa, SIGUSR1);
+  OPT_SERV__SIG_OR_ERR(sa, SIGUSR2);
+  OPT_SERV__SIG_OR_ERR(sa, SIGHUP);
+  OPT_SERV__SIG_OR_ERR(sa, SIGCONT);
   
-  OPT_SERV__SIG_OR_ERR(SIGTSTP);
+
+  sa->sa_handler = opt_serv__sig_term;
+  OPT_SERV__SIG_OR_ERR(sa, SIGTERM);
+
+  
+  /* queue print, and re-raise */
+  sa->sa_handler = opt_serv__sig_raise_cont;
+  OPT_SERV__SIG_OR_ERR(sa, SIGTSTP);
 }
-#undef SERV__SIG_OR_ERR
+#undef OPT_SERV__SIG_OR_ERR
+#undef OPT_SERV__SIG_EMPTY
 
 void opt_serv_sc_check_sig_children(void)
 {

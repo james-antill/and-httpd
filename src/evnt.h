@@ -123,7 +123,9 @@ struct Evnt
  unsigned int flag_io_r_limited : 1; /* 16 */
  unsigned int flag_io_w_limited : 1;
 
- unsigned int flag_io_wonly_tm  : 1; /* 18 */
+ unsigned int flag_io_wonly_tm  : 1;
+
+ unsigned int flag_got_EAGAIN   : 1; /* 19 */
 };
 
 #ifndef  EVNT_USE_EPOLL

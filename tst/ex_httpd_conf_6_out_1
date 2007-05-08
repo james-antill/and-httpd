@@ -1,6 +1,6 @@
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified:
 Connection: Keep-Alive
 Content-Type: text/html
@@ -9,7 +9,7 @@ Location: http://foo.example.com/index.html
 
 HTTP/1.1 301 Moved Permanently
 Date:
-Server: and-httpd/0.99.11
+Server: and-httpd/0.99.12
 Last-Modified:
 Connection: close
 Content-Type: text/html

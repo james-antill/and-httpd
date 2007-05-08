@@ -10,7 +10,6 @@
 	have enumeration bind, Ie. bind to each IP address ... 
           helps for testing recv socket.
 
-
   cntl
 	Remove race when multiple commands are done from multiple connections.
 	timeout's for connections
@@ -43,6 +42,7 @@
 
 http://www.sans.org/top20/#u2
 
+        setsockopt(SO_RCVBUF)
 	splice() for real aio from disk
 	doc converter, manual
         change gethostbyname() to the new BS.

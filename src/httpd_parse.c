@@ -561,7 +561,7 @@ void http_parse_connection(struct Con *con, struct Httpd_req_data *req)
     }
     else if (VIEQ(data, pos, tmp, "keep-alive"))
     {
-      if (req->policy->use_keep_alive_1_0)
+      if (req->policy->use_keep_alive && req->policy->use_keep_alive_1_0)
         con->keep_alive = HTTP_1_0_KEEP_ALIVE;
     }
     /* now fixup connection headers for HTTP/1.0 proxies */

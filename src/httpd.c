@@ -1575,6 +1575,7 @@ static int httpd__serv_send_err(struct Con *con, const char *msg)
 static int httpd_serv_q_send(struct Con *con)
 {
   vlg_dbg2(vlg, "http Q send $<sa:%p>\n", CON_CEVNT_SA(con));
+
   if (!evnt_send_add(con->evnt, TRUE, HTTPD_CONF_MAX_WAIT_SEND))
     return (httpd__serv_send_err(con, "Q"));
       
@@ -1585,9 +1586,17 @@ static int httpd_serv_q_send(struct Con *con)
 static int httpd__serv_fin_send(struct Con *con)
 {
   if (con->keep_alive)
+  {
     /* need to try immediately, as we might have already got the next req */
     return (http_parse_req(con));
+  }
 
+  if (con->evnt->flag_insta_close)
+  {
+    vlg_dbg1(vlg, "http insta close $<sa:%p>\n", CON_CEVNT_SA(con));
+    return (FALSE);
+  }
+  
   return (evnt_shutdown_w(con->evnt));
 }
 
@@ -1601,10 +1610,12 @@ static int httpd__serv_send_lim(struct Con *con, const char *emsg,
   
   while (out->len >= lim)
   {
-    if (!con->io_limit_num--) return (httpd_serv_q_send(con));
+    if (!con->io_limit_num--)       return (httpd_serv_q_send(con));
     
     if (!evnt_send(con->evnt))
       return (httpd__serv_send_err(con, emsg));
+
+    if (con->evnt->flag_got_EAGAIN) return (TRUE);
   }
 
   *cont = TRUE;
@@ -1645,7 +1656,7 @@ int httpd_serv_send(struct Con *con)
     
     while (fs->len)
     {
-      if (!con->io_limit_num--) return (httpd_serv_q_send(con));
+      if (!con->io_limit_num--)       return (httpd_serv_q_send(con));
       
       if (!evnt_sendfile(con->evnt, fs->fd, &fs->off, &fs->len, &ern))
       {
@@ -1669,6 +1680,8 @@ int httpd_serv_send(struct Con *con)
         con->use_sendfile = FALSE;
         return (httpd_serv_send(con)); /* recurse */
       }
+      
+      if (con->evnt->flag_got_EAGAIN) return (TRUE);
     }
     
     goto file_end;

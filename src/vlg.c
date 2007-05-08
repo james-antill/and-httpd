@@ -891,6 +891,12 @@ void vlg_vabort(Vlg *vlg, const char *fmt, va_list ap)
   abort();
 }
 
+void vlg_vsig(Vlg *vlg, int s_ignum, const char *fmt, va_list ap)
+{
+  vlg__add_chk_flush(vlg, fmt, ap, LOG_ALERT, TRUE);
+  raise(s_ignum);
+}
+
 void vlg_verr(Vlg *vlg, int exit_code, const char *fmt, va_list ap)
 {
   vlg__add_chk_flush(vlg, fmt, ap, LOG_ALERT, TRUE);
@@ -941,6 +947,15 @@ void vlg_abort(Vlg *vlg, const char *fmt, ... )
   va_end(ap);
   
   ASSERT_NOT_REACHED();
+}
+
+void vlg_sig(Vlg *vlg, int s_ignum, const char *fmt, ... )
+{
+  va_list ap;
+
+  va_start(ap, fmt);
+  vlg_vsig(vlg, s_ignum, fmt, ap);
+  va_end(ap);
 }
 
 void vlg_err(Vlg *vlg, int exit_code, const char *fmt, ... )
@@ -1068,6 +1083,21 @@ void vlg_sig_abort(Vlg *vlg, const char *fmt, ... )
   VLG__SIG_BLOCK_END();
   
   ASSERT_NOT_REACHED();
+}
+
+void vlg_sig_sig(Vlg *vlg, int s_ignum, const char *fmt, ... )
+{
+  va_list ap;
+
+  VLG__SIG_BLOCK_BEG();
+  
+  va_start(ap, fmt);
+  vlg_vsig(vlg, s_ignum, fmt, ap);
+  va_end(ap);
+  
+  VLG__SIG_BLOCK_END();
+
+  /* in theory we can continue, but mostly we won't as we'll have SIGSEGV */
 }
 
 void vlg_sig_err(Vlg *vlg, int exit_code, const char *fmt, ... )

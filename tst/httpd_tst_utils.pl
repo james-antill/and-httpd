@@ -747,8 +747,8 @@ if (@ARGV)
     success();
   }
 
-our $conf_args_nonstrict = " --configuration-data-and-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP ETag: auto-off strictness headers allow-spaces true))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
-our $conf_args_strict    = " --configuration-data-and-httpd ' policy <default>  unspecified-hostname-append-port off  secure-directory-filename no    HTTP ETag: auto-no' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+our $conf_args_nonstrict = " --configuration-data-httpd '(policy <default> (unspecified-hostname-append-port off) (secure-directory-filename no) (HTTP ETag: auto-off strictness headers allow-spaces true))' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
+our $conf_args_strict    = " --configuration-data-httpd ' policy <default>  unspecified-hostname-append-port off  secure-directory-filename no    HTTP ETag: auto-no' --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
 
 sub httpd_vhost_tst
   {
@@ -765,7 +765,7 @@ sub conf_tsts
     my $end = shift;
     my $args = ' --configuration-data-daemon "rlimit CORE <unlimited>"';
     $args .= " --mime-types-main $ENV{_TSTDIR}/ex_httpd_sys_mime";
-    $args .= " --configuration-data-and-httpd 'policy <default> HTTP ETag: auto-none'";
+    $args .= " --configuration-data-httpd 'policy <default> HTTP ETag: auto-none'";
 
     my @conf_httpd_tsts = glob("$ENV{_TSTDIR}/ex_conf_httpd_tst_*");
     if (($beg == 1) && ($end == scalar(@conf_httpd_tsts)))

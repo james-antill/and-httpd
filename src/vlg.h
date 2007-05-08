@@ -65,6 +65,8 @@ extern void vlg_sc_bind_mount(const char *);
 
 extern void vlg_vabort(Vlg *, const char *fmt, va_list )
    COMPILE_ATTR_FMT(2, 0);
+extern void vlg_vsig(Vlg *, int, const char *fmt, va_list )
+   COMPILE_ATTR_FMT(3, 0);
 extern void vlg_verr(Vlg *, int, const char *fmt, va_list )
    COMPILE_ATTR_FMT(3, 0);
 extern void vlg_vwarn(Vlg *, const char *fmt, va_list )
@@ -80,6 +82,8 @@ extern void vlg_vdbg3(Vlg *, const char *fmt, va_list )
 
 extern void vlg_abort(Vlg *, const char *fmt, ... )
       COMPILE_ATTR_FMT(2, 3);
+extern void vlg_sig(Vlg *, int, const char *fmt, ... )
+      COMPILE_ATTR_FMT(3, 4);
 extern void vlg_err(Vlg *, int, const char *fmt, ... )
       COMPILE_ATTR_FMT(3, 4);
 extern void vlg_warn(Vlg *, const char *fmt, ... )
@@ -95,6 +99,8 @@ extern void vlg_dbg3(Vlg *, const char *fmt, ... )
 
 extern void vlg_sig_abort(Vlg *, const char *fmt, ... )
       COMPILE_ATTR_FMT(2, 3);
+extern void vlg_sig_sig(Vlg *, int, const char *fmt, ... )
+      COMPILE_ATTR_FMT(3, 4);
 extern void vlg_sig_err(Vlg *, int, const char *fmt, ... )
       COMPILE_ATTR_FMT(3, 4);
 extern void vlg_sig_warn(Vlg *, const char *fmt, ... )

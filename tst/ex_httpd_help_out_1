@@ -40,8 +40,10 @@
     --config-data-httpd
                       - Parse configuration given in the
                         org.and.httpd-conf-main-1.0 namespace.
+    --keep-alive      - Toggle use of Keep-Alive handling (default: on).
     --virtual-hosts
     --vhosts          - Toggle use of directory virtual hostnames (default: off).
+    --range           - Toggle use of partial responses (default: on).
     --public-only     - Toggle use of public only privilages (default: off).
     --directory-filename
     --dir-filename    - Filename to use when requesting directories.
